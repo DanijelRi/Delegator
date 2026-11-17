@@ -100,7 +100,16 @@ export default async function handler(req, res) {
       }),
     });
     const json = await r.json().catch(() => ({}));
-    if (!r.ok) return res.status(502).json({ error: `AI greška (${r.status}): ${json.error?.message || 'nepoznato'}` });
+    if (!r.ok) {
+      console.error('AI Gateway', r.status, MODEL, json.error?.message);
+      // Brojač ne naplaćujemo kad AI uopće nije odgovorio.
+      await sql`UPDATE ai_usage SET count = count - 1 WHERE user_id = ${me.id} AND day = ${todayZagreb()} AND count > 0`;
+      const msg = r.status === 403 && /free tier|credit/i.test(json.error?.message || '')
+        ? `AI model ${MODEL} nije dostupan na besplatnoj razini AI Gatewaya — postavi AI_GATEWAY_MODEL ili uplati kredite.`
+        : r.status === 429 ? 'AI je trenutno preopterećen, pokušaj za minutu.'
+        : `AI greška (${r.status}): ${json.error?.message || 'nepoznato'}`;
+      return res.status(502).json({ error: msg });
+    }
 
     const call = json.choices?.[0]?.message?.tool_calls?.[0];
     const raw = call ? JSON.parse(call.function.arguments) : JSON.parse(json.choices?.[0]?.message?.content || '{}');
