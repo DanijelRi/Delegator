@@ -3,6 +3,14 @@
 Teme → zadaci → ljudi → bilješke za svaku osobu. Diktiranje glasom na hrvatskom. Baza: Neon Postgres.
 
 ## Što zna
+- **🏠 Pregled:** što kasni, što je danas i u sljedećih 7 dana, opterećenost ljudi i napredak tema.
+- **Podteme** bilo koje dubine (Sajam › Marketing › Tisak).
+- **🗂 Ploča (Kanban):** Za napraviti / U tijeku / Gotovo — povuci karticu u drugi stupac.
+- **📅 Kalendar:** mjesec, tjedan, popis; povuci zadatak na drugi dan za novi rok; višednevni zadaci (početak–rok); hrvatski blagdani.
+- **🔁 Ponavljanje:** svaki dan / tjedan / 2 tjedna / mjesec / godinu — kad je gotov, sam se napravi sljedeći.
+- **Pretplata na kalendar:** rokovi se sami pojavljuju u Google/Apple kalendaru (👤 → Rokovi u kalendaru).
+- **🕸 Mreža:** teme, zadaci, ljudi i bilješke kao jedan graf.
+- **📲 Instalacija na mobitel** (PWA) i čitanje bez interneta.
 - **Više korisnika na pozivnice:** svatko ima svoje teme, zadatke i ljude. Administrator u kartici „Korisnici“ radi pozivnice i poveznice za novu lozinku.
 - **✉️ Pošalji mailom:** zadatak s bilješkama ili popis zadataka osobe otvara se u tvom programu za poštu i šalje s tvoje adrese.
 - **Teme** (s bojom, arhiviranje) i neograničen broj zadataka i bilješki.

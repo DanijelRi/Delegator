@@ -105,3 +105,13 @@ ALTER TABLE people ADD COLUMN IF NOT EXISTS email text;
 -- Brisanje teme briše i njene podteme sa zadacima (sučelje to jasno najavi prije brisanja).
 ALTER TABLE topics ADD COLUMN IF NOT EXISTS parent_id int REFERENCES topics(id) ON DELETE CASCADE;
 CREATE INDEX IF NOT EXISTS topics_parent_idx ON topics (parent_id);
+
+-- Datum početka (višednevni zadaci u kalendaru) i ponavljanje zadatka.
+-- repeat: daily | weekly | biweekly | monthly | yearly (NULL = ne ponavlja se).
+-- Kad se zadatak koji se ponavlja označi gotovim, nastaje sljedeći s pomaknutim rokom.
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS start_date date;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS repeat text;
+
+-- Tajni token za pretplatu na kalendar (Google/Apple): /api/ical?t=TOKEN
+ALTER TABLE users ADD COLUMN IF NOT EXISTS ical_token text;
+CREATE UNIQUE INDEX IF NOT EXISTS users_ical_idx ON users (ical_token);

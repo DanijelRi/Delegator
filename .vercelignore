@@ -8,5 +8,5 @@ README.md
 schema.sql
 migrate.mjs
 dev-server.mjs
-*.png
-*.zip
+/*.png
+/*.zip

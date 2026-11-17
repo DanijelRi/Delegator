@@ -4,7 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Delegator — teme, zadaci, ljudi</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>">
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#4f6bed">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Delegator">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
   :root {
     --bg: #f5f6f8; --card: #fff; --ink: #1d2330; --muted: #6b7385; --line: #e3e6ec;
@@ -96,6 +103,7 @@
   .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -2px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .login { max-width: 360px; margin: 10vh auto; }
+  .offline { width: 100%; background: #fff3e0; color: #a3650c; font-size: 13px; padding: 4px 10px; border-radius: 6px; text-align: center; }
   mark { background: #ffe58a; color: inherit; border-radius: 3px; padding: 0 1px; }
   .hits { margin: -4px 0 8px; padding: 6px 12px 8px 24px; border: 1px solid var(--line); border-top: 0;
           border-radius: 0 0 var(--radius) var(--radius); background: #fafbfc; }
@@ -149,6 +157,44 @@
     .cd-add { opacity: 1; }
   }
 
+  /* pregled */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+  .stat { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px; border-radius: var(--radius); background: var(--card); text-align: left; }
+  .stat b { font-size: 28px; line-height: 1; } .stat span { color: var(--muted); font-size: 13px; }
+  .stat.bad b { color: var(--danger); } .stat.warn b { color: var(--warn); } .stat.muted b { color: var(--muted); }
+  .ov-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .ov-grid { grid-template-columns: 1fr; } }
+  .ov-row .cchip { flex: 1; } .ov-row > span { white-space: nowrap; }
+  .loadrow { width: 100%; display: grid; grid-template-columns: minmax(90px, 140px) 1fr auto; gap: 10px; align-items: center; border: 0; padding: 6px 4px; text-align: left; background: none; }
+  .loadrow:hover { background: #f1f3f6; }
+  .loadrow .ln { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar { position: relative; height: 10px; background: #eef0f4; border-radius: 6px; overflow: hidden; }
+  .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 6px; }
+  .bar i.late { background: var(--danger); } .bar i.ok { opacity: .85; }
+
+  /* ploča */
+  main:has(.board) { max-width: none; }
+  .kanban { display: grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); gap: 12px; align-items: stretch; overflow-x: auto; }
+  .kcol { background: #eceef3; border-radius: var(--radius); padding: 8px; display: flex; flex-direction: column; gap: 8px; min-height: calc(100vh - 230px); border: 2px solid transparent; }
+  .kcol.drop { border-color: var(--accent); background: var(--accent-soft); }
+  .kh { display: flex; align-items: center; gap: 8px; padding: 2px 4px; }
+  .kcard { background: var(--card); border: 1px solid var(--line); border-left: 4px solid; border-radius: 8px; padding: 8px 10px; cursor: grab; display: flex; flex-direction: column; gap: 3px; }
+  .kcard:hover { box-shadow: 0 2px 8px rgba(20,24,35,.08); }
+  .kt { font-weight: 600; } .kp { margin-left: auto; display: flex; gap: 2px; }
+  .kp b { font-size: 10px; background: var(--accent-soft); color: var(--accent); border-radius: 4px; padding: 1px 4px; }
+  .kempty { text-align: center; padding: 18px 0; }
+  @media (max-width: 760px) { .kanban { grid-template-columns: repeat(3, 82vw); } .kcol { min-height: 50vh; } }
+
+  /* kalendar: višednevni i ponavljanja */
+  .cchip.seg-start { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .cchip.seg-mid, .cchip.seg-end { border-left-style: dotted; }
+  .cchip.ghost { border-left-style: dashed; opacity: .7; }
+  .btnlink { display: block; text-align: center; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink); background: var(--card); }
+  .btnlink.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* navigacija: na mobitelu se kartice pomiču vodoravno */
+  @media (max-width: 760px) { nav { overflow-x: auto; flex-wrap: nowrap; max-width: 100%; scrollbar-width: none; } nav button { white-space: nowrap; } header h1 { width: 100%; } }
+
   /* mreža */
   .net-wrap { display: flex; flex-direction: column; gap: 10px; }
   .net-bar { gap: 12px; }
@@ -176,7 +222,7 @@
 /* ========= stanje ========= */
 const S = {
   data: { people: [], topics: [], tasks: [], notes: [] },
-  view: localStorage.getItem('view') || 'topics',   // topics | people | person
+  view: localStorage.getItem('view') || 'overview', // overview | topics | board | calendar | network | person | people | admin
   topicId: Number(localStorage.getItem('topicId')) || null,
   personId: Number(localStorage.getItem('personId')) || null,
   open: new Set(),                                   // otvoreni zadaci
@@ -193,11 +239,15 @@ const S = {
          ...JSON.parse(localStorage.getItem('cal') || '{}') },   // kalendar
   net: { tasks: true, done: false, people: true, notes: false, layout: 'cose', topic: 0,
          ...JSON.parse(localStorage.getItem('net') || '{}') },   // mreža
+  board: { topic: 0, person: 0, allDone: false, ...JSON.parse(localStorage.getItem('board') || '{}') }, // ploča
 };
 const COLORS = ['#4f6bed', '#2f9e6b', '#d98b1a', '#d64545', '#8e5bd6', '#1f9bb3', '#6b7385'];
 const STATUS = { todo: 'Za napraviti', doing: 'U tijeku', done: 'Gotovo' };
 const NEXT_STATUS = { todo: 'doing', doing: 'done', done: 'todo' };
 const PRIO = { low: 'Nizak', normal: 'Normalan', high: 'Visok' };
+const REPEAT = { '': 'Ne ponavlja se', daily: 'Svaki dan', weekly: 'Svaki tjedan', biweekly: 'Svaka 2 tjedna', monthly: 'Svaki mjesec', yearly: 'Svake godine' };
+const repeatSelect = (v = '') => `<select name="repeat" style="width:auto" title="Ponavljanje">${Object.entries(REPEAT)
+  .map(([k, l]) => `<option value="${k}" ${k === (v || '') ? 'selected' : ''}>🔁 ${l}</option>`).join('')}</select>`;
 
 /* ========= API ========= */
 async function api(body) {
@@ -207,6 +257,7 @@ async function api(body) {
     body: body ? JSON.stringify(body) : undefined,
   });
   if (res.status === 401) { S.needLogin = true; S.auth = { mode: 'login' }; render(); throw new Error('login'); }
+  S.offline = res.headers.get('x-delegator-offline') === '1';
   const json = await res.json().catch(() => ({}));
   if (!res.ok) { toast('Greška: ' + (json.error || res.status)); throw new Error(json.error); }
   S.user = json.user; delete json.user;
@@ -214,7 +265,10 @@ async function api(body) {
   render();
   return json;
 }
-const run = (op, payload = {}) => api({ op, ...payload }).catch(() => {});
+const run = (op, payload = {}) => {
+  if (S.offline && !navigator.onLine) { toast('📴 Bez interneta — promjene nisu moguće'); return Promise.resolve(); }
+  return api({ op, ...payload }).catch((e) => { if (e instanceof TypeError) toast('📴 Nema veze s internetom'); });
+};
 
 // Prijava, registracija i administracija (/api/auth). Baca grešku s porukom za korisnika.
 async function authOp(op, payload = {}) {
@@ -266,6 +320,28 @@ const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2
 const parseDate = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const today = () => isoDate(new Date());
+// Rok s početkom: „24.–27.11.2026.“
+function fmtSpan(k) {
+  if (!k.due_date) return '';
+  if (!k.start_date) return fmtDate(k.due_date);
+  const [a, b] = [k.start_date.split('-'), k.due_date.split('-')];
+  return a[0] === b[0] && a[1] === b[1] ? `${Number(a[2])}.–${fmtDate(k.due_date)}` : `${fmtDate(k.start_date)} – ${fmtDate(k.due_date)}`;
+}
+// Isto računanje kao na poslužitelju (api/data.js addPeriod): n-ti termin od izvornog datuma.
+function addPeriod(iso, repeat, n = 1) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const days = { daily: 1, weekly: 7, biweekly: 14 }[repeat];
+  if (days) return isoDate(new Date(y, m - 1, d + days * n));
+  const months = (m - 1) + (repeat === 'yearly' ? 12 * n : n);
+  const ny = y + Math.floor(months / 12), nm = months % 12;
+  return isoDate(new Date(ny, nm, Math.min(d, new Date(ny, nm + 1, 0).getDate())));
+}
+// Promjena statusa; zadatak koji se ponavlja dobije nasljednika kad je gotov.
+async function setTaskStatus(id, status) {
+  const d = await run('setStatus', { id, status });
+  if (d?.result?.next_due) toast(`🔁 Sljedeći put: ${fmtDate(d.result.next_due)}`);
+  return d;
+}
 const fmtDate = (d) => d ? d.split('-').reverse().join('.') + '.' : '';
 const fmtTime = (ts) => new Date(ts).toLocaleString('hr-HR', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
 function toast(msg) {
@@ -278,6 +354,7 @@ function save() {
   localStorage.setItem('withSub', S.withSub ? '1' : '0');
   localStorage.setItem('cal', JSON.stringify({ ...S.cal, anchor: null }));
   localStorage.setItem('net', JSON.stringify(S.net));
+  localStorage.setItem('board', JSON.stringify(S.board));
   if (S.topicId) localStorage.setItem('topicId', S.topicId);
   if (S.personId) localStorage.setItem('personId', S.personId);
 }
@@ -405,10 +482,11 @@ function render() {
   document.querySelectorAll('[data-draft]').forEach((el) => { if (el.value) drafts[el.id] = el.value; });
 
   app.innerHTML = headerView() + `<main>${
-    terms().length ? searchView()
+    terms().length && S.view !== 'board' ? searchView()
       : S.view === 'people' ? peopleView() : S.view === 'person' ? personView()
       : S.view === 'admin' && S.user?.is_admin ? adminView()
-      : S.view === 'calendar' ? calendarView() : S.view === 'network' ? networkView() : topicsView()
+      : S.view === 'calendar' ? calendarView() : S.view === 'network' ? networkView()
+      : S.view === 'board' ? boardView() : S.view === 'overview' ? overviewView() : topicsView()
   }</main><button class="fab" data-act="quick" title="Brzi unos glasom">🎤</button>`;
 
   Object.entries(drafts).forEach(([id, v]) => { const el = document.getElementById(id); if (el && !el.value) el.value = v; });
@@ -420,10 +498,11 @@ function headerView() {
   const tab = (v, label) => `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}">${label}</button>`;
   return `<header>
     <h1>✅ Delegator</h1>
-    <nav>${tab('topics', 'Teme')}${tab('calendar', '📅 Kalendar')}${tab('network', '🕸 Mreža')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
+    <nav>${tab('overview', '🏠 Pregled')}${tab('topics', 'Teme')}${tab('board', '🗂 Ploča')}${tab('calendar', '📅 Kalendar')}${tab('network', '🕸 Mreža')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
     <button class="primary" data-act="quick" title="Izdiktiraj ili upiši zadatak, AI ga razvrsta">⚡ Brzi unos</button>
     <input type="search" class="search" id="search" placeholder="Traži kroz sve teme i bilješke…" value="${esc(S.q)}" autocomplete="off">
     <button class="ghost" data-act="userMenu" title="Račun">👤 ${esc(S.user?.name || '')}</button>
+    ${S.offline ? '<div class="offline">📴 Bez interneta — prikazujem zadnje spremljene podatke (samo čitanje)</div>' : ''}
   </header>`;
 }
 
@@ -559,6 +638,7 @@ function newTaskForm(topicId) {
     <div class="row">
       <select name="priority" style="width:auto"><option value="normal">Prioritet: normalan</option><option value="high">Prioritet: visok</option><option value="low">Prioritet: nizak</option></select>
       <input type="date" name="due_date" style="width:auto" title="Rok">
+      ${repeatSelect()}
       <button class="primary" style="margin-left:auto">Dodaj zadatak</button>
     </div>
   </form>`;
@@ -576,7 +656,8 @@ function taskView(k, opts = {}) {
       <div class="row small muted" style="margin-top:4px">
         ${opts.showTopic && t ? `<span><span class="dot" style="display:inline-block;background:${esc(t.color)}"></span> ${hl(topicPath(t))}</span>` : ''}
         ${k.priority !== 'normal' ? `<span class="prio-${k.priority}">${k.priority === 'high' ? '▲ visok' : '▽ nizak'}</span>` : ''}
-        ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtDate(k.due_date)}${late ? ' (kasni)' : ''}</span>` : ''}
+        ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtSpan(k)}${late ? ' (kasni)' : ''}</span>` : ''}
+        ${k.repeat ? `<span title="Ponavlja se">🔁 ${REPEAT[k.repeat].toLowerCase()}</span>` : ''}
         ${noteCount ? `<span>📝 ${noteCount}</span>` : ''}
       </div>
     </div>
@@ -749,24 +830,47 @@ function calTasks() {
     && (!c.person || k.people.includes(c.person)) && (!scope || scope.has(k.topic_id)));
 }
 const initials = (name) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-function calChip(k, big = false) {
+// e = {k, seg: 'start'|'mid'|'end'|null, ghost: bool} ili sam zadatak
+function calChip(e, big = false) {
+  const { k, seg = null, ghost = false } = e.k ? e : { k: e };
   const t = topic(k.topic_id), col = t?.color || '#6b7385';
-  const late = k.status !== 'done' && k.due_date < today();
+  const late = !ghost && k.status !== 'done' && k.due_date < today();
   const ppl = k.people.map(person).filter(Boolean);
-  return `<div class="cchip st-${k.status} ${late ? 'late' : ''} ${big ? 'big' : ''}" draggable="true" data-act="calTask" data-id="${k.id}"
-      style="border-left-color:${esc(col)};background:${esc(col)}1a" title="${esc(k.title)} — ${esc(topicPath(t))}${ppl.length ? ' — ' + esc(ppl.map((p) => p.name).join(', ')) : ''}">
-    <span class="ct">${k.status === 'done' ? '✓ ' : k.priority === 'high' ? '❗' : ''}${esc(k.title)}</span>
+  const tip = `${k.title} — ${topicPath(t)}${k.start_date ? ` — ${fmtSpan(k)}` : ''}${ghost ? ' — sljedeće ponavljanje' : ''}${ppl.length ? ' — ' + ppl.map((p) => p.name).join(', ') : ''}`;
+  return `<div class="cchip st-${k.status} ${late ? 'late' : ''} ${big ? 'big' : ''} ${seg ? 'seg-' + seg : ''} ${ghost ? 'ghost' : ''}" ${ghost ? '' : 'draggable="true"'} data-act="calTask" data-id="${k.id}"
+      style="border-left-color:${esc(col)};background:${esc(col)}${ghost ? '0d' : '1a'}" title="${esc(tip)}">
+    <span class="ct">${ghost ? '🔁 ' : seg === 'mid' || seg === 'end' ? '⋯ ' : ''}${k.status === 'done' ? '✓ ' : k.priority === 'high' ? '❗' : ''}${esc(k.title)}${seg === 'start' ? ' →' : ''}</span>
     ${big ? `<span class="cm">${esc(topicPath(t))}${ppl.length ? ' · ' + esc(ppl.map((p) => p.name).join(', ')) : ''}</span>`
       : ppl.length ? `<span class="ci">${ppl.slice(0, 3).map((p) => `<b title="${esc(p.name)}">${esc(initials(p.name))}</b>`).join('')}</span>` : ''}
   </div>`;
+}
+// Zadaci po danima u rasponu [from, to]: višednevni na svakom danu, ponavljanja kao „duhovi“ unaprijed.
+function calEntries(tasks, from, to) {
+  const byDay = {};
+  const put = (d, e) => { if (d >= from && d <= to) (byDay[d] ||= []).push(e); };
+  tasks.forEach((k) => {
+    if (!k.due_date) return;
+    if (k.start_date && k.start_date < k.due_date) {
+      for (let d = k.start_date, i = 0; d <= k.due_date && i < 400; d = isoDate(addDays(parseDate(d), 1)), i++)
+        put(d, { k, seg: d === k.start_date ? 'start' : d === k.due_date ? 'end' : 'mid' });
+    } else put(k.due_date, { k });
+    if (k.repeat && k.status !== 'done') {
+      for (let n = 1, d = addPeriod(k.due_date, k.repeat, 1); d <= to && n < 400; d = addPeriod(k.due_date, k.repeat, ++n)) put(d, { k, ghost: true });
+    }
+  });
+  const pr = { high: 0, normal: 1, low: 2 }, st = { doing: 0, todo: 1, done: 2 };
+  Object.values(byDay).forEach((list) => list.sort((a, b) => (a.ghost - b.ghost) || (!!b.seg - !!a.seg)
+    || st[a.k.status] - st[b.k.status] || pr[a.k.priority] - pr[b.k.priority] || a.k.id - b.k.id));
+  return byDay;
 }
 function calendarView() {
   const c = S.cal;
   const anchor = parseDate(c.anchor || today());
   const tasks = calTasks();
-  const byDay = {};
-  tasks.forEach((k) => { if (k.due_date) (byDay[k.due_date] ||= []).push(k); });
-  Object.values(byDay).forEach(sortTasks);
+  const week0 = c.mode === 'week' ? monday(anchor) : monday(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
+  const from = c.mode === 'list' ? today() : isoDate(week0);
+  const to = isoDate(addDays(parseDate(from), c.mode === 'list' ? 60 : 42));
+  const byDay = calEntries(tasks, from, to);
   const noDue = tasks.filter((k) => !k.due_date && k.status !== 'done').length;
   const td = today();
 
@@ -780,11 +884,11 @@ function calendarView() {
       ${late.length ? `<div class="cl-day late"><div class="cl-h">⚠️ Kasni (${late.length})</div>${late.map((k) => `<div class="row">${calChip(k, true)}<span class="small due late">${fmtDate(k.due_date)}</span></div>`).join('')}</div>` : ''}
       ${days.map((d) => { const dt = parseDate(d); const h = holiday(d);
         return `<div class="cl-day ${d === td ? 'today' : ''}" data-day="${d}"><div class="cl-h">${d === td ? 'Danas · ' : ''}${WEEKDAYS_LONG[(dt.getDay() + 6) % 7]}, ${fmtDate(d)}${h ? ` <span class="hol">${esc(h)}</span>` : ''}</div>
-          ${byDay[d].map((k) => calChip(k, true)).join('')}</div>`; }).join('') || '<div class="empty">Nema nadolazećih rokova.</div>'}
+          ${byDay[d].map((e) => calChip(e, true)).join('')}</div>`; }).join('') || '<div class="empty">Nema nadolazećih rokova.</div>'}
     </div>`;
   } else {
     const week = c.mode === 'week';
-    const start = week ? monday(anchor) : monday(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
+    const start = week0;
     const n = week ? 7 : Math.ceil(((new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0) - start) / 864e5 + 1) / 7) * 7;
     const max = week ? 99 : Math.max(2, Math.floor((window.innerHeight - 260) / (n / 7) / 24) - 1);
     title = week ? `${fmtDate(isoDate(start))} – ${fmtDate(isoDate(addDays(start, 6)))}` : `${MONTHS[anchor.getMonth()]} ${anchor.getFullYear()}.`;
@@ -795,7 +899,7 @@ function calendarView() {
       cells.push(`<div class="cday ${other ? 'other' : ''} ${d === td ? 'today' : ''} ${i % 7 >= 5 || h ? 'weekend' : ''}" data-day="${d}">
         <div class="cd-h"><span class="cd-n">${week ? WEEKDAYS[i] + ' ' : ''}${dt.getDate()}.</span>${h ? `<span class="hol" title="${esc(h)}">${esc(h)}</span>` : ''}
           <button class="ghost cd-add" data-act="calNew" data-day="${d}" title="Novi zadatak s rokom ${fmtDate(d)}">+</button></div>
-        ${list.slice(0, list.length > max ? max - 1 : max).map((k) => calChip(k, week)).join('')}
+        ${list.slice(0, list.length > max ? max - 1 : max).map((e) => calChip(e, week)).join('')}
         ${list.length > max ? `<button class="ghost small cd-more" data-act="calDay" data-day="${d}">+${list.length - max + 1} više</button>` : ''}
       </div>`);
     }
@@ -832,7 +936,8 @@ function taskInfo(k) {
     <h2>${esc(k.title)}</h2>
     <div class="row small">
       <span class="status st-${k.status}">${STATUS[k.status]}</span>
-      ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtDate(k.due_date)}${late ? ' (kasni)' : ''}</span>` : '<span class="muted">bez roka</span>'}
+      ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtSpan(k)}${late ? ' (kasni)' : ''}</span>` : '<span class="muted">bez roka</span>'}
+      ${k.repeat ? `<span>🔁 ${REPEAT[k.repeat].toLowerCase()}</span>` : ''}
       ${k.priority !== 'normal' ? `<span class="prio-${k.priority}">${k.priority === 'high' ? '▲ visok' : '▽ nizak'}</span>` : ''}
     </div>
     ${k.people.length ? `<div class="chips">${k.people.map(person).filter(Boolean).map((p) => `<span class="chip static">${esc(p.name)}</span>`).join('')}</div>` : ''}
@@ -848,26 +953,33 @@ function taskInfo(k) {
   if (!dlg.open) dlg.showModal();
 }
 function dayDialog(d) {
-  const list = calTasks().filter((k) => k.due_date === d);
-  sortTasks(list);
+  const list = calEntries(calTasks(), d, d)[d] || [];
   const dlg = $('#dlg');
   dlg.innerHTML = `<div class="stack"><h2>${WEEKDAYS_LONG[(parseDate(d).getDay() + 6) % 7]}, ${fmtDate(d)}</h2>
     ${holiday(d) ? `<div class="hol">${esc(holiday(d))}</div>` : ''}
-    ${list.map((k) => calChip(k, true)).join('') || '<div class="muted">Nema zadataka.</div>'}
+    ${list.map((e) => calChip(e, true)).join('') || '<div class="muted">Nema zadataka.</div>'}
     <div class="row"><button class="primary" data-act="calNew" data-day="${d}">+ Novi zadatak</button>
       <button style="margin-left:auto" onclick="this.closest('dialog').close()">Zatvori</button></div></div>`;
   if (!dlg.open) dlg.showModal();
 }
-function newTaskOnDay(d) {
+function newTaskOnDay(d = '', status = 'todo') {
   if (!S.data.topics.length) return toast('Prvo napravi temu u kartici „Teme“');
-  const def = S.cal.topic || S.topicId || S.data.topics[0].id;
-  openDialog(`<h2>Novi zadatak · rok ${fmtDate(d)}</h2>
+  const def = (S.view === 'board' ? S.board.topic : S.cal.topic) || S.topicId || S.data.topics[0].id;
+  openDialog(`<h2>Novi zadatak${d ? ` · rok ${fmtDate(d)}` : ''}</h2>
     <div class="with-mic"><input id="cn-title" name="title" required placeholder="Što treba napraviti?">${micBtn('cn-title')}</div>
     <select name="topic_id">${topicOptions(def, { hideArchived: true })}</select>
-    ${peopleChips('people', S.cal.person ? [S.cal.person] : [])}
+    ${peopleChips('people', (S.view === 'board' ? S.board.person : S.cal.person) ? [S.view === 'board' ? S.board.person : S.cal.person] : [])}
     <div class="row"><select name="priority" style="width:auto"><option value="normal">Prioritet: normalan</option><option value="high">Prioritet: visok</option><option value="low">Prioritet: nizak</option></select>
-      <input type="date" name="due_date" value="${d}" style="width:auto"></div>`,
-    (fd, form) => run('addTask', { ...Object.fromEntries(fd), topic_id: Number(fd.get('topic_id')), people: selectedChips(form) }));
+      ${repeatSelect()}</div>
+    <div class="row small muted">
+      <label class="row" style="gap:4px">Početak <input type="date" name="start_date" style="width:auto"></label>
+      <label class="row" style="gap:4px">Rok <input type="date" name="due_date" value="${d}" style="width:auto"></label></div>`,
+    async (fd, form) => {
+      const before = new Set(S.data.tasks.map((x) => x.id));
+      await run('addTask', { ...Object.fromEntries(fd), topic_id: Number(fd.get('topic_id')), people: selectedChips(form) });
+      const created = S.data.tasks.find((x) => !before.has(x.id));
+      if (created && status !== 'todo') setTaskStatus(created.id, status);
+    });
   setTimeout(() => $('#cn-title')?.focus(), 50);
 }
 
@@ -1004,6 +1116,142 @@ function netSelect(nd) {
   box.hidden = false;
 }
 
+/* ---- Pregled: što kasni, danas, ovaj tjedan, opterećenost ljudi, napredak tema ---- */
+function overviewView() {
+  const { tasks, people } = S.data;
+  const td = today(), in7 = isoDate(addDays(new Date(), 7));
+  const open = tasks.filter((k) => k.status !== 'done');
+  const late = open.filter((k) => k.due_date && k.due_date < td);
+  const now = open.filter((k) => k.due_date === td || (k.start_date && k.start_date <= td && k.due_date > td));
+  const soon = open.filter((k) => k.due_date > td && k.due_date <= in7 && !now.includes(k));
+  const doing = open.filter((k) => k.status === 'doing');
+  const noDue = open.filter((k) => !k.due_date);
+  [late, now, soon].forEach(sortTasks);
+  const byDue = (a, b) => a.due_date.localeCompare(b.due_date);
+  soon.sort(byDue);
+  const hour = new Date().getHours();
+  const hello = hour < 10 ? 'Dobro jutro' : hour < 18 ? 'Dobar dan' : 'Dobra večer';
+  const stat = (n, label, cls, go) => `<button class="stat ${cls}" ${go}><b>${n}</b><span>${label}</span></button>`;
+  const section = (title, list, empty) => `<div class="panel stack"><h3>${title} <span class="muted small">${list.length || ''}</span></h3>
+    ${list.slice(0, 12).map((k) => `<div class="row ov-row">${calChip(k, true)}<span class="small ${k.due_date && k.due_date < td ? 'due late' : 'muted'}">${k.due_date ? fmtSpan(k) : ''}</span></div>`).join('')
+      || `<div class="muted small">${empty}</div>`}
+    ${list.length > 12 ? `<button class="ghost small" data-act="view" data-v="calendar">… još ${list.length - 12} u kalendaru</button>` : ''}</div>`;
+
+  const load = people.map((p) => {
+    const mine = open.filter((k) => k.people.includes(p.id));
+    return { p, open: mine.length, late: mine.filter((k) => k.due_date && k.due_date < td).length,
+      week: mine.filter((k) => k.due_date && k.due_date <= in7).length };
+  }).filter((x) => x.open).sort((a, b) => b.open - a.open || b.late - a.late);
+  const maxLoad = Math.max(1, ...load.map((x) => x.open));
+  const roots = childTopics(null).filter((t) => !t.archived);
+  const progress = roots.map((t) => {
+    const ids = topicSubtree(t.id), all = tasks.filter((k) => ids.has(k.topic_id));
+    return { t, all: all.length, done: all.filter((k) => k.status === 'done').length, late: all.filter((k) => k.status !== 'done' && k.due_date && k.due_date < td).length };
+  }).filter((x) => x.all);
+
+  return `<div class="stack ov">
+    <div class="row"><h2 class="grow">${hello}, ${esc(S.user?.name.split(' ')[0] || '')}</h2>
+      <span class="muted">${WEEKDAYS_LONG[(new Date().getDay() + 6) % 7]}, ${fmtDate(td)}${holiday(td) ? ` · <span class="hol">${esc(holiday(td))}</span>` : ''}</span></div>
+    <div class="stats">
+      ${stat(late.length, 'kasni', late.length ? 'bad' : '', 'data-act="calList"')}
+      ${stat(now.length, 'danas', '', 'data-act="calList"')}
+      ${stat(soon.length, 'sljedećih 7 dana', '', 'data-act="calList"')}
+      ${stat(doing.length, 'u tijeku', 'warn', 'data-act="view" data-v="board"')}
+      ${stat(noDue.length, 'bez roka', 'muted', 'data-act="view" data-v="board"')}
+    </div>
+    <div class="ov-grid">
+      <div class="stack">
+        ${late.length ? section('⚠️ Kasni', late, '') : ''}
+        ${section('📌 Danas', now, 'Za danas nema rokova.')}
+        ${section('📅 Sljedećih 7 dana', soon, 'Nema rokova idući tjedan.')}
+      </div>
+      <div class="stack">
+        <div class="panel stack"><h3>👥 Opterećenost ljudi</h3>
+          ${load.map((x) => `<button class="loadrow" data-act="openPerson" data-id="${x.p.id}">
+            <span class="ln">${esc(x.p.name)}</span>
+            <span class="bar"><i style="width:${(x.open / maxLoad) * 100}%"></i>${x.late ? `<i class="late" style="width:${(x.late / maxLoad) * 100}%"></i>` : ''}</span>
+            <span class="small muted">${x.open} otv.${x.late ? ` · <span class="due late">${x.late} kasni</span>` : ''}${x.week ? ` · ${x.week} ovaj tj.` : ''}</span></button>`).join('')
+            || '<div class="muted small">Nitko nema otvorenih zadataka.</div>'}
+        </div>
+        <div class="panel stack"><h3>📈 Napredak tema</h3>
+          ${progress.map((x) => `<button class="loadrow" data-act="topic" data-id="${x.t.id}">
+            <span class="ln"><span class="dot" style="display:inline-block;background:${esc(x.t.color)}"></span> ${esc(x.t.title)}</span>
+            <span class="bar"><i class="ok" style="width:${(x.done / x.all) * 100}%;background:${esc(x.t.color)}"></i></span>
+            <span class="small muted">${x.done}/${x.all}${x.late ? ` · <span class="due late">${x.late} kasni</span>` : ''}</span></button>`).join('')
+            || '<div class="muted small">Još nema zadataka.</div>'}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---- Ploča (Kanban): povuci karticu u drugi stupac = novi status ---- */
+function boardView() {
+  const b = S.board;
+  const scope = b.topic && topic(b.topic) ? topicSubtree(b.topic) : null;
+  const tasks = S.data.tasks.filter((k) => (!scope || scope.has(k.topic_id)) && (!b.person || k.people.includes(b.person)) && matchesQuery(k));
+  const td = today();
+  const col = (status) => {
+    let list = tasks.filter((k) => k.status === status);
+    sortTasks(list);
+    if (status === 'done') list.sort((x, y) => y.id - x.id);
+    const hidden = status === 'done' && !b.allDone && list.length > 20 ? list.length - 20 : 0;
+    if (hidden) list = list.slice(0, 20);
+    return `<div class="kcol" data-status="${status}">
+      <div class="kh"><span class="status st-${status}">${STATUS[status]}</span><span class="muted small">${tasks.filter((k) => k.status === status).length}</span>
+        ${status === 'todo' ? '<button class="ghost small" data-act="boardNew" style="margin-left:auto">+ Novi</button>' : ''}</div>
+      ${list.map((k) => {
+        const t = topic(k.topic_id), late = k.status !== 'done' && k.due_date && k.due_date < td;
+        return `<div class="kcard" draggable="true" data-act="calTask" data-id="${k.id}" style="border-left-color:${esc(t?.color || '#6b7385')}">
+          <div class="kt">${k.priority === 'high' ? '❗' : ''}${hl(k.title)}</div>
+          <div class="small muted">${esc(topicPath(t))}</div>
+          <div class="row small">
+            ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtSpan(k)}</span>` : ''}
+            ${k.repeat ? '<span title="Ponavlja se">🔁</span>' : ''}
+            ${S.data.notes.some((n) => n.task_id === k.id) ? `<span>📝 ${S.data.notes.filter((n) => n.task_id === k.id).length}</span>` : ''}
+            <span class="kp">${k.people.map(person).filter(Boolean).map((p) => `<b title="${esc(p.name)}">${esc(initials(p.name))}</b>`).join('')}</span>
+          </div></div>`;
+      }).join('') || '<div class="muted small kempty">Povuci karticu ovamo</div>'}
+      ${hidden ? `<button class="ghost small" data-act="boardAllDone">Prikaži još ${hidden} gotovih</button>` : ''}
+    </div>`;
+  };
+  return `<div class="stack board">
+    <div class="panel row">
+      <h2 class="grow">Ploča</h2>
+      <select data-act="boardPerson" style="width:auto"><option value="0">Svi ljudi</option>${S.data.people.map((p) => `<option value="${p.id}" ${p.id === b.person ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
+      <select data-act="boardTopic" style="width:auto;max-width:220px"><option value="0">Sve teme</option>${topicOptions(b.topic)}</select>
+    </div>
+    <div class="kanban">${col('todo')}${col('doing')}${col('done')}</div>
+    <div class="muted small" style="text-align:center">Povuci karticu u drugi stupac da promijeniš status · klik otvara detalje</div>
+  </div>`;
+}
+
+/* ---- Pretplata na kalendar (Google / Apple) ---- */
+async function icalDialog(reset = false) {
+  let r;
+  try { r = await authOp('getIcal', { reset }); } catch (e) { return toast(e.message); }
+  const url = `${location.origin}/api/ical?t=${r.token}`;
+  const webcal = url.replace(/^https?:/, 'webcal:');
+  const dlg = $('#dlg');
+  dlg.innerHTML = `<div class="stack">
+    <h2>📅 Rokovi u tvom kalendaru</h2>
+    <div class="muted small">Pretplati se jednom i rokovi iz Delegatora sami se pojavljuju u kalendaru na mobitelu i računalu
+      (višednevni zadaci kao više dana, ponavljanja unaprijed). Promjene se osvježavaju same.</div>
+    <a class="btnlink primary" href="${esc(webcal)}">🍎 iPhone / Mac (Apple kalendar)</a>
+    <a class="btnlink" href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}" target="_blank" rel="noopener">📆 Google kalendar</a>
+    <div class="notes-block stack">
+      <div class="small"><strong>Ili ručno</strong> — Google: Ostali kalendari → + → „Iz URL-a“; Outlook: Dodaj kalendar → „Pretplati se s weba“.</div>
+      <input readonly value="${esc(url)}" onclick="this.select()">
+      <button type="button" data-act="copyText" data-text="${esc(url)}">📋 Kopiraj poveznicu</button>
+    </div>
+    <div class="muted small">Google osvježava pretplate sporo (do nekoliko sati), Apple otprilike svaki sat.
+      Tko ima ovu poveznicu, vidi tvoje rokove — ne dijeli je. Ako je procurila, napravi novu.</div>
+    <div class="row"><button class="ghost danger small" data-act="icalReset">↻ Nova poveznica (stara prestaje raditi)</button>
+      <button style="margin-left:auto" onclick="this.closest('dialog').close()">Zatvori</button></div>
+  </div>`;
+  if (!dlg.open) dlg.showModal();
+}
+
 /* ---- Korisnici (samo administrator) ---- */
 async function loadAdmin() {
   try { S.admin = { ...S.admin, ...(await authOp('listUsers')) }; } catch (e) { toast(e.message); }
@@ -1094,12 +1342,19 @@ function taskDialog(k) {
     <div class="row">
       <select name="status" style="width:auto">${Object.entries(STATUS).map(([v, l]) => `<option value="${v}" ${v === k.status ? 'selected' : ''}>${l}</option>`).join('')}</select>
       <select name="priority" style="width:auto">${Object.entries(PRIO).map(([v, l]) => `<option value="${v}" ${v === k.priority ? 'selected' : ''}>${l}</option>`).join('')}</select>
-      <input type="date" name="due_date" value="${k.due_date || ''}" style="width:auto">
+    </div>
+    <div class="row small muted">
+      <label class="row" style="gap:4px">Početak <input type="date" name="start_date" value="${k.start_date || ''}" style="width:auto"></label>
+      <label class="row" style="gap:4px">Rok <input type="date" name="due_date" value="${k.due_date || ''}" style="width:auto"></label>
+      ${repeatSelect(k.repeat)}
     </div>
     <label class="small muted">Tema</label>
     <select name="topic_id">${topicOptions(k.topic_id)}</select>
     <button type="button" class="danger" data-act="delTask" data-id="${k.id}">Obriši zadatak</button>`,
-    (fd, form) => run('updateTask', { ...Object.fromEntries(fd), id: k.id, topic_id: Number(fd.get('topic_id')), people: selectedChips(form) }));
+    async (fd, form) => {
+      const d = await run('updateTask', { ...Object.fromEntries(fd), id: k.id, topic_id: Number(fd.get('topic_id')), people: selectedChips(form) });
+      if (d?.result?.next_due) toast(`🔁 Sljedeći put: ${fmtDate(d.result.next_due)}`);
+    });
 }
 function personDialog(p) {
   openDialog(`<h2>Uredi osobu</h2>
@@ -1112,10 +1367,28 @@ function noteDialog(n) {
     <div class="with-mic"><textarea id="dn-body" name="body" rows="4" required>${esc(n.body)}</textarea>${micBtn('dn-body')}</div>`,
     (fd) => run('updateNote', { id: n.id, body: fd.get('body') }));
 }
+/* ---- instalacija na mobitel (PWA) ---- */
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; });
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+function installButton() {
+  if (isStandalone()) return '';
+  if (installEvt) return '<button data-act="install">📲 Instaliraj kao aplikaciju</button>';
+  if (isIOS()) return `<div class="notes-block small">📲 <strong>Na iPhoneu/iPadu:</strong> u Safariju dodirni <strong>Dijeli</strong> (□↑) → <strong>Dodaj na početni zaslon</strong>.</div>`;
+  return '<div class="notes-block small">📲 <strong>Instalacija:</strong> u Chromeu otvori izbornik ⋮ → <strong>Instaliraj aplikaciju</strong> / <strong>Dodaj na početni zaslon</strong>.</div>';
+}
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
+window.addEventListener('online', () => { if (S.offline) api().catch(() => {}); });
+
 function userMenu() {
   const dlg = $('#dlg');
   dlg.innerHTML = `<div class="stack">
     <h2>${esc(S.user.name)}</h2><div class="muted small">${esc(S.user.email)}${S.user.is_admin ? ' · administrator' : ''}</div>
+    ${installButton()}
+    <button data-act="ical">📅 Rokovi u Google/Apple kalendaru</button>
     <button data-act="changePw">🔑 Promijeni lozinku</button>
     <button data-act="logout">↩︎ Odjava</button>
     <div class="row" style="justify-content:flex-end"><button type="button" onclick="this.closest('dialog').close()">Zatvori</button></div></div>`;
@@ -1250,6 +1523,12 @@ document.addEventListener('click', async (e) => {
     case 'topic': S.topicId = id; S.view = 'topics'; S.q = ''; save(); return render();
     case 'clearSearch': S.q = ''; return render();
     case 'calMode': S.cal.mode = el.dataset.v; save(); return render();
+    case 'calList': S.view = 'calendar'; S.cal.mode = 'list'; save(); return render();
+    case 'boardNew': return newTaskOnDay('');
+    case 'boardAllDone': S.board.allDone = true; save(); return render();
+    case 'ical': $('#dlg').close(); return icalDialog();
+    case 'install': $('#dlg').close(); if (installEvt) { installEvt.prompt(); installEvt = null; } return;
+    case 'icalReset': if (confirm('Napraviti novu poveznicu? Stara odmah prestaje raditi, pa ćeš se u kalendaru morati ponovno pretplatiti.')) return icalDialog(true); return;
     case 'calNav': {
       const v = Number(el.dataset.v), a = parseDate(S.cal.anchor || today());
       S.cal.anchor = v === 0 ? today() : isoDate(S.cal.mode === 'week' ? addDays(a, 7 * v) : new Date(a.getFullYear(), a.getMonth() + v, 1));
@@ -1261,7 +1540,7 @@ document.addEventListener('click', async (e) => {
     case 'calNew': if ($('#dlg').open) $('#dlg').close(); return newTaskOnDay(el.dataset.day);
     case 'infoStatus': {
       const k = S.data.tasks.find((x) => x.id === id);
-      await run('setStatus', { id, status: k.status === 'done' ? 'todo' : 'done' });
+      await setTaskStatus(id, k.status === 'done' ? 'todo' : 'done');
       const k2 = S.data.tasks.find((x) => x.id === id); if (k2 && $('#dlg').open) taskInfo(k2);
       return;
     }
@@ -1286,6 +1565,7 @@ document.addEventListener('click', async (e) => {
     case 'logout':
       $('#dlg').close();
       try { await authOp('logout'); } catch {}
+      try { await caches.delete('delegator-data'); } catch {}
       Object.assign(S, { user: null, loaded: false, needLogin: true, auth: { mode: 'login' }, admin: null, q: '',
         data: { people: [], topics: [], tasks: [], notes: [] } });
       S.open.clear();
@@ -1314,7 +1594,7 @@ document.addEventListener('click', async (e) => {
     case 'filter': S.statusFilter = el.dataset.v; return render();
     case 'toggle': if (e.target.closest('button, a, input, textarea, select, form')) return;
       S.open.has(id) ? S.open.delete(id) : S.open.add(id); return render();
-    case 'status': { const k = S.data.tasks.find((x) => x.id === id); return run('setStatus', { id, status: NEXT_STATUS[k.status] }); }
+    case 'status': { const k = S.data.tasks.find((x) => x.id === id); return setTaskStatus(id, NEXT_STATUS[k.status]); }
     case 'chip': el.classList.toggle('on'); el.dataset.manual = '1'; return;
     case 'quick': return quickStep1();
     case 'newTopic': return topicDialog(null);
@@ -1350,6 +1630,8 @@ document.addEventListener('change', (e) => {
   if (act === 'pickPerson') { S.personId = v; save(); render(); }
   if (act === 'calPerson') { S.cal.person = v; save(); render(); }
   if (act === 'calTopic') { S.cal.topic = v; save(); render(); }
+  if (act === 'boardPerson') { S.board.person = v; save(); render(); }
+  if (act === 'boardTopic') { S.board.topic = v; save(); render(); }
   if (act === 'netTopic') { S.net.topic = v; save(); render(); }
   if (act === 'netLayout') { S.net.layout = e.target.value; S.netCache = null; save(); render(); }
 });
@@ -1369,27 +1651,43 @@ document.addEventListener('input', (e) => {
 });
 
 // Kalendar: povuci zadatak na drugi dan = novi rok
-let dragTask = null;
+let dragTask = null, dragFrom = null;
 document.addEventListener('dragstart', (e) => {
+  const kc = e.target.closest?.('.kcard');
+  if (kc) { dragTask = Number(kc.dataset.id); dragFrom = 'board'; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', kc.dataset.id); return; }
   const chip = e.target.closest?.('.cchip');
-  if (!chip) return;
+  if (!chip || chip.classList.contains('ghost')) return;
   dragTask = Number(chip.dataset.id);
+  dragFrom = chip.closest('[data-day]')?.dataset.day || null;
   e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(dragTask));
 });
 document.addEventListener('dragover', (e) => {
-  const day = dragTask && e.target.closest?.('[data-day].cday, [data-day].cl-day');
+  const col = dragTask && dragFrom === 'board' && e.target.closest?.('.kcol');
+  if (col) { e.preventDefault(); document.querySelectorAll('.drop').forEach((x) => x !== col && x.classList.remove('drop')); col.classList.add('drop'); return; }
+  const day = dragTask && dragFrom !== 'board' && e.target.closest?.('[data-day].cday, [data-day].cl-day');
   if (!day) return;
   e.preventDefault();
   document.querySelectorAll('.drop').forEach((x) => x !== day && x.classList.remove('drop'));
   day.classList.add('drop');
 });
 document.addEventListener('drop', (e) => {
+  const col = dragTask && dragFrom === 'board' && e.target.closest?.('.kcol');
+  if (col) {
+    e.preventDefault();
+    const id = dragTask; dragTask = null;
+    const k = S.data.tasks.find((x) => x.id === id);
+    if (k && k.status !== col.dataset.status) setTaskStatus(id, col.dataset.status); else render();
+    return;
+  }
   const day = dragTask && e.target.closest?.('[data-day].cday, [data-day].cl-day');
   if (!day) return;
   e.preventDefault();
   const id = dragTask; dragTask = null;
   const k = S.data.tasks.find((x) => x.id === id);
-  if (k && k.due_date !== day.dataset.day) run('setDue', { id, due_date: day.dataset.day }).then(() => toast(`Rok: ${fmtDate(day.dataset.day)}`));
+  // pomak = koliko je dana čip pomaknut (radi i kad se povuče srednji dan višednevnog zadatka)
+  const shift = dragFrom ? Math.round((parseDate(day.dataset.day) - parseDate(dragFrom)) / 864e5) : 0;
+  const due = k?.due_date ? isoDate(addDays(parseDate(k.due_date), shift)) : day.dataset.day;
+  if (k && due !== k.due_date) run('setDue', { id, due_date: due }).then(() => toast(`Rok: ${fmtDate(due)}`));
   else render();
 });
 document.addEventListener('dragend', () => { dragTask = null; document.querySelectorAll('.drop').forEach((x) => x.classList.remove('drop')); });
@@ -1461,8 +1759,13 @@ async function boot() {
     S.needLogin = true; return render();
   }
   if (me.user) {
-    if (inv) { history.replaceState(null, '', location.pathname); toast('Već si prijavljen'); }
-    return api().catch(() => {});
+    if (inv) toast('Već si prijavljen');
+    const v = params.get('v'), quick = params.get('brzi');
+    if (v && ['overview', 'topics', 'board', 'calendar', 'network', 'person', 'people'].includes(v)) { S.view = v; save(); }
+    if (location.search) history.replaceState(null, '', location.pathname);
+    await api().catch(() => {});
+    if (quick && S.loaded && !S.offline) quickStep1();
+    return;
   }
   if (inv) S.auth = { mode: 'signup', token: inv, info: await authOp('tokenInfo', { token: inv }).catch(() => ({ valid: false })) };
   else S.auth = { mode: me.setup ? 'setup' : 'login' };

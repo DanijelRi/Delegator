@@ -102,6 +102,17 @@ const ops = {
     await sql`UPDATE users SET password_hash = ${await hashPassword(b.password)} WHERE id = ${me.id}`;
   },
 
+  // Poveznica za pretplatu na kalendar (napravi token ako ga još nema; reset = nova, stara prestaje raditi).
+  async getIcal(b, req, res, me) {
+    let [u] = await sql`SELECT ical_token FROM users WHERE id = ${me.id}`;
+    if (!u.ical_token || b.reset) {
+      const token = newToken();
+      await sql`UPDATE users SET ical_token = ${token} WHERE id = ${me.id}`;
+      u = { ical_token: token };
+    }
+    return { token: u.ical_token };
+  },
+
   // --- administrator ---
   async listUsers(b, req, res, me) {
     const [users, invites] = await Promise.all([

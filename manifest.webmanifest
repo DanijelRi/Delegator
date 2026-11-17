@@ -1,0 +1,22 @@
+{
+  "name": "Delegator — teme, zadaci, ljudi",
+  "short_name": "Delegator",
+  "description": "Teme, zadaci, ljudi i bilješke — delegiranje s kalendarom i AI brzim unosom.",
+  "lang": "hr",
+  "start_url": "/?izvor=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f6f8",
+  "theme_color": "#4f6bed",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Brzi unos", "short_name": "Brzi unos", "url": "/?brzi=1", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Kalendar", "url": "/?v=calendar", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Pregled", "url": "/?v=overview", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
