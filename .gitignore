@@ -1,0 +1,7 @@
+node_modules
+.vercel
+*.zip
+*.png
+# tajne: nikad u git
+.env*
+!.env.example

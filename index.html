@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delegator — teme, zadaci, ljudi</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>">
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #fff; --ink: #1d2330; --muted: #6b7385; --line: #e3e6ec;
+    --accent: #4f6bed; --accent-soft: #eef1fe; --danger: #d64545; --ok: #2f9e6b; --warn: #d98b1a;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 6px 12px; }
+  button:hover { border-color: #c9ceda; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.ghost { border-color: transparent; background: transparent; color: var(--muted); padding: 4px 8px; }
+  button.ghost:hover { color: var(--ink); background: #eceef3; }
+  button.danger:hover { color: var(--danger); }
+  input, select, textarea { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff; width: 100%; }
+  textarea { resize: vertical; min-height: 38px; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+
+  header { position: sticky; top: 0; z-index: 5; background: var(--card); border-bottom: 1px solid var(--line);
+           display: flex; gap: 12px; align-items: center; padding: 10px 16px; flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0 8px 0 0; }
+  nav { display: flex; gap: 4px; }
+  nav button { border-color: transparent; }
+  nav button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  header .search { margin-left: auto; max-width: 260px; }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 16px 16px 96px; }
+  .layout { display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } header .search { max-width: none; width: 100%; order: 3; } }
+
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; }
+  .topic-item { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 8px; cursor: pointer; }
+  .topic-item:hover { background: #f1f3f6; }
+  .topic-item.on { background: var(--accent-soft); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .count { margin-left: auto; color: var(--muted); font-size: 12px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  h2 { font-size: 20px; margin: 0; }
+  h3 { font-size: 15px; margin: 0 0 6px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .grow { flex: 1; min-width: 0; }
+  .stack > * + * { margin-top: 10px; }
+
+  .task { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+  .task + .task { margin-top: 8px; }
+  .task-head { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; cursor: pointer; }
+  .task.done .task-title { text-decoration: line-through; color: var(--muted); }
+  .task-title { font-weight: 600; }
+  .task-body { border-top: 1px solid var(--line); padding: 12px; }
+  .status { flex: none; border-radius: 999px; font-size: 12px; padding: 2px 10px; border: 1px solid transparent; white-space: nowrap; }
+  .st-todo { background: #eef0f4; color: #4a5266; }
+  .st-doing { background: #fff3e0; color: #a3650c; }
+  .st-done { background: #e5f6ee; color: #1f7a50; }
+  .prio-high { color: var(--danger); font-weight: 600; }
+  .prio-low { color: var(--muted); }
+  .due.late { color: var(--danger); font-weight: 600; }
+
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { border-radius: 999px; padding: 3px 10px; font-size: 13px; border: 1px solid var(--line); background: #fff; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip.static { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+
+  .notes-block { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fafbfc; }
+  .notes-block + .notes-block { margin-top: 8px; }
+  .note { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+  .note:last-of-type { border-bottom: 0; }
+  .note-body { white-space: pre-wrap; flex: 1; }
+  .note-time { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  .with-mic { position: relative; display: flex; gap: 6px; align-items: flex-start; }
+  .mic { flex: none; width: 38px; height: 38px; padding: 0; border-radius: 8px; font-size: 17px; }
+  .mic.rec { background: var(--danger); border-color: var(--danger); color: #fff; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 50% { opacity: .65; } }
+
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .empty { text-align: center; padding: 30px 10px; color: var(--muted); }
+  .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff;
+           padding: 8px 14px; border-radius: 8px; font-size: 14px; z-index: 20; }
+  dialog { border: 1px solid var(--line); border-radius: 12px; padding: 18px; width: min(520px, 94vw); }
+  dialog::backdrop { background: rgba(20, 24, 35, .35); }
+  .fab { position: fixed; right: 18px; bottom: 18px; width: 58px; height: 58px; border-radius: 50%; font-size: 24px;
+         background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 6px 18px rgba(79,107,237,.4); z-index: 6; }
+  .qa-text { font-size: 17px; min-height: 110px; }
+  .qa-note { display: flex; gap: 6px; align-items: flex-start; }
+  .qa-note .lbl { flex: none; width: 110px; font-size: 13px; color: var(--muted); padding-top: 9px; }
+  .chip.new { border-style: dashed; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -2px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .login { max-width: 360px; margin: 10vh auto; }
+  mark { background: #ffe58a; color: inherit; border-radius: 3px; padding: 0 1px; }
+  .hits { margin: -4px 0 8px; padding: 6px 12px 8px 24px; border: 1px solid var(--line); border-top: 0;
+          border-radius: 0 0 var(--radius) var(--radius); background: #fafbfc; }
+  .hits > * + * { margin-top: 4px; }
+  a { color: var(--accent); }
+  .colors { display: flex; gap: 6px; }
+  .colors label { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+  .colors input { display: none; }
+  .colors input:checked + label { border-color: var(--ink); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+/* ========= stanje ========= */
+const S = {
+  data: { people: [], topics: [], tasks: [], notes: [] },
+  view: localStorage.getItem('view') || 'topics',   // topics | people | person
+  topicId: Number(localStorage.getItem('topicId')) || null,
+  personId: Number(localStorage.getItem('personId')) || null,
+  open: new Set(),                                   // otvoreni zadaci
+  statusFilter: 'open',                              // all | open | done
+  q: '',
+  loaded: false,
+  needLogin: false,
+  user: null,                                        // prijavljeni korisnik {id, name, email, is_admin}
+  auth: { mode: 'login' },                           // login | setup | signup | reset
+  admin: null,                                       // podaci za karticu „Korisnici“
+};
+const COLORS = ['#4f6bed', '#2f9e6b', '#d98b1a', '#d64545', '#8e5bd6', '#1f9bb3', '#6b7385'];
+const STATUS = { todo: 'Za napraviti', doing: 'U tijeku', done: 'Gotovo' };
+const NEXT_STATUS = { todo: 'doing', doing: 'done', done: 'todo' };
+const PRIO = { low: 'Nizak', normal: 'Normalan', high: 'Visok' };
+
+/* ========= API ========= */
+async function api(body) {
+  const res = await fetch('/api/data', {
+    method: body ? 'POST' : 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 401) { S.needLogin = true; S.auth = { mode: 'login' }; render(); throw new Error('login'); }
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) { toast('Greška: ' + (json.error || res.status)); throw new Error(json.error); }
+  S.user = json.user; delete json.user;
+  S.data = json; S.loaded = true; S.needLogin = false;
+  render();
+  return json;
+}
+const run = (op, payload = {}) => api({ op, ...payload }).catch(() => {});
+
+// Prijava, registracija i administracija (/api/auth). Baca grešku s porukom za korisnika.
+async function authOp(op, payload = {}) {
+  const res = await fetch('/api/auth', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op, ...payload }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || 'Greška ' + res.status);
+  return json;
+}
+
+/* ========= pomoćne ========= */
+const $ = (sel, el = document) => el.querySelector(sel);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const person = (id) => S.data.people.find((p) => p.id === id);
+const topic = (id) => S.data.topics.find((t) => t.id === id);
+const today = () => new Date().toISOString().slice(0, 10);
+const fmtDate = (d) => d ? d.split('-').reverse().join('.') + '.' : '';
+const fmtTime = (ts) => new Date(ts).toLocaleString('hr-HR', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2200);
+}
+function save() {
+  localStorage.setItem('view', S.view);
+  if (S.topicId) localStorage.setItem('topicId', S.topicId);
+  if (S.personId) localStorage.setItem('personId', S.personId);
+}
+/* ========= pretraga ========= */
+// Bez razlike velikih/malih slova i kvačica: „Štand“ = „stand“, „Đuro“ = „duro“.
+// Duljina teksta se ne mijenja, pa se pozicije pogodaka mogu označiti u izvornom tekstu.
+const fold = (s) => String(s ?? '').normalize('NFC').toLowerCase()
+  .replace(/[čćšžđ]/g, (c) => ({ č: 'c', ć: 'c', š: 's', ž: 'z', đ: 'd' }[c]))
+  .normalize('NFD').replace(/\p{M}/gu, (m) => '');
+// Riječi upita; duže riječi bez zadnjeg slova da se nađu i drugi padeži (Marko → Marku, štand → štandu).
+function terms() {
+  return fold(S.q).split(/[^\p{L}\p{N}]+/u).filter(Boolean).map((w) => (w.length >= 5 ? w.slice(0, -1) : w));
+}
+const hasAll = (text, ts) => { const f = fold(text); return ts.every((t) => f.includes(t)); };
+function matchesQuery(task) {
+  const ts = terms();
+  if (!ts.length) return true;
+  const hay = [task.title, task.description, topic(task.topic_id)?.title, ...task.people.map((id) => person(id)?.name),
+    ...S.data.notes.filter((n) => n.task_id === task.id).map((n) => n.body)].join(' ');
+  return hasAll(hay, ts);
+}
+// Escape + <mark> oko pogodaka trenutnog upita.
+function hl(text) {
+  const src = String(text ?? '').normalize('NFC');
+  const ts = terms();
+  if (!ts.length || fold(src).length !== src.length) return esc(src);
+  const f = fold(src), marks = new Array(src.length).fill(false);
+  ts.forEach((t) => { for (let i = f.indexOf(t); i >= 0; i = f.indexOf(t, i + 1)) for (let j = i; j < i + t.length; j++) marks[j] = true; });
+  let out = '', open = false;
+  for (let i = 0; i < src.length; i++) {
+    if (marks[i] !== open) { out += marks[i] ? '<mark>' : '</mark>'; open = marks[i]; }
+    out += esc(src[i]);
+  }
+  return out + (open ? '</mark>' : '');
+}
+
+/* ========= slanje mailom (otvara korisnikov program za e-poštu) ========= */
+const MAIL_MAX = 1500; // dulje poveznice neki programi za mail ne otvore
+async function openMail(to, subject, body) {
+  body += `\n\n— ${S.user?.name || ''}`;
+  let short = body;
+  if (body.length > MAIL_MAX) {
+    short = body.slice(0, MAIL_MAX) + '\n\n[…tekst je skraćen — cijeli je kopiran, zalijepi ga ovdje]';
+    try { await navigator.clipboard.writeText(body); } catch {}
+  }
+  const addr = to.filter(Boolean).join(',');
+  location.href = `mailto:${addr}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(short)}`;
+  if (!addr) toast('Nema e-mail adrese — upiši je u kartici „Ljudi“ ili u mail');
+}
+function taskMailText(k, pid) {
+  const t = topic(k.topic_id);
+  const lines = [`Zadatak: ${k.title}`];
+  if (t) lines.push(`Tema: ${t.title}`);
+  if (k.due_date) lines.push(`Rok: ${fmtDate(k.due_date)}`);
+  if (k.priority === 'high') lines.push('Prioritet: HITNO');
+  lines.push(`Status: ${STATUS[k.status]}`);
+  if (k.description) lines.push('', k.description);
+  const notes = S.data.notes.filter((n) => n.task_id === k.id && (pid ? n.person_id === pid || !n.person_id : true));
+  if (notes.length) {
+    lines.push('', 'Bilješke:');
+    notes.forEach((n) => lines.push(`– ${n.person_id && !pid ? person(n.person_id)?.name + ': ' : ''}${n.body}`));
+  }
+  return lines.join('\n');
+}
+function mailTask(taskId, pid) {
+  const k = S.data.tasks.find((x) => x.id === taskId);
+  const who = pid ? [person(pid)] : k.people.map(person);
+  const greet = pid ? `Bok ${person(pid).name.split(' ')[0]},\n\n` : 'Bok,\n\n';
+  openMail(who.filter(Boolean).map((p) => p.email), `Zadatak: ${k.title}${k.due_date ? ` (rok ${fmtDate(k.due_date)})` : ''}`,
+    greet + taskMailText(k, pid));
+}
+function matchesStatus(task) {
+  return S.statusFilter === 'all' || (S.statusFilter === 'done' ? task.status === 'done' : task.status !== 'done');
+}
+
+/* ========= glas u tekst (Web Speech API, hrvatski) ========= */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let activeRec = null;
+function micBtn(targetId) {
+  if (!SR) return '';
+  return `<button type="button" class="mic" title="Diktiraj (hrvatski)" data-mic="${targetId}">🎤</button>`;
+}
+function toggleMic(btn) {
+  const target = document.getElementById(btn.dataset.mic);
+  if (!target) return;
+  if (activeRec) { const same = activeRec.btn === btn; activeRec.rec.stop(); if (same) return; }
+  const rec = new SR();
+  rec.lang = 'hr-HR'; rec.continuous = true; rec.interimResults = true;
+  const base = target.value ? target.value.replace(/\s*$/, ' ') : '';
+  let finalText = '';
+  rec.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) finalText += r[0].transcript.trim() + ' ';
+      else interim += r[0].transcript;
+    }
+    target.value = (base + finalText + interim).replace(/^\s+/, '');
+    target.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  rec.onerror = (e) => { if (e.error === 'not-allowed') toast('Dopusti pristup mikrofonu u pregledniku'); };
+  rec.onend = () => { btn.classList.remove('rec'); if (activeRec?.rec === rec) activeRec = null; target.value = target.value.trim(); };
+  rec.start(); btn.classList.add('rec'); activeRec = { rec, btn };
+}
+
+/* Prepoznaj imena ljudi u tekstu (i padeže: Ivan → Ivanu, Ivana…) */
+function peopleInText(text) {
+  const words = text.toLowerCase().split(/[^\p{L}]+/u).filter(Boolean);
+  return S.data.people.filter((p) => {
+    const first = p.name.toLowerCase().split(/\s+/)[0];
+    const stem = first.length > 3 ? first.slice(0, -1) : first;
+    return words.some((w) => w === first || (w.startsWith(stem) && w.length <= first.length + 3));
+  }).map((p) => p.id);
+}
+
+/* ========= prikaz ========= */
+function render() {
+  const app = $('#app');
+  if (S.needLogin) return (app.innerHTML = loginView());
+  if (!S.loaded) return (app.innerHTML = '<div class="empty">Učitavam…</div>');
+  const active = document.activeElement?.id;
+  const sel = active && document.activeElement.selectionStart;
+  // sačuvaj nespremljene unose u bilješke/forme
+  const drafts = {};
+  document.querySelectorAll('[data-draft]').forEach((el) => { if (el.value) drafts[el.id] = el.value; });
+
+  app.innerHTML = headerView() + `<main>${
+    terms().length ? searchView()
+      : S.view === 'people' ? peopleView() : S.view === 'person' ? personView()
+      : S.view === 'admin' && S.user?.is_admin ? adminView() : topicsView()
+  }</main><button class="fab" data-act="quick" title="Brzi unos glasom">🎤</button>`;
+
+  Object.entries(drafts).forEach(([id, v]) => { const el = document.getElementById(id); if (el && !el.value) el.value = v; });
+  if (active) { const el = document.getElementById(active); if (el) { el.focus(); try { el.setSelectionRange(sel, sel); } catch {} } }
+}
+
+function headerView() {
+  const tab = (v, label) => `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}">${label}</button>`;
+  return `<header>
+    <h1>✅ Delegator</h1>
+    <nav>${tab('topics', 'Teme')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
+    <button class="primary" data-act="quick" title="Izdiktiraj ili upiši zadatak, AI ga razvrsta">⚡ Brzi unos</button>
+    <input type="search" class="search" id="search" placeholder="Traži kroz sve teme i bilješke…" value="${esc(S.q)}" autocomplete="off">
+    <button class="ghost" data-act="userMenu" title="Račun">👤 ${esc(S.user?.name || '')}</button>
+  </header>`;
+}
+
+/* ---- Prijava / registracija ---- */
+function loginView() {
+  const a = S.auth;
+  const err = `<div class="auth-err small" style="color:var(--danger)" role="alert"></div>`;
+  const pwField = (ph = 'Lozinka (barem 8 znakova)') =>
+    `<input type="password" name="password" placeholder="${ph}" required minlength="8" autocomplete="new-password">`;
+  const head = `<div class="muted small">✅ Delegator</div>`;
+  if (a.mode === 'reset') {
+    if (!a.info?.valid) return `<div class="panel login stack">${head}<h2>Poveznica ne vrijedi</h2>
+      <div class="muted">Istekla je ili je već iskorištena. Zatraži novu od administratora.</div>
+      <button data-act="toLogin">Na prijavu</button></div>`;
+    return `<form class="panel login stack" data-form="reset">${head}<h2>Nova lozinka</h2>
+      <div class="muted small">Za: ${esc(a.info.name)} (${esc(a.info.email)})</div>
+      ${pwField('Nova lozinka (barem 8 znakova)')}${err}<button class="primary">Spremi i uđi</button></form>`;
+  }
+  if (a.mode === 'signup' || a.mode === 'setup') {
+    if (a.mode === 'signup' && !a.info?.valid) return `<div class="panel login stack">${head}<h2>Pozivnica ne vrijedi</h2>
+      <div class="muted">Istekla je ili je već iskorištena. Zatraži novu od osobe koja te pozvala.</div>
+      <button data-act="toLogin">Imam račun — prijava</button></div>`;
+    return `<form class="panel login stack" data-form="signup">${head}
+      <h2>${a.mode === 'setup' ? 'Prvo postavljanje' : 'Registracija'}</h2>
+      <div class="muted small">${a.mode === 'setup'
+        ? 'Još nema korisnika. Prvi račun postaje administrator i šalje pozivnice ostalima.'
+        : 'Pozvan si u Delegator. Napravi svoj račun — tvoji zadaci vidljivi su samo tebi.'}</div>
+      <input name="name" placeholder="Ime i prezime" required autocomplete="name">
+      <input type="email" name="email" placeholder="E-mail" required autocomplete="email">
+      ${pwField()}
+      ${a.mode === 'setup' ? '<input type="password" name="invite" placeholder="Kod za prvo postavljanje" required>' : ''}
+      ${err}<button class="primary">Napravi račun</button>
+      ${a.mode === 'signup' ? '<button type="button" class="ghost" data-act="toLogin">Već imam račun — prijava</button>' : ''}
+    </form>`;
+  }
+  return `<form class="panel login stack" data-form="login">${head}
+    <h2>Prijava</h2>
+    <input type="email" name="email" placeholder="E-mail" required autocomplete="email" autofocus>
+    <input type="password" name="password" placeholder="Lozinka" required autocomplete="current-password">
+    ${err}<button class="primary">Uđi</button>
+    <div class="muted small">Nemaš račun? Delegator radi na pozivnice — zatraži je od administratora.
+      Zaboravljenu lozinku također resetira administrator.</div>
+  </form>`;
+}
+
+function filtersView() {
+  const f = (v, l) => `<button class="chip ${S.statusFilter === v ? 'on' : ''}" data-act="filter" data-v="${v}">${l}</button>`;
+  return `<div class="filters">${f('open', 'Otvoreni')}${f('done', 'Gotovi')}${f('all', 'Svi')}</div>`;
+}
+
+/* ---- Teme ---- */
+function topicsView() {
+  const { topics, tasks } = S.data;
+  if (!topic(S.topicId)) S.topicId = topics.find((t) => !t.archived)?.id || topics[0]?.id || null;
+  const list = topics.map((t) => {
+    const open = tasks.filter((k) => k.topic_id === t.id && k.status !== 'done').length;
+    return `<div class="topic-item ${t.id === S.topicId ? 'on' : ''}" data-act="topic" data-id="${t.id}" style="${t.archived ? 'opacity:.5' : ''}">
+      <span class="dot" style="background:${esc(t.color)}"></span><span class="grow">${esc(t.title)}</span><span class="count">${open || ''}</span></div>`;
+  }).join('');
+
+  const side = `<div class="panel stack">
+      <button class="primary" data-act="newTopic" style="width:100%">+ Nova tema</button>
+      <div>${list || '<div class="muted small">Još nema tema.</div>'}</div>
+    </div>`;
+
+  const t = topic(S.topicId);
+  if (!t) return `<div class="layout">${side}<div class="panel empty">Napravi prvu temu, npr. „Renovacija ureda“ ili „Sajam 2027“.</div></div>`;
+
+  const tt = tasks.filter((k) => k.topic_id === t.id && matchesStatus(k) && matchesQuery(k));
+  sortTasks(tt);
+  const mainCol = `<div class="stack">
+    <div class="panel stack">
+      <div class="row">
+        <span class="dot" style="background:${esc(t.color)};width:14px;height:14px"></span>
+        <h2 class="grow">${esc(t.title)}</h2>
+        <button class="ghost" data-act="editTopic" data-id="${t.id}">Uredi</button>
+      </div>
+      ${t.description ? `<div class="muted">${esc(t.description)}</div>` : ''}
+      ${newTaskForm(t.id)}
+    </div>
+    <div class="row">${filtersView()}<span class="muted small" style="margin-left:auto">${tt.length} zadataka</span></div>
+    <div>${tt.map((k) => taskView(k)).join('') || '<div class="panel empty">Nema zadataka za ovaj filter.</div>'}</div>
+  </div>`;
+  return `<div class="layout">${side}${mainCol}</div>`;
+}
+
+function sortTasks(arr) {
+  const pr = { high: 0, normal: 1, low: 2 }, st = { doing: 0, todo: 1, done: 2 };
+  arr.sort((a, b) => st[a.status] - st[b.status] || pr[a.priority] - pr[b.priority]
+    || (a.due_date || '9999').localeCompare(b.due_date || '9999') || a.id - b.id);
+}
+
+function peopleChips(name, selected) {
+  if (!S.data.people.length) return `<span class="muted small">Dodaj ljude u kartici „Ljudi“ pa ih ovdje samo klikneš.</span>`;
+  return `<div class="chips" data-chips="${name}">${S.data.people.map((p) =>
+    `<button type="button" class="chip ${selected.includes(p.id) ? 'on' : ''}" data-act="chip" data-id="${p.id}">${esc(p.name)}</button>`).join('')}</div>`;
+}
+
+function newTaskForm(topicId) {
+  return `<form class="stack" data-form="newTask" data-topic="${topicId}">
+    <div class="with-mic"><input id="nt-title" name="title" data-draft placeholder="Novi zadatak… (npr. „Marko neka nazove dobavljača“)" autocomplete="off">${micBtn('nt-title')}</div>
+    <div class="with-mic"><textarea id="nt-desc" name="description" data-draft rows="1" placeholder="Opis (nije obavezno)"></textarea>${micBtn('nt-desc')}</div>
+    ${peopleChips('people', [])}
+    <div class="row">
+      <select name="priority" style="width:auto"><option value="normal">Prioritet: normalan</option><option value="high">Prioritet: visok</option><option value="low">Prioritet: nizak</option></select>
+      <input type="date" name="due_date" style="width:auto" title="Rok">
+      <button class="primary" style="margin-left:auto">Dodaj zadatak</button>
+    </div>
+  </form>`;
+}
+
+function taskView(k, opts = {}) {
+  const isOpen = S.open.has(k.id);
+  const late = k.due_date && k.status !== 'done' && k.due_date < today();
+  const t = topic(k.topic_id);
+  const noteCount = S.data.notes.filter((n) => n.task_id === k.id).length;
+  const head = `<div class="task-head" data-act="toggle" data-id="${k.id}">
+    <button class="status st-${k.status}" data-act="status" data-id="${k.id}" title="Klikni za promjenu statusa">${STATUS[k.status]}</button>
+    <div class="grow">
+      <div class="task-title">${hl(k.title)}</div>
+      <div class="row small muted" style="margin-top:4px">
+        ${opts.showTopic && t ? `<span><span class="dot" style="display:inline-block;background:${esc(t.color)}"></span> ${esc(t.title)}</span>` : ''}
+        ${k.priority !== 'normal' ? `<span class="prio-${k.priority}">${k.priority === 'high' ? '▲ visok' : '▽ nizak'}</span>` : ''}
+        ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtDate(k.due_date)}${late ? ' (kasni)' : ''}</span>` : ''}
+        ${noteCount ? `<span>📝 ${noteCount}</span>` : ''}
+      </div>
+    </div>
+    <div class="chips" style="justify-content:flex-end">${k.people.map((id) => person(id)).filter(Boolean)
+      .map((p) => `<span class="chip static">${esc(p.name)}</span>`).join('')}</div>
+  </div>`;
+  if (!isOpen) return `<div class="task ${k.status}">${head}</div>`;
+
+  const notes = S.data.notes.filter((n) => n.task_id === k.id);
+  const blocks = [...k.people.map((id) => person(id)).filter(Boolean), { id: 0, name: null }]
+    .filter((p) => !opts.onlyPerson || p.id === opts.onlyPerson || p.id === 0)
+    .map((p) => notesBlock(k, p, notes.filter((n) => (n.person_id || 0) === p.id))).join('');
+
+  return `<div class="task ${k.status}">${head}
+    <div class="task-body stack">
+      ${k.description ? `<div style="white-space:pre-wrap">${hl(k.description)}</div>` : ''}
+      ${blocks}
+      <div class="row">
+        <button class="ghost" data-act="editTask" data-id="${k.id}">✏️ Uredi zadatak</button>
+        <span class="muted small" style="margin-left:auto">Kreirano ${fmtTime(k.created_at)}</span>
+      </div>
+    </div></div>`;
+}
+
+function notesBlock(k, p, notes) {
+  const fid = `note-${k.id}-${p.id}`;
+  const mailTitle = p.name
+    ? (p.email ? `Pošalji zadatak i bilješke na ${p.email}` : `${p.name} nema upisan e-mail — dodaj ga u kartici „Ljudi“`)
+    : 'Pošalji zadatak sa svim bilješkama svim zaduženima';
+  const canMail = p.name || k.people.length;
+  return `<div class="notes-block">
+    <div class="row"><h3 class="grow">${p.name ? `Bilješke za: ${esc(p.name)}` : 'Opće bilješke'}</h3>
+      ${canMail ? `<button class="ghost small" data-act="mailTask" data-id="${k.id}" data-pid="${p.id}" title="${esc(mailTitle)}">✉️ Pošalji mailom</button>` : ''}</div>
+    ${notes.map((n) => `<div class="note">
+        <div class="note-body">${hl(n.body)}</div>
+        <span class="note-time">${fmtTime(n.created_at)}</span>
+        <button class="ghost small" data-act="editNote" data-id="${n.id}" title="Uredi">✏️</button>
+        <button class="ghost small danger" data-act="delNote" data-id="${n.id}" title="Obriši">✕</button>
+      </div>`).join('')}
+    <form class="with-mic" data-form="note" data-task="${k.id}" data-person="${p.id}" style="margin-top:6px">
+      <textarea id="${fid}" name="body" data-draft rows="1" placeholder="${p.name ? `Upute ili bilješka za ${esc(p.name)}…` : 'Bilješka…'}"></textarea>
+      ${micBtn(fid)}<button class="primary" style="height:38px">Spremi</button>
+    </form>
+  </div>`;
+}
+
+/* ---- Rezultati pretrage (kroz sve teme) ---- */
+function searchView() {
+  const ts = terms();
+  const tasks = S.data.tasks.filter(matchesQuery);
+  sortTasks(tasks);
+  const people = S.data.people.filter((p) => hasAll([p.name, p.role, p.email].join(' '), ts));
+  const topics = S.data.topics.filter((t) => hasAll([t.title, t.description].join(' '), ts));
+  const noteHits = (k) => S.data.notes.filter((n) => n.task_id === k.id && ts.some((t) => fold(n.body).includes(t)));
+  const list = tasks.map((k) => {
+    const hits = S.open.has(k.id) ? [] : noteHits(k);
+    return taskView(k, { showTopic: true }) + (hits.length ? `<div class="hits">${hits.slice(0, 3).map((n) =>
+      `<div class="small">📝 ${n.person_id ? `<strong>${esc(person(n.person_id)?.name)}:</strong> ` : ''}${hl(n.body)}</div>`).join('')}</div>` : '');
+  }).join('');
+  return `<div class="stack" style="max-width:900px;margin:0 auto">
+    <div class="panel row">
+      <h2 class="grow">Rezultati za „${esc(S.q.trim())}“</h2>
+      <span class="muted small">${tasks.length} zadataka</span>
+      <button class="ghost" data-act="clearSearch">✕ Očisti</button>
+    </div>
+    ${topics.length ? `<div class="panel row small"><span class="muted">Teme:</span>${topics.map((t) =>
+      `<button class="chip" data-act="topic" data-id="${t.id}"><span class="dot" style="display:inline-block;background:${esc(t.color)}"></span> ${hl(t.title)}</button>`).join('')}</div>` : ''}
+    ${people.length ? `<div class="panel row small"><span class="muted">Ljudi:</span>${people.map((p) =>
+      `<button class="chip" data-act="openPerson" data-id="${p.id}">${hl(p.name)}</button>`).join('')}</div>` : ''}
+    <div>${list || '<div class="panel empty">Ništa nije pronađeno. Probaj kraću riječ.</div>'}</div>
+  </div>`;
+}
+
+/* ---- Ljudi ---- */
+function peopleView() {
+  const { people, tasks } = S.data;
+  const rows = people.map((p) => {
+    const mine = tasks.filter((k) => k.people.includes(p.id));
+    const open = mine.filter((k) => k.status !== 'done').length;
+    return `<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)">
+      <div class="grow"><strong>${esc(p.name)}</strong> ${p.role ? `<span class="muted small">· ${esc(p.role)}</span>` : ''}
+        <div class="muted small">${p.email ? esc(p.email) : '<em>bez e-maila</em>'}</div></div>
+      <span class="muted small">${open} otvorenih / ${mine.length}</span>
+      <button class="ghost" data-act="openPerson" data-id="${p.id}">Zadaci →</button>
+      <button class="ghost" data-act="editPerson" data-id="${p.id}">✏️</button>
+      <button class="ghost danger" data-act="delPerson" data-id="${p.id}">✕</button>
+    </div>`;
+  }).join('');
+  return `<div class="panel stack" style="max-width:720px;margin:0 auto">
+    <h2>Ljudi</h2>
+    <form class="row" data-form="newPerson">
+      <div class="with-mic grow"><input id="np-name" name="name" data-draft placeholder="Ime i prezime" required>${micBtn('np-name')}</div>
+      <input name="role" placeholder="Uloga (nije obavezno)" style="max-width:180px">
+      <input type="email" name="email" placeholder="E-mail (za slanje zadataka)" style="max-width:240px">
+      <button class="primary">Dodaj</button>
+    </form>
+    <div>${rows || '<div class="empty">Dodaj ljude kojima delegiraš zadatke.</div>'}</div>
+  </div>`;
+}
+
+/* ---- Po osobi ---- */
+function personView() {
+  const { people, tasks } = S.data;
+  if (!person(S.personId)) S.personId = people[0]?.id || null;
+  if (!S.personId) return `<div class="panel empty">Prvo dodaj ljude u kartici „Ljudi“.</div>`;
+  const p = person(S.personId);
+  const mine = tasks.filter((k) => k.people.includes(p.id) && matchesStatus(k) && matchesQuery(k));
+  sortTasks(mine);
+  return `<div class="stack" style="max-width:900px;margin:0 auto">
+    <div class="panel stack">
+      <div class="row">
+        <select data-act="pickPerson" style="width:auto;font-weight:600">${people.map((x) =>
+          `<option value="${x.id}" ${x.id === p.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+        ${p.role ? `<span class="muted">${esc(p.role)}</span>` : ''}
+        <button style="margin-left:auto" data-act="copyPerson" data-id="${p.id}" title="Kopira popis otvorenih zadataka za slanje porukom">📋 Kopiraj popis</button>
+        <button data-act="mailPerson" data-id="${p.id}" title="${p.email ? 'Otvori mail s popisom otvorenih zadataka' : 'Osoba nema e-mail — dodaj ga u kartici „Ljudi“'}">✉️ Pošalji popis mailom</button>
+      </div>
+      ${filtersView()}
+    </div>
+    <div>${mine.map((k) => taskView(k, { showTopic: true, onlyPerson: p.id })).join('') || '<div class="panel empty">Nema zadataka.</div>'}</div>
+  </div>`;
+}
+
+function personSummary(pid) {
+  const p = person(pid);
+  const mine = S.data.tasks.filter((k) => k.people.includes(pid) && k.status !== 'done');
+  sortTasks(mine);
+  let out = `Bok ${p.name.split(' ')[0]}, tvoji otvoreni zadaci:\n`;
+  const byTopic = {};
+  mine.forEach((k) => (byTopic[k.topic_id] ||= []).push(k));
+  for (const [tid, list] of Object.entries(byTopic)) {
+    out += `\n■ ${topic(Number(tid))?.title || ''}\n`;
+    list.forEach((k) => {
+      out += `• ${k.title}${k.due_date ? ` (rok ${fmtDate(k.due_date)})` : ''}${k.priority === 'high' ? ' — HITNO' : ''}\n`;
+      S.data.notes.filter((n) => n.task_id === k.id && n.person_id === pid).forEach((n) => (out += `   – ${n.body}\n`));
+    });
+  }
+  return mine.length ? out : `${p.name} nema otvorenih zadataka.`;
+}
+
+/* ---- Korisnici (samo administrator) ---- */
+async function loadAdmin() {
+  try { S.admin = { ...S.admin, ...(await authOp('listUsers')) }; } catch (e) { toast(e.message); }
+  render();
+}
+function linkBox(label, url, mailSubject, mailBody) {
+  return `<div class="notes-block stack">
+    <div class="small"><strong>${label}</strong></div>
+    <input readonly value="${esc(url)}" onclick="this.select()">
+    <div class="row">
+      <button type="button" data-act="copyText" data-text="${esc(url)}">📋 Kopiraj poveznicu</button>
+      <a class="small" href="mailto:?subject=${encodeURIComponent(mailSubject)}&body=${encodeURIComponent(mailBody)}">✉️ Pošalji mailom</a>
+    </div></div>`;
+}
+function adminView() {
+  if (!S.admin?.users) { if (!S.admin?.loading) { S.admin = { loading: true }; loadAdmin(); } return '<div class="empty">Učitavam…</div>'; }
+  const { users, invites, link } = S.admin;
+  const fmtDay = (ts) => new Date(ts).toLocaleDateString('hr-HR');
+  return `<div class="stack" style="max-width:820px;margin:0 auto">
+    <div class="panel stack">
+      <h2>Pozovi novog korisnika</h2>
+      <div class="muted small">Napravi poveznicu i pošalji je osobi (mailom, WhatsAppom…). Vrijedi 7 dana i samo za jednu registraciju.
+        Svaki korisnik ima svoje teme, zadatke i ljude — nitko ne vidi tuđe.</div>
+      <form class="row" data-form="invite">
+        <input name="note" class="grow" placeholder="Za koga je (samo tebi za podsjetnik), npr. Ana iz nabave" style="width:auto">
+        <button class="primary">Napravi pozivnicu</button>
+      </form>
+      ${link ? linkBox(link.label, link.url, link.subject, link.body) : ''}
+    </div>
+    <div class="panel stack">
+      <h2>Korisnici (${users.length})</h2>
+      ${users.map((u) => `<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)">
+        <div class="grow"><strong>${esc(u.name)}</strong> ${u.is_admin ? '<span class="chip static small">administrator</span>' : ''}
+          <div class="muted small">${esc(u.email)} · od ${fmtDay(u.created_at)} · ${u.tasks} zadataka</div></div>
+        <button class="ghost small" data-act="resetUser" data-id="${u.id}" title="Napravi poveznicu za novu lozinku">🔑 Nova lozinka</button>
+        ${u.id !== S.user.id ? `<button class="ghost small danger" data-act="delUser" data-id="${u.id}" title="Obriši korisnika i sve njegove podatke">✕</button>` : ''}
+      </div>`).join('')}
+    </div>
+    ${invites.length ? `<div class="panel stack"><h3>Neiskorištene poveznice</h3>${invites.map((i) =>
+      `<div class="small muted">${i.kind === 'reset' ? `🔑 nova lozinka za ${esc(i.for_name)}` : `✉️ pozivnica${i.note ? ' — ' + esc(i.note) : ''}`}
+        · vrijedi do ${new Date(i.expires_at).toLocaleString('hr-HR', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>`).join('')}</div>` : ''}
+  </div>`;
+}
+
+/* ========= dijalozi ========= */
+function openDialog(html, onSubmit) {
+  const dlg = $('#dlg');
+  dlg.innerHTML = `<form method="dialog" class="stack">${html}
+    <div class="row" style="justify-content:flex-end"><button type="button" onclick="this.closest('dialog').close()">Odustani</button><button class="primary" value="ok">Spremi</button></div></form>`;
+  const form = $('form', dlg);
+  form.onsubmit = (e) => {
+    if (e.submitter?.value !== 'ok') return;
+    e.preventDefault(); dlg.close(); onSubmit(new FormData(form), form);
+  };
+  dlg.showModal();
+}
+function colorPicker(current) {
+  return `<div class="colors">${COLORS.map((c, i) => `<input type="radio" name="color" id="c${i}" value="${c}" ${c === current ? 'checked' : ''}>
+    <label for="c${i}" style="background:${c}"></label>`).join('')}</div>`;
+}
+function topicDialog(t) {
+  openDialog(`<h2>${t ? 'Uredi temu' : 'Nova tema'}</h2>
+    <div class="with-mic"><input id="dt-title" name="title" required placeholder="Naziv teme" value="${esc(t?.title)}">${micBtn('dt-title')}</div>
+    <div class="with-mic"><textarea id="dt-desc" name="description" placeholder="Opis (nije obavezno)">${esc(t?.description)}</textarea>${micBtn('dt-desc')}</div>
+    ${colorPicker(t?.color || COLORS[S.data.topics.length % COLORS.length])}
+    ${t ? `<label class="row small"><input type="checkbox" name="archived" style="width:auto" ${t.archived ? 'checked' : ''}> Arhivirana</label>
+      <button type="button" class="danger" data-act="delTopic" data-id="${t.id}">Obriši temu i sve njene zadatke</button>` : ''}`,
+    async (fd) => {
+      const body = Object.fromEntries(fd);
+      if (t) await run('updateTopic', { ...body, id: t.id, archived: fd.has('archived') });
+      else {
+        await run('addTopic', body);
+        S.topicId = Math.max(...S.data.topics.map((x) => x.id)); save(); render();
+      }
+    });
+}
+function taskDialog(k) {
+  openDialog(`<h2>Uredi zadatak</h2>
+    <div class="with-mic"><input id="dk-title" name="title" required value="${esc(k.title)}">${micBtn('dk-title')}</div>
+    <div class="with-mic"><textarea id="dk-desc" name="description" rows="3" placeholder="Opis">${esc(k.description)}</textarea>${micBtn('dk-desc')}</div>
+    ${peopleChips('people', k.people)}
+    <div class="row">
+      <select name="status" style="width:auto">${Object.entries(STATUS).map(([v, l]) => `<option value="${v}" ${v === k.status ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <select name="priority" style="width:auto">${Object.entries(PRIO).map(([v, l]) => `<option value="${v}" ${v === k.priority ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <input type="date" name="due_date" value="${k.due_date || ''}" style="width:auto">
+    </div>
+    <select name="topic_id">${S.data.topics.map((t) => `<option value="${t.id}" ${t.id === k.topic_id ? 'selected' : ''}>Tema: ${esc(t.title)}</option>`).join('')}</select>
+    <button type="button" class="danger" data-act="delTask" data-id="${k.id}">Obriši zadatak</button>`,
+    (fd, form) => run('updateTask', { ...Object.fromEntries(fd), id: k.id, topic_id: Number(fd.get('topic_id')), people: selectedChips(form) }));
+}
+function personDialog(p) {
+  openDialog(`<h2>Uredi osobu</h2>
+    <input name="name" required value="${esc(p.name)}"><input name="role" placeholder="Uloga" value="${esc(p.role)}">
+    <input type="email" name="email" placeholder="E-mail" value="${esc(p.email)}">`,
+    (fd) => run('updatePerson', { ...Object.fromEntries(fd), id: p.id }));
+}
+function noteDialog(n) {
+  openDialog(`<h2>Uredi bilješku</h2>
+    <div class="with-mic"><textarea id="dn-body" name="body" rows="4" required>${esc(n.body)}</textarea>${micBtn('dn-body')}</div>`,
+    (fd) => run('updateNote', { id: n.id, body: fd.get('body') }));
+}
+function userMenu() {
+  const dlg = $('#dlg');
+  dlg.innerHTML = `<div class="stack">
+    <h2>${esc(S.user.name)}</h2><div class="muted small">${esc(S.user.email)}${S.user.is_admin ? ' · administrator' : ''}</div>
+    <button data-act="changePw">🔑 Promijeni lozinku</button>
+    <button data-act="logout">↩︎ Odjava</button>
+    <div class="row" style="justify-content:flex-end"><button type="button" onclick="this.closest('dialog').close()">Zatvori</button></div></div>`;
+  dlg.showModal();
+}
+function changePwDialog() {
+  openDialog(`<h2>Promijeni lozinku</h2>
+    <input type="password" name="old_password" placeholder="Trenutna lozinka" required autocomplete="current-password">
+    <input type="password" name="password" placeholder="Nova lozinka (barem 8 znakova)" required minlength="8" autocomplete="new-password">`,
+    async (fd) => {
+      try { await authOp('changePassword', Object.fromEntries(fd)); toast('Lozinka promijenjena ✓'); }
+      catch (e) { toast(e.message); }
+    });
+}
+const selectedChips = (root) => [...root.querySelectorAll('[data-chips] .chip.on')].map((c) => Number(c.dataset.id));
+
+/* ========= brzi unos uz AI ========= */
+async function parseText(text) {
+  const res = await fetch('/api/parse', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, topic_hint: S.view === 'topics' ? topic(S.topicId)?.title : null }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || 'Greška ' + res.status);
+  return json;
+}
+
+function quickStep1(text = '') {
+  const dlg = $('#dlg');
+  dlg.innerHTML = `<form class="stack" data-qa="parse">
+    <h2>⚡ Brzi unos</h2>
+    <div class="muted small">Izdiktiraj ili upiši, npr. <em>„Marko do petka naruči štand za sajam, budžet 2000 eura“</em>. AI će predložiti temu, osobu, rok i bilješke — ti samo potvrdiš.</div>
+    <div class="with-mic"><textarea id="qa-text" class="qa-text" name="text" required>${esc(text)}</textarea>${micBtn('qa-text')}</div>
+    <div class="row" style="justify-content:flex-end">
+      <button type="button" onclick="this.closest('dialog').close()">Odustani</button>
+      <button class="primary" id="qa-go">Obradi ✨</button>
+    </div></form>`;
+  if (!dlg.open) dlg.showModal();
+  const ta = $('#qa-text');
+  ta.focus();
+  // na mobitelu odmah kreni slušati
+  const mic = $('[data-mic="qa-text"]', dlg);
+  if (mic && !text && matchMedia('(pointer: coarse)').matches) toggleMic(mic);
+  $('form', dlg).onsubmit = async (e) => {
+    e.preventDefault();
+    if (activeRec) activeRec.rec.stop();
+    const t = ta.value.trim(); if (!t) return;
+    const btn = $('#qa-go'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Obrađujem…';
+    try {
+      const p = await parseText(t);
+      if (p.remaining != null && p.remaining <= 5) toast(`Brzi unos: danas još ${p.remaining}`);
+      quickStep2(t, p);
+    }
+    catch (err) { toast(err.message); btn.disabled = false; btn.textContent = 'Obradi ✨'; }
+  };
+}
+
+function quickStep2(text, p) {
+  const dlg = $('#dlg');
+  const topicOpts = S.data.topics.filter((t) => !t.archived || t.id === p.topic_id).map((t) =>
+    `<option value="${t.id}" ${t.id === p.topic_id ? 'selected' : ''}>${esc(t.title)}</option>`).join('');
+  const newTopic = p.new_topic || (!p.topic_id && !S.data.topics.length ? 'Opće' : null);
+  const fallbackTopic = !p.topic_id && !newTopic ? (S.topicId || S.data.topics[0]?.id) : null;
+  const chips = S.data.people.map((x) =>
+    `<button type="button" class="chip ${p.people.includes(x.id) ? 'on' : ''}" data-act="chip" data-id="${x.id}">${esc(x.name)}</button>`).join('')
+    + p.new_people.map((n) => `<button type="button" class="chip new on" data-act="chip" data-new="${esc(n)}" title="Nova osoba — bit će dodana na popis">+ ${esc(n)}</button>`).join('');
+  const noteRow = (n, i) => `<div class="qa-note" data-note data-pid="${n.person_id || ''}" data-pname="${esc(n.person_name || '')}">
+      <span class="lbl">${n.person_name ? 'za ' + esc(n.person_name) : 'Opća'}</span>
+      <textarea rows="1">${esc(n.body)}</textarea>
+      <button type="button" class="ghost danger" onclick="this.parentElement.remove()" title="Makni">✕</button></div>`;
+
+  dlg.innerHTML = `<form class="stack" data-qa="save">
+    <h2>Provjeri i spremi</h2>
+    <div class="muted small">„${esc(text)}“</div>
+    <label class="small muted">Tema</label>
+    <select name="topic">${newTopic ? `<option value="new" selected>➕ Nova tema: ${esc(newTopic)}</option>` : ''}${topicOpts.replace(`value="${fallbackTopic}"`, `value="${fallbackTopic}" selected`)}</select>
+    <input name="title" required value="${esc(p.title)}" placeholder="Naziv zadatka" style="font-weight:600">
+    <textarea name="description" rows="1" placeholder="Opis (nije obavezno)">${esc(p.description)}</textarea>
+    <div class="chips" data-chips="people">${chips || '<span class="muted small">Nema ljudi.</span>'}</div>
+    <div class="row">
+      <select name="priority" style="width:auto">${Object.entries(PRIO).map(([v, l]) => `<option value="${v}" ${v === p.priority ? 'selected' : ''}>Prioritet: ${l.toLowerCase()}</option>`).join('')}</select>
+      <input type="date" name="due_date" value="${p.due_date || ''}" style="width:auto" title="Rok">
+    </div>
+    ${p.notes.length ? `<label class="small muted">Bilješke</label><div class="stack">${p.notes.map(noteRow).join('')}</div>` : ''}
+    <div class="row" style="justify-content:flex-end">
+      <button type="button" data-qa-back>← Natrag</button>
+      <button class="primary" id="qa-save">Spremi zadatak</button>
+    </div></form>`;
+  $('[data-qa-back]', dlg).onclick = () => quickStep1(text);
+  $('form', dlg).onsubmit = async (e) => {
+    e.preventDefault();
+    const f = e.target, fd = new FormData(f);
+    const on = [...f.querySelectorAll('[data-chips] .chip.on')];
+    const newPeople = on.filter((c) => c.dataset.new).map((c) => c.dataset.new);
+    const notes = [...f.querySelectorAll('[data-note]')].map((el) => ({
+      person_id: Number(el.dataset.pid) || null,
+      person_name: el.dataset.pname || null,
+      body: $('textarea', el).value,
+    })).filter((n) => n.body.trim())
+      // bilješka za novu osobu koju je korisnik odznačio postaje opća
+      .map((n) => (!n.person_id && n.person_name && !newPeople.includes(n.person_name) ? { ...n, person_name: null } : n));
+    $('#qa-save').disabled = true;
+    try {
+      const data = await api({
+        op: 'quickAdd',
+        topic_id: fd.get('topic') === 'new' ? null : Number(fd.get('topic')),
+        new_topic: fd.get('topic') === 'new' ? newTopic : null,
+        title: fd.get('title'), description: fd.get('description'),
+        priority: fd.get('priority'), due_date: fd.get('due_date'),
+        people: on.filter((c) => !c.dataset.new).map((c) => Number(c.dataset.id)),
+        new_people: newPeople, notes,
+      });
+      dlg.close();
+      S.view = 'topics'; S.topicId = data.result.topic_id; S.open.add(data.result.task_id); S.statusFilter = 'open';
+      save(); render(); toast('Zadatak spremljen ✓');
+    } catch { $('#qa-save').disabled = false; }
+  };
+}
+
+/* ========= događaji ========= */
+document.addEventListener('click', async (e) => {
+  const el = e.target.closest('[data-act], [data-mic]');
+  if (!el) return;
+  if (el.dataset.mic) { e.preventDefault(); return toggleMic(el); }
+  const id = Number(el.dataset.id);
+  const act = el.dataset.act;
+  if (act !== 'toggle') e.stopPropagation();
+  switch (act) {
+    case 'view': S.view = el.dataset.v; S.q = ''; if (S.view === 'admin') S.admin = null; save(); return render();
+    case 'topic': S.topicId = id; S.view = 'topics'; S.q = ''; save(); return render();
+    case 'clearSearch': S.q = ''; return render();
+    case 'mailTask': return mailTask(id, Number(el.dataset.pid) || null);
+    case 'mailPerson': {
+      const p = person(id);
+      return openMail([p.email], 'Tvoji otvoreni zadaci', personSummary(id));
+    }
+    case 'userMenu': return userMenu();
+    case 'changePw': $('#dlg').close(); return changePwDialog();
+    case 'logout':
+      $('#dlg').close();
+      try { await authOp('logout'); } catch {}
+      Object.assign(S, { user: null, loaded: false, needLogin: true, auth: { mode: 'login' }, admin: null, q: '',
+        data: { people: [], topics: [], tasks: [], notes: [] } });
+      S.open.clear();
+      return render();
+    case 'toLogin': history.replaceState(null, '', location.pathname); S.auth = { mode: 'login' }; return render();
+    case 'copyText':
+      try { await navigator.clipboard.writeText(el.dataset.text); toast('Kopirano ✓'); } catch { toast('Označi poveznicu i kopiraj ručno'); }
+      return;
+    case 'resetUser': {
+      const u = S.admin.users.find((x) => x.id === id);
+      try {
+        const r = await authOp('createReset', { user_id: id });
+        const url = `${location.origin}/?reset=${r.token}`;
+        S.admin.link = { label: `Poveznica za novu lozinku — ${u.name} (vrijedi ${r.hours} h)`, url,
+          subject: 'Delegator — nova lozinka', body: `Bok ${u.name.split(' ')[0]},\n\novdje postavi novu lozinku za Delegator:\n${url}\n\nPoveznica vrijedi ${r.hours} sata.` };
+        loadAdmin();
+      } catch (e) { toast(e.message); }
+      return;
+    }
+    case 'delUser': {
+      const u = S.admin.users.find((x) => x.id === id);
+      if (prompt(`Ovo trajno briše korisnika ${u.name} i SVE njegove teme, zadatke, ljude i bilješke.\nZa potvrdu upiši njegov e-mail:`) !== u.email) return toast('Nije obrisano');
+      try { await authOp('deleteUser', { user_id: id }); toast('Korisnik obrisan'); loadAdmin(); } catch (e) { toast(e.message); }
+      return;
+    }
+    case 'filter': S.statusFilter = el.dataset.v; return render();
+    case 'toggle': if (e.target.closest('button, a, input, textarea, select, form')) return;
+      S.open.has(id) ? S.open.delete(id) : S.open.add(id); return render();
+    case 'status': { const k = S.data.tasks.find((x) => x.id === id); return run('setStatus', { id, status: NEXT_STATUS[k.status] }); }
+    case 'chip': el.classList.toggle('on'); el.dataset.manual = '1'; return;
+    case 'quick': return quickStep1();
+    case 'newTopic': return topicDialog(null);
+    case 'editTopic': return topicDialog(topic(id));
+    case 'delTopic': if (confirm('Obrisati temu sa svim zadacima i bilješkama?')) { $('#dlg').close(); S.topicId = null; run('deleteTopic', { id }); } return;
+    case 'editTask': return taskDialog(S.data.tasks.find((x) => x.id === id));
+    case 'delTask': if (confirm('Obrisati zadatak i njegove bilješke?')) { $('#dlg').close(); run('deleteTask', { id }); } return;
+    case 'editNote': return noteDialog(S.data.notes.find((x) => x.id === id));
+    case 'delNote': if (confirm('Obrisati bilješku?')) run('deleteNote', { id }); return;
+    case 'editPerson': return personDialog(person(id));
+    case 'delPerson': if (confirm(`Ukloniti osobu ${person(id).name}? Bit će maknuta sa svih zadataka.`)) run('deletePerson', { id }); return;
+    case 'openPerson': S.personId = id; S.view = 'person'; S.q = ''; save(); return render();
+    case 'copyPerson': {
+      const text = personSummary(id);
+      try { await navigator.clipboard.writeText(text); toast('Popis kopiran — zalijepi u poruku ili mail'); }
+      catch { openDialog(`<h2>Popis zadataka</h2><textarea rows="12">${esc(text)}</textarea>`, () => {}); }
+      return;
+    }
+  }
+});
+
+document.addEventListener('change', (e) => {
+  if (e.target.dataset.act === 'pickPerson') { S.personId = Number(e.target.value); save(); render(); }
+});
+
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'search') { S.q = e.target.value; render(); return; }
+
+  // automatski označi ljude spomenute u naslovu novog zadatka
+  if (e.target.id === 'nt-title' || e.target.id === 'nt-desc') {
+    const form = e.target.form;
+    const found = peopleInText(form.title.value + ' ' + form.description.value);
+    form.querySelectorAll('[data-chips] .chip').forEach((c) => {
+      if (c.dataset.manual) return;
+      c.classList.toggle('on', found.includes(Number(c.dataset.id)));
+    });
+  }
+});
+
+// Enter u bilješci = spremi (Shift+Enter = novi red); Esc u tražilici = očisti
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && e.target.id === 'search' && S.q) { e.preventDefault(); S.q = ''; render(); return; }
+  if (e.key === 'Enter' && !e.shiftKey && e.target.matches('form[data-form="note"] textarea')) {
+    e.preventDefault(); e.target.form.requestSubmit();
+  }
+});
+
+document.addEventListener('submit', async (e) => {
+  const f = e.target;
+  const kind = f.dataset.form;
+  if (!kind) return;
+  e.preventDefault();
+  if (activeRec) activeRec.rec.stop();
+  const fd = Object.fromEntries(new FormData(f));
+  if (kind === 'login' || kind === 'signup' || kind === 'reset') {
+    const btn = $('button.primary', f); btn.disabled = true;
+    try {
+      if (kind === 'login') await authOp('login', fd);
+      if (kind === 'signup') await authOp('signup', { ...fd, invite: S.auth.mode === 'setup' ? fd.invite : S.auth.token });
+      if (kind === 'reset') await authOp('resetPassword', { token: S.auth.token, password: fd.password });
+      history.replaceState(null, '', location.pathname);
+      S.auth = { mode: 'login' };
+      return api().catch(() => {});
+    } catch (err) { $('.auth-err', f).textContent = err.message; btn.disabled = false; return; }
+  }
+  if (kind === 'invite') {
+    try {
+      const r = await authOp('createInvite', fd);
+      const url = `${location.origin}/?pozivnica=${r.token}`;
+      S.admin.link = { label: `Pozivnica${fd.note ? ' — ' + fd.note : ''} (vrijedi ${r.days} dana)`, url,
+        subject: `${S.user.name} te poziva u Delegator`,
+        body: `Bok,\n\npozivam te u Delegator — aplikaciju za teme, zadatke i bilješke.\nNapravi račun ovdje:\n${url}\n\nPoveznica vrijedi ${r.days} dana.\n\n— ${S.user.name}` };
+      loadAdmin();
+    } catch (err) { toast(err.message); }
+    return;
+  }
+  if (kind === 'newPerson') {
+    if (!fd.name.trim()) return;
+    f.reset(); await run('addPerson', fd); return;
+  }
+  if (kind === 'newTask') {
+    if (!fd.title.trim()) return toast('Upiši naziv zadatka');
+    const people = selectedChips(f);
+    f.reset();
+    await run('addTask', { ...fd, topic_id: Number(f.dataset.topic), people });
+    return;
+  }
+  if (kind === 'note') {
+    if (!fd.body.trim()) return;
+    f.reset();
+    await run('addNote', { task_id: Number(f.dataset.task), person_id: Number(f.dataset.person) || null, body: fd.body });
+  }
+});
+
+/* ========= pokretanje ========= */
+async function boot() {
+  render();
+  const params = new URLSearchParams(location.search);
+  const inv = params.get('pozivnica'), rst = params.get('reset');
+  let me = { user: null, setup: false };
+  try { me = await (await fetch('/api/auth')).json(); } catch { toast('Nema veze s poslužiteljem'); }
+  if (rst) {
+    S.auth = { mode: 'reset', token: rst, info: await authOp('tokenInfo', { token: rst, kind: 'reset' }).catch(() => ({ valid: false })) };
+    S.needLogin = true; return render();
+  }
+  if (me.user) {
+    if (inv) { history.replaceState(null, '', location.pathname); toast('Već si prijavljen'); }
+    return api().catch(() => {});
+  }
+  if (inv) S.auth = { mode: 'signup', token: inv, info: await authOp('tokenInfo', { token: inv }).catch(() => ({ valid: false })) };
+  else S.auth = { mode: me.setup ? 'setup' : 'login' };
+  S.needLogin = true; render();
+}
+boot();
+</script>
+</body>
+</html>
