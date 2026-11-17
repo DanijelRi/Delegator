@@ -7,7 +7,7 @@ import { sql, currentUser, readBody, txt } from './_lib.js';
 async function loadAll(uid) {
   const [people, topics, tasks, notes] = await Promise.all([
     sql`SELECT id, name, role, email FROM people WHERE user_id = ${uid} ORDER BY name`,
-    sql`SELECT id, title, description, color, archived FROM topics WHERE user_id = ${uid} ORDER BY archived, created_at`,
+    sql`SELECT id, parent_id, title, description, color, archived FROM topics WHERE user_id = ${uid} ORDER BY archived, created_at`,
     sql`SELECT t.id, t.topic_id, t.title, t.description, t.status, t.priority,
                to_char(t.due_date, 'YYYY-MM-DD') AS due_date, t.created_at,
                COALESCE(array_agg(tp.person_id) FILTER (WHERE tp.person_id IS NOT NULL), '{}') AS people
@@ -34,6 +34,22 @@ const own = {
   // osoba je opcionalna (null = opća bilješka)
   person: async (id, uid) => { if (id && !(await sql`SELECT 1 FROM people WHERE id = ${id} AND user_id = ${uid}`).length) throw notFound(); },
 };
+// Nadređena tema: mora biti korisnikova i ne smije biti sama tema ni njena podtema (petlja).
+async function parentFor(b, uid, selfId = null) {
+  const pid = Number(b.parent_id) || null;
+  if (!pid) return null;
+  await own.topic(pid, uid);
+  if (selfId) {
+    const [loop] = await sql`
+      WITH RECURSIVE sub AS (
+        SELECT id FROM topics WHERE id = ${selfId} AND user_id = ${uid}
+        UNION SELECT t.id FROM topics t JOIN sub ON t.parent_id = sub.id)
+      SELECT 1 AS x FROM sub WHERE id = ${pid}`;
+    if (loop) throw Object.assign(new Error('Tema ne može biti podtema same sebe'), { status: 400 });
+  }
+  return pid;
+}
+
 // Od zadanih id-eva ljudi zadrži samo one koji pripadaju korisniku.
 const myPeople = async (list, uid) => (list.length
   ? (await sql`SELECT id FROM people WHERE user_id = ${uid} AND id = ANY(${list}::int[])`).map((r) => r.id)
@@ -48,11 +64,19 @@ const ops = {
   deletePerson: (b, uid) => sql`DELETE FROM people WHERE id = ${b.id} AND user_id = ${uid}`,
 
   // --- teme ---
-  addTopic: (b, uid) => sql`INSERT INTO topics (user_id, title, description, color)
-                            VALUES (${uid}, ${txt(b.title)}, ${txt(b.description)}, ${b.color || '#4f6bed'})`,
-  updateTopic: (b, uid) => sql`UPDATE topics SET title = ${txt(b.title)}, description = ${txt(b.description)},
-                               color = ${b.color || '#4f6bed'}, archived = ${!!b.archived}
-                               WHERE id = ${b.id} AND user_id = ${uid}`,
+  addTopic: async (b, uid) => {
+    const parent = await parentFor(b, uid);
+    const [t] = await sql`INSERT INTO topics (user_id, parent_id, title, description, color)
+                          VALUES (${uid}, ${parent}, ${txt(b.title)}, ${txt(b.description)}, ${b.color || '#4f6bed'}) RETURNING id`;
+    return { topic_id: t.id };
+  },
+  updateTopic: async (b, uid) => {
+    await own.topic(b.id, uid);
+    const parent = await parentFor(b, uid, b.id);
+    return sql`UPDATE topics SET title = ${txt(b.title)}, description = ${txt(b.description)}, parent_id = ${parent},
+               color = ${b.color || '#4f6bed'}, archived = ${!!b.archived}
+               WHERE id = ${b.id} AND user_id = ${uid}`;
+  },
   deleteTopic: (b, uid) => sql`DELETE FROM topics WHERE id = ${b.id} AND user_id = ${uid}`,
 
   // --- zadaci ---
@@ -80,6 +104,11 @@ const ops = {
     ]);
   },
   setStatus: (b, uid) => sql`UPDATE tasks SET status = ${b.status} WHERE id = ${b.id} AND user_id = ${uid}`,
+  // Kalendar: novi rok (povlačenjem zadatka na drugi dan); prazno = bez roka.
+  setDue: (b, uid) => {
+    const d = /^\d{4}-\d{2}-\d{2}$/.test(b.due_date || '') ? b.due_date : null;
+    return sql`UPDATE tasks SET due_date = ${d} WHERE id = ${b.id} AND user_id = ${uid}`;
+  },
   deleteTask: (b, uid) => sql`DELETE FROM tasks WHERE id = ${b.id} AND user_id = ${uid}`,
 
   // --- brzi unos (potvrđeni AI prijedlog iz /api/parse) ---
@@ -94,7 +123,18 @@ const ops = {
     let topicId = Number(b.topic_id) || null;
     if (topicId) await own.topic(topicId, uid);
     else {
-      const [t] = await sql`INSERT INTO topics (user_id, title) VALUES (${uid}, ${txt(b.new_topic) || 'Bez teme'}) RETURNING id`;
+      // AI može predložiti novu podtemu postojeće teme: "Sajam › Štand" -> podtema "Štand" pod "Sajam".
+      const parts = String(txt(b.new_topic) || 'Bez teme').split('›').map((x) => x.trim()).filter(Boolean);
+      const title = parts.pop() || 'Bez teme';
+      let parent = null;
+      if (parts.length) {
+        const mine = await sql`SELECT id, parent_id, title FROM topics WHERE user_id = ${uid}`;
+        const byId = Object.fromEntries(mine.map((t) => [t.id, t]));
+        const path = (t, d = 0) => (t.parent_id && byId[t.parent_id] && d < 20 ? path(byId[t.parent_id], d + 1) + ' › ' : '') + t.title;
+        const want = parts.join(' › ').toLowerCase();
+        parent = mine.find((t) => path(t).toLowerCase() === want)?.id || null;
+      }
+      const [t] = await sql`INSERT INTO topics (user_id, parent_id, title) VALUES (${uid}, ${parent}, ${title}) RETURNING id`;
       topicId = t.id;
     }
     const mine = await myPeople(ids(b.people), uid);
@@ -144,7 +184,7 @@ export default async function handler(req, res) {
     }
     const data = await loadAll(me.id);
     data.user = me;
-    if (body?.op === 'quickAdd') data.result = result;
+    if (body?.op === 'quickAdd' || body?.op === 'addTopic') data.result = result;
     return res.status(200).json(data);
   } catch (e) {
     if (!e.status) console.error(e);

@@ -101,6 +101,67 @@
           border-radius: 0 0 var(--radius) var(--radius); background: #fafbfc; }
   .hits > * + * { margin-top: 4px; }
   a { color: var(--accent); }
+
+  /* stablo tema */
+  .side { position: sticky; top: 70px; max-height: calc(100vh - 90px); overflow: auto; }
+  .twisty { width: 14px; flex: none; color: var(--muted); font-size: 11px; text-align: center; }
+  .twisty[data-act]:hover { color: var(--ink); }
+  .crumbs a { color: var(--muted); text-decoration: none; } .crumbs a:hover { color: var(--accent); }
+  .subcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+  .subcard { text-align: left; display: flex; flex-direction: column; gap: 2px; border-left: 4px solid; padding: 8px 10px; background: #fafbfc; }
+
+  /* kalendar */
+  main:has(.cal), main:has(.net-wrap) { max-width: none; padding-bottom: 24px; }
+  .cal { display: flex; flex-direction: column; gap: 10px; }
+  .cal-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+  .cal-title { font-size: 22px; min-width: 180px; text-transform: capitalize; }
+  .cal-wd { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 12px; color: var(--muted); font-weight: 600; padding: 0 4px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: repeat(var(--rows), minmax(118px, 1fr));
+              gap: 4px; min-height: max(560px, calc(100vh - 215px)); }
+  .cal-grid.week { grid-template-rows: 1fr; }
+  .cday { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 4px; overflow: hidden; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .cday.weekend { background: #f8f9fb; } .cday.other { opacity: .45; }
+  .cday.today { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .cday.drop, .cl-day.drop { background: var(--accent-soft); border-color: var(--accent); }
+  .cd-h { display: flex; align-items: center; gap: 4px; font-size: 12px; min-height: 20px; }
+  .cd-n { font-weight: 600; } .cday.today .cd-n { color: var(--accent); }
+  .hol { font-size: 10px; color: var(--danger); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .cd-add { margin-left: auto; padding: 0 6px; line-height: 18px; opacity: 0; } .cday:hover .cd-add { opacity: 1; }
+  .cd-more { padding: 0 4px; text-align: left; color: var(--accent); }
+  .cchip { display: flex; align-items: center; gap: 4px; font-size: 12px; padding: 2px 5px; border-left: 3px solid; border-radius: 4px; cursor: pointer; min-width: 0; }
+  .cchip:hover { filter: brightness(.95); }
+  .cchip .ct { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cchip .ci { display: flex; gap: 1px; flex: none; }
+  .cchip .ci b { font-size: 9px; background: #fff; border-radius: 3px; padding: 0 2px; color: var(--muted); font-weight: 600; }
+  .cchip.st-done .ct { text-decoration: line-through; color: var(--muted); }
+  .cchip.late .ct { color: var(--danger); font-weight: 600; }
+  .cchip.big { flex-direction: column; align-items: stretch; padding: 5px 8px; font-size: 13px; }
+  .cchip.big .ct { white-space: normal; } .cchip .cm { font-size: 11px; color: var(--muted); }
+  .cal-list { display: flex; flex-direction: column; gap: 8px; max-width: 900px; }
+  .cl-day { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; }
+  .cl-day.today { border-color: var(--accent); } .cl-day.late { border-color: #f0c3c3; }
+  .cl-h { font-weight: 600; font-size: 14px; } .cl-day .row .cchip { flex: 1; }
+  .cal-foot { text-align: center; }
+  @media (max-width: 760px) {
+    .cal-grid { height: auto; grid-template-rows: repeat(var(--rows), minmax(84px, auto)); gap: 2px; }
+    .cal-grid.week { grid-template-columns: 1fr; grid-template-rows: none; }
+    .cchip .ci { display: none; } .cday { padding: 2px; } .cchip { font-size: 10px; padding: 1px 3px; }
+    .cd-add { opacity: 1; }
+  }
+
+  /* mreža */
+  .net-wrap { display: flex; flex-direction: column; gap: 10px; }
+  .net-bar { gap: 12px; }
+  .net-stage { position: relative; height: calc(100vh - 190px); min-height: 480px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  #net { position: absolute; inset: 0; }
+  #net-info { position: absolute; top: 10px; right: 10px; width: min(300px, calc(100% - 20px)); box-shadow: 0 6px 20px rgba(20,24,35,.12); display: flex; flex-direction: column; gap: 6px; padding-right: 34px; }
+  #net-info[hidden] { display: none; }
+  .net-x { position: absolute; top: 6px; right: 6px; }
+  .net-help { position: absolute; left: 10px; bottom: 8px; pointer-events: none; }
+  .net-legend { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+  .lg { display: inline-block; width: 10px; height: 10px; margin-left: 6px; }
+  .lg.t { background: var(--accent); border-radius: 50%; } .lg.k { background: #9aa3b5; border-radius: 2px; }
+  .lg.p { background: #8e5bd6; transform: rotate(45deg); } .lg.n { background: #c3c8d4; }
   .colors { display: flex; gap: 6px; }
   .colors label { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
   .colors input { display: none; }
@@ -126,6 +187,12 @@ const S = {
   user: null,                                        // prijavljeni korisnik {id, name, email, is_admin}
   auth: { mode: 'login' },                           // login | setup | signup | reset
   admin: null,                                       // podaci za karticu „Korisnici“
+  collapsed: new Set(JSON.parse(localStorage.getItem('collapsed') || '[]')), // zatvorene grane stabla tema
+  withSub: localStorage.getItem('withSub') !== '0',  // u temi prikaži i zadatke iz podtema
+  cal: { mode: matchMedia('(max-width: 760px)').matches ? 'list' : 'month', anchor: null, person: 0, topic: 0, done: true,
+         ...JSON.parse(localStorage.getItem('cal') || '{}') },   // kalendar
+  net: { tasks: true, done: false, people: true, notes: false, layout: 'cose', topic: 0,
+         ...JSON.parse(localStorage.getItem('net') || '{}') },   // mreža
 };
 const COLORS = ['#4f6bed', '#2f9e6b', '#d98b1a', '#d64545', '#8e5bd6', '#1f9bb3', '#6b7385'];
 const STATUS = { todo: 'Za napraviti', doing: 'U tijeku', done: 'Gotovo' };
@@ -164,7 +231,41 @@ const $ = (sel, el = document) => el.querySelector(sel);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const person = (id) => S.data.people.find((p) => p.id === id);
 const topic = (id) => S.data.topics.find((t) => t.id === id);
-const today = () => new Date().toISOString().slice(0, 10);
+
+/* ---- stablo tema (podteme bilo koje dubine) ---- */
+const childTopics = (id) => S.data.topics.filter((t) => (t.parent_id || null) === (id || null) || (!id && t.parent_id && !topic(t.parent_id)));
+function topicAncestors(t) {            // od korijena do roditelja
+  const out = []; let p = t && topic(t.parent_id);
+  while (p && out.length < 50 && !out.includes(p)) { out.unshift(p); p = topic(p.parent_id); }
+  return out;
+}
+const topicPath = (t) => t ? [...topicAncestors(t), t].map((x) => x.title).join(' › ') : '';
+function topicSubtree(id) {             // id teme + sve podteme
+  const ids = new Set([id]);
+  for (let added = true; added;) {
+    added = false;
+    S.data.topics.forEach((t) => { if (t.parent_id && ids.has(t.parent_id) && !ids.has(t.id)) { ids.add(t.id); added = true; } });
+  }
+  return ids;
+}
+function topicTree() {                  // [{t, depth}] redom kao u stablu
+  const out = [], seen = new Set();
+  const walk = (list, depth) => list.forEach((t) => {
+    if (seen.has(t.id)) return; seen.add(t.id);
+    out.push({ t, depth }); walk(childTopics(t.id), depth + 1);
+  });
+  walk(childTopics(null), 0);
+  S.data.topics.forEach((t) => { if (!seen.has(t.id)) out.push({ t, depth: 0 }); }); // sigurnosna mreža
+  return out;
+}
+// <option> popis tema s uvlakom; exclude = id-evi koje ne nudimo (npr. tema sama i njene podteme)
+const topicOptions = (selected, { exclude = new Set(), hideArchived = false } = {}) => topicTree()
+  .filter(({ t }) => !exclude.has(t.id) && (!hideArchived || !t.archived || t.id === selected))
+  .map(({ t, depth }) => `<option value="${t.id}" ${t.id === selected ? 'selected' : ''}>${'\u2003'.repeat(depth)}${depth ? '└ ' : ''}${esc(t.title)}</option>`).join('');
+const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const parseDate = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const today = () => isoDate(new Date());
 const fmtDate = (d) => d ? d.split('-').reverse().join('.') + '.' : '';
 const fmtTime = (ts) => new Date(ts).toLocaleString('hr-HR', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
 function toast(msg) {
@@ -173,6 +274,10 @@ function toast(msg) {
 }
 function save() {
   localStorage.setItem('view', S.view);
+  localStorage.setItem('collapsed', JSON.stringify([...S.collapsed]));
+  localStorage.setItem('withSub', S.withSub ? '1' : '0');
+  localStorage.setItem('cal', JSON.stringify({ ...S.cal, anchor: null }));
+  localStorage.setItem('net', JSON.stringify(S.net));
   if (S.topicId) localStorage.setItem('topicId', S.topicId);
   if (S.personId) localStorage.setItem('personId', S.personId);
 }
@@ -302,18 +407,20 @@ function render() {
   app.innerHTML = headerView() + `<main>${
     terms().length ? searchView()
       : S.view === 'people' ? peopleView() : S.view === 'person' ? personView()
-      : S.view === 'admin' && S.user?.is_admin ? adminView() : topicsView()
+      : S.view === 'admin' && S.user?.is_admin ? adminView()
+      : S.view === 'calendar' ? calendarView() : S.view === 'network' ? networkView() : topicsView()
   }</main><button class="fab" data-act="quick" title="Brzi unos glasom">🎤</button>`;
 
   Object.entries(drafts).forEach(([id, v]) => { const el = document.getElementById(id); if (el && !el.value) el.value = v; });
   if (active) { const el = document.getElementById(active); if (el) { el.focus(); try { el.setSelectionRange(sel, sel); } catch {} } }
+  if (S.view === 'network' && !terms().length) drawNetwork();
 }
 
 function headerView() {
   const tab = (v, label) => `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}">${label}</button>`;
   return `<header>
     <h1>✅ Delegator</h1>
-    <nav>${tab('topics', 'Teme')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
+    <nav>${tab('topics', 'Teme')}${tab('calendar', '📅 Kalendar')}${tab('network', '🕸 Mreža')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
     <button class="primary" data-act="quick" title="Izdiktiraj ili upiši zadatak, AI ga razvrsta">⚡ Brzi unos</button>
     <input type="search" class="search" id="search" placeholder="Traži kroz sve teme i bilješke…" value="${esc(S.q)}" autocomplete="off">
     <button class="ghost" data-act="userMenu" title="Račun">👤 ${esc(S.user?.name || '')}</button>
@@ -370,35 +477,64 @@ function filtersView() {
 /* ---- Teme ---- */
 function topicsView() {
   const { topics, tasks } = S.data;
-  if (!topic(S.topicId)) S.topicId = topics.find((t) => !t.archived)?.id || topics[0]?.id || null;
-  const list = topics.map((t) => {
-    const open = tasks.filter((k) => k.topic_id === t.id && k.status !== 'done').length;
-    return `<div class="topic-item ${t.id === S.topicId ? 'on' : ''}" data-act="topic" data-id="${t.id}" style="${t.archived ? 'opacity:.5' : ''}">
-      <span class="dot" style="background:${esc(t.color)}"></span><span class="grow">${esc(t.title)}</span><span class="count">${open || ''}</span></div>`;
+  if (!topic(S.topicId)) S.topicId = topics.find((t) => !t.archived && !t.parent_id)?.id || topics[0]?.id || null;
+  const t = topic(S.topicId);
+  // otvori put do odabrane teme
+  if (t) topicAncestors(t).forEach((a) => S.collapsed.delete(a.id));
+  const openIn = (ids) => tasks.filter((k) => ids.has(k.topic_id) && k.status !== 'done').length;
+
+  const rows = [];
+  const walk = (list, depth) => list.forEach((x) => {
+    const kids = childTopics(x.id);
+    const shut = S.collapsed.has(x.id);
+    const n = openIn(topicSubtree(x.id));
+    rows.push(`<div class="topic-item ${x.id === S.topicId ? 'on' : ''}" data-act="topic" data-id="${x.id}"
+        style="padding-left:${6 + depth * 16}px;${x.archived ? 'opacity:.5' : ''}">
+      <span class="twisty" ${kids.length ? `data-act="twisty" data-id="${x.id}" title="${shut ? 'Prikaži' : 'Sakrij'} podteme"` : ''}>${kids.length ? (shut ? '▸' : '▾') : ''}</span>
+      <span class="dot" style="background:${esc(x.color)}"></span><span class="grow">${esc(x.title)}</span><span class="count">${n || ''}</span></div>`);
+    if (!shut) walk(kids, depth + 1);
+  });
+  walk(childTopics(null), 0);
+
+  const side = `<div class="panel stack side">
+      <button class="primary" data-act="newTopic" style="width:100%">+ Nova tema</button>
+      <div>${rows.join('') || '<div class="muted small">Još nema tema.</div>'}</div>
+    </div>`;
+  if (!t) return `<div class="layout">${side}<div class="panel empty">Napravi prvu temu, npr. „Renovacija ureda“ ili „Sajam 2027“.<br>Unutar nje možeš otvoriti podteme.</div></div>`;
+
+  const sub = topicSubtree(t.id);
+  const kids = childTopics(t.id);
+  const inScope = (k) => (S.withSub ? sub.has(k.topic_id) : k.topic_id === t.id);
+  const tt = tasks.filter((k) => inScope(k) && matchesStatus(k) && matchesQuery(k));
+  sortTasks(tt);
+  const crumbs = topicAncestors(t).map((a) => `<a href="#" data-act="topic" data-id="${a.id}">${esc(a.title)}</a> › `).join('');
+  const cards = kids.map((c) => {
+    const ids = topicSubtree(c.id);
+    const all = tasks.filter((k) => ids.has(k.topic_id));
+    const open = all.filter((k) => k.status !== 'done').length;
+    const subN = ids.size - 1;
+    return `<button class="subcard" data-act="topic" data-id="${c.id}" style="border-left-color:${esc(c.color)};${c.archived ? 'opacity:.55' : ''}">
+      <strong>${esc(c.title)}</strong>
+      <span class="muted small">${open} otvorenih / ${all.length}${subN ? ` · ${subN} podtema` : ''}</span></button>`;
   }).join('');
 
-  const side = `<div class="panel stack">
-      <button class="primary" data-act="newTopic" style="width:100%">+ Nova tema</button>
-      <div>${list || '<div class="muted small">Još nema tema.</div>'}</div>
-    </div>`;
-
-  const t = topic(S.topicId);
-  if (!t) return `<div class="layout">${side}<div class="panel empty">Napravi prvu temu, npr. „Renovacija ureda“ ili „Sajam 2027“.</div></div>`;
-
-  const tt = tasks.filter((k) => k.topic_id === t.id && matchesStatus(k) && matchesQuery(k));
-  sortTasks(tt);
   const mainCol = `<div class="stack">
     <div class="panel stack">
+      ${crumbs ? `<div class="small muted crumbs">${crumbs}</div>` : ''}
       <div class="row">
         <span class="dot" style="background:${esc(t.color)};width:14px;height:14px"></span>
         <h2 class="grow">${esc(t.title)}</h2>
+        <button class="ghost" data-act="newSubtopic" data-id="${t.id}" title="Nova podtema unutar ove teme">+ Podtema</button>
         <button class="ghost" data-act="editTopic" data-id="${t.id}">Uredi</button>
       </div>
       ${t.description ? `<div class="muted">${esc(t.description)}</div>` : ''}
+      ${kids.length ? `<div class="subcards">${cards}</div>` : ''}
       ${newTaskForm(t.id)}
     </div>
-    <div class="row">${filtersView()}<span class="muted small" style="margin-left:auto">${tt.length} zadataka</span></div>
-    <div>${tt.map((k) => taskView(k)).join('') || '<div class="panel empty">Nema zadataka za ovaj filter.</div>'}</div>
+    <div class="row">${filtersView()}
+      ${sub.size > 1 ? `<label class="row small muted" style="gap:4px"><input type="checkbox" data-act="withSub" style="width:auto" ${S.withSub ? 'checked' : ''}> i zadaci iz podtema</label>` : ''}
+      <span class="muted small" style="margin-left:auto">${tt.length} zadataka</span></div>
+    <div>${tt.map((k) => taskView(k, { showTopic: S.withSub && k.topic_id !== t.id })).join('') || '<div class="panel empty">Nema zadataka za ovaj filter.</div>'}</div>
   </div>`;
   return `<div class="layout">${side}${mainCol}</div>`;
 }
@@ -438,7 +574,7 @@ function taskView(k, opts = {}) {
     <div class="grow">
       <div class="task-title">${hl(k.title)}</div>
       <div class="row small muted" style="margin-top:4px">
-        ${opts.showTopic && t ? `<span><span class="dot" style="display:inline-block;background:${esc(t.color)}"></span> ${esc(t.title)}</span>` : ''}
+        ${opts.showTopic && t ? `<span><span class="dot" style="display:inline-block;background:${esc(t.color)}"></span> ${hl(topicPath(t))}</span>` : ''}
         ${k.priority !== 'normal' ? `<span class="prio-${k.priority}">${k.priority === 'high' ? '▲ visok' : '▽ nizak'}</span>` : ''}
         ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtDate(k.due_date)}${late ? ' (kasni)' : ''}</span>` : ''}
         ${noteCount ? `<span>📝 ${noteCount}</span>` : ''}
@@ -581,6 +717,293 @@ function personSummary(pid) {
   return mine.length ? out : `${p.name} nema otvorenih zadataka.`;
 }
 
+/* ---- Kalendar ---- */
+const MONTHS = ['siječanj', 'veljača', 'ožujak', 'travanj', 'svibanj', 'lipanj', 'srpanj', 'kolovoz', 'rujan', 'listopad', 'studeni', 'prosinac'];
+const WEEKDAYS = ['Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned'];
+const WEEKDAYS_LONG = ['ponedjeljak', 'utorak', 'srijeda', 'četvrtak', 'petak', 'subota', 'nedjelja'];
+const monday = (d) => addDays(d, -((d.getDay() + 6) % 7));
+
+// Blagdani i neradni dani u Hrvatskoj (Uskrs po gregorijanskom računanju).
+const holidayCache = {};
+function hrHolidays(y) {
+  if (holidayCache[y]) return holidayCache[y];
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25),
+    g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4,
+    l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
+    month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+  const easter = new Date(y, month - 1, day);
+  const fixed = { '01-01': 'Nova godina', '01-06': 'Sveta tri kralja', '05-01': 'Praznik rada', '05-30': 'Dan državnosti',
+    '06-22': 'Dan antifašističke borbe', '08-05': 'Dan pobjede', '08-15': 'Velika Gospa', '11-01': 'Svi sveti',
+    '11-18': 'Dan sjećanja na Vukovar', '12-25': 'Božić', '12-26': 'Sveti Stjepan' };
+  const out = {};
+  Object.entries(fixed).forEach(([md, n]) => { out[`${y}-${md}`] = n; });
+  out[isoDate(easter)] = 'Uskrs'; out[isoDate(addDays(easter, 1))] = 'Uskrsni ponedjeljak'; out[isoDate(addDays(easter, 60))] = 'Tijelovo';
+  return (holidayCache[y] = out);
+}
+const holiday = (iso) => hrHolidays(Number(iso.slice(0, 4)))[iso];
+
+function calTasks() {
+  const c = S.cal;
+  const scope = c.topic && topic(c.topic) ? topicSubtree(c.topic) : null;
+  return S.data.tasks.filter((k) => (c.done || k.status !== 'done')
+    && (!c.person || k.people.includes(c.person)) && (!scope || scope.has(k.topic_id)));
+}
+const initials = (name) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+function calChip(k, big = false) {
+  const t = topic(k.topic_id), col = t?.color || '#6b7385';
+  const late = k.status !== 'done' && k.due_date < today();
+  const ppl = k.people.map(person).filter(Boolean);
+  return `<div class="cchip st-${k.status} ${late ? 'late' : ''} ${big ? 'big' : ''}" draggable="true" data-act="calTask" data-id="${k.id}"
+      style="border-left-color:${esc(col)};background:${esc(col)}1a" title="${esc(k.title)} — ${esc(topicPath(t))}${ppl.length ? ' — ' + esc(ppl.map((p) => p.name).join(', ')) : ''}">
+    <span class="ct">${k.status === 'done' ? '✓ ' : k.priority === 'high' ? '❗' : ''}${esc(k.title)}</span>
+    ${big ? `<span class="cm">${esc(topicPath(t))}${ppl.length ? ' · ' + esc(ppl.map((p) => p.name).join(', ')) : ''}</span>`
+      : ppl.length ? `<span class="ci">${ppl.slice(0, 3).map((p) => `<b title="${esc(p.name)}">${esc(initials(p.name))}</b>`).join('')}</span>` : ''}
+  </div>`;
+}
+function calendarView() {
+  const c = S.cal;
+  const anchor = parseDate(c.anchor || today());
+  const tasks = calTasks();
+  const byDay = {};
+  tasks.forEach((k) => { if (k.due_date) (byDay[k.due_date] ||= []).push(k); });
+  Object.values(byDay).forEach(sortTasks);
+  const noDue = tasks.filter((k) => !k.due_date && k.status !== 'done').length;
+  const td = today();
+
+  let title, body;
+  if (c.mode === 'list') {
+    const late = tasks.filter((k) => k.due_date && k.due_date < td && k.status !== 'done');
+    sortTasks(late);
+    const days = Object.keys(byDay).filter((d) => d >= td).sort().slice(0, 60);
+    title = 'Popis rokova';
+    body = `<div class="cal-list">
+      ${late.length ? `<div class="cl-day late"><div class="cl-h">⚠️ Kasni (${late.length})</div>${late.map((k) => `<div class="row">${calChip(k, true)}<span class="small due late">${fmtDate(k.due_date)}</span></div>`).join('')}</div>` : ''}
+      ${days.map((d) => { const dt = parseDate(d); const h = holiday(d);
+        return `<div class="cl-day ${d === td ? 'today' : ''}" data-day="${d}"><div class="cl-h">${d === td ? 'Danas · ' : ''}${WEEKDAYS_LONG[(dt.getDay() + 6) % 7]}, ${fmtDate(d)}${h ? ` <span class="hol">${esc(h)}</span>` : ''}</div>
+          ${byDay[d].map((k) => calChip(k, true)).join('')}</div>`; }).join('') || '<div class="empty">Nema nadolazećih rokova.</div>'}
+    </div>`;
+  } else {
+    const week = c.mode === 'week';
+    const start = week ? monday(anchor) : monday(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
+    const n = week ? 7 : Math.ceil(((new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0) - start) / 864e5 + 1) / 7) * 7;
+    const max = week ? 99 : Math.max(2, Math.floor((window.innerHeight - 260) / (n / 7) / 24) - 1);
+    title = week ? `${fmtDate(isoDate(start))} – ${fmtDate(isoDate(addDays(start, 6)))}` : `${MONTHS[anchor.getMonth()]} ${anchor.getFullYear()}.`;
+    const cells = [];
+    for (let i = 0; i < n; i++) {
+      const dt = addDays(start, i), d = isoDate(dt), list = byDay[d] || [], h = holiday(d);
+      const other = !week && dt.getMonth() !== anchor.getMonth();
+      cells.push(`<div class="cday ${other ? 'other' : ''} ${d === td ? 'today' : ''} ${i % 7 >= 5 || h ? 'weekend' : ''}" data-day="${d}">
+        <div class="cd-h"><span class="cd-n">${week ? WEEKDAYS[i] + ' ' : ''}${dt.getDate()}.</span>${h ? `<span class="hol" title="${esc(h)}">${esc(h)}</span>` : ''}
+          <button class="ghost cd-add" data-act="calNew" data-day="${d}" title="Novi zadatak s rokom ${fmtDate(d)}">+</button></div>
+        ${list.slice(0, list.length > max ? max - 1 : max).map((k) => calChip(k, week)).join('')}
+        ${list.length > max ? `<button class="ghost small cd-more" data-act="calDay" data-day="${d}">+${list.length - max + 1} više</button>` : ''}
+      </div>`);
+    }
+    body = `${week ? '' : `<div class="cal-wd">${WEEKDAYS.map((w) => `<div>${w}</div>`).join('')}</div>`}
+      <div class="cal-grid ${week ? 'week' : ''}" style="--rows:${n / 7}">${cells.join('')}</div>`;
+  }
+  const mode = (v, l) => `<button class="chip ${c.mode === v ? 'on' : ''}" data-act="calMode" data-v="${v}">${l}</button>`;
+  return `<div class="cal">
+    <div class="panel cal-bar">
+      <div class="row">
+        ${c.mode === 'list' ? '' : `<button data-act="calNav" data-v="-1" title="Prethodno">‹</button><button data-act="calNav" data-v="0">Danas</button><button data-act="calNav" data-v="1" title="Sljedeće">›</button>`}
+        <h2 class="cal-title">${title}</h2>
+      </div>
+      <div class="row">
+        <div class="chips">${mode('month', 'Mjesec')}${mode('week', 'Tjedan')}${mode('list', 'Popis')}</div>
+        <select data-act="calPerson" style="width:auto"><option value="0">Svi ljudi</option>${S.data.people.map((p) => `<option value="${p.id}" ${p.id === c.person ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
+        <select data-act="calTopic" style="width:auto;max-width:220px"><option value="0">Sve teme</option>${topicOptions(c.topic)}</select>
+        <label class="row small muted" style="gap:4px"><input type="checkbox" data-act="calDone" style="width:auto" ${c.done ? 'checked' : ''}> gotovi</label>
+      </div>
+    </div>
+    ${body}
+    <div class="muted small cal-foot">${c.mode === 'list' ? '' : 'Povuci zadatak na drugi dan da mu promijeniš rok · „+“ u danu dodaje zadatak s tim rokom · '}${noDue ? `${noDue} otvorenih zadataka nema rok` : 'Svi otvoreni zadaci imaju rok'}</div>
+  </div>`;
+}
+
+// Detalji zadatka (iz kalendara i mreže)
+function taskInfo(k) {
+  const t = topic(k.topic_id);
+  const late = k.due_date && k.status !== 'done' && k.due_date < today();
+  const notes = S.data.notes.filter((n) => n.task_id === k.id);
+  const dlg = $('#dlg');
+  dlg.innerHTML = `<div class="stack">
+    <div class="small muted"><span class="dot" style="display:inline-block;background:${esc(t?.color)}"></span> ${esc(topicPath(t))}</div>
+    <h2>${esc(k.title)}</h2>
+    <div class="row small">
+      <span class="status st-${k.status}">${STATUS[k.status]}</span>
+      ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtDate(k.due_date)}${late ? ' (kasni)' : ''}</span>` : '<span class="muted">bez roka</span>'}
+      ${k.priority !== 'normal' ? `<span class="prio-${k.priority}">${k.priority === 'high' ? '▲ visok' : '▽ nizak'}</span>` : ''}
+    </div>
+    ${k.people.length ? `<div class="chips">${k.people.map(person).filter(Boolean).map((p) => `<span class="chip static">${esc(p.name)}</span>`).join('')}</div>` : ''}
+    ${k.description ? `<div style="white-space:pre-wrap">${esc(k.description)}</div>` : ''}
+    ${notes.length ? `<div class="notes-block">${notes.map((n) => `<div class="note"><div class="note-body">${n.person_id ? `<strong>${esc(person(n.person_id)?.name)}:</strong> ` : ''}${esc(n.body)}</div><span class="note-time">${fmtTime(n.created_at)}</span></div>`).join('')}</div>` : ''}
+    <div class="row">
+      <button data-act="infoStatus" data-id="${k.id}">${k.status === 'done' ? '↺ Vrati u rad' : '✓ Gotovo'}</button>
+      <button data-act="infoEdit" data-id="${k.id}">✏️ Uredi</button>
+      <button data-act="infoOpen" data-id="${k.id}">Otvori u temi →</button>
+      ${k.people.length ? `<button data-act="mailTask" data-id="${k.id}" data-pid="0">✉️ Pošalji</button>` : ''}
+      <button style="margin-left:auto" onclick="this.closest('dialog').close()">Zatvori</button>
+    </div></div>`;
+  if (!dlg.open) dlg.showModal();
+}
+function dayDialog(d) {
+  const list = calTasks().filter((k) => k.due_date === d);
+  sortTasks(list);
+  const dlg = $('#dlg');
+  dlg.innerHTML = `<div class="stack"><h2>${WEEKDAYS_LONG[(parseDate(d).getDay() + 6) % 7]}, ${fmtDate(d)}</h2>
+    ${holiday(d) ? `<div class="hol">${esc(holiday(d))}</div>` : ''}
+    ${list.map((k) => calChip(k, true)).join('') || '<div class="muted">Nema zadataka.</div>'}
+    <div class="row"><button class="primary" data-act="calNew" data-day="${d}">+ Novi zadatak</button>
+      <button style="margin-left:auto" onclick="this.closest('dialog').close()">Zatvori</button></div></div>`;
+  if (!dlg.open) dlg.showModal();
+}
+function newTaskOnDay(d) {
+  if (!S.data.topics.length) return toast('Prvo napravi temu u kartici „Teme“');
+  const def = S.cal.topic || S.topicId || S.data.topics[0].id;
+  openDialog(`<h2>Novi zadatak · rok ${fmtDate(d)}</h2>
+    <div class="with-mic"><input id="cn-title" name="title" required placeholder="Što treba napraviti?">${micBtn('cn-title')}</div>
+    <select name="topic_id">${topicOptions(def, { hideArchived: true })}</select>
+    ${peopleChips('people', S.cal.person ? [S.cal.person] : [])}
+    <div class="row"><select name="priority" style="width:auto"><option value="normal">Prioritet: normalan</option><option value="high">Prioritet: visok</option><option value="low">Prioritet: nizak</option></select>
+      <input type="date" name="due_date" value="${d}" style="width:auto"></div>`,
+    (fd, form) => run('addTask', { ...Object.fromEntries(fd), topic_id: Number(fd.get('topic_id')), people: selectedChips(form) }));
+  setTimeout(() => $('#cn-title')?.focus(), 50);
+}
+
+/* ---- Mreža: teme, podteme, zadaci, ljudi i bilješke kao jedan sustav ---- */
+let cyLib = null, cy = null;
+function loadCytoscape() {
+  return cyLib ||= new Promise((ok, fail) => {
+    const sc = document.createElement('script');
+    sc.src = '/vendor/cytoscape.min.js'; sc.onload = () => ok(window.cytoscape); sc.onerror = () => fail(new Error('Mreža se nije učitala'));
+    document.head.appendChild(sc);
+  });
+}
+function networkView() {
+  const n = S.net;
+  const box = (k, l) => `<label class="row small" style="gap:4px"><input type="checkbox" data-act="netOpt" data-k="${k}" style="width:auto" ${n[k] ? 'checked' : ''}> ${l}</label>`;
+  return `<div class="net-wrap">
+    <div class="panel row net-bar">
+      <select data-act="netTopic" style="width:auto;max-width:220px"><option value="0">Sve teme</option>${topicOptions(n.topic)}</select>
+      ${box('tasks', 'zadaci')}${box('done', 'gotovi')}${box('people', 'ljudi')}${box('notes', 'bilješke')}
+      <select data-act="netLayout" style="width:auto">
+        <option value="cose" ${n.layout === 'cose' ? 'selected' : ''}>Raspored: mreža</option>
+        <option value="breadthfirst" ${n.layout === 'breadthfirst' ? 'selected' : ''}>Raspored: stablo</option>
+        <option value="concentric" ${n.layout === 'concentric' ? 'selected' : ''}>Raspored: krugovi</option>
+      </select>
+      <button data-act="netFit" title="Prikaži cijelu mrežu">⤢ Cijela mreža</button>
+      <span class="muted small net-legend"><i class="lg t"></i>tema <i class="lg k"></i>zadatak <i class="lg p"></i>osoba <i class="lg n"></i>bilješka</span>
+    </div>
+    <div class="net-stage"><div id="net"></div><div id="net-info" class="panel" hidden></div>
+      <div class="net-help muted small">Kotačić/prsti = zum · povuci = pomicanje · klik = detalji i povezano</div></div>
+  </div>`;
+}
+function netElements() {
+  const n = S.net, els = [];
+  const scope = n.topic && topic(n.topic) ? topicSubtree(n.topic) : null;
+  const topics = S.data.topics.filter((t) => !scope || scope.has(t.id));
+  const tids = new Set(topics.map((t) => t.id));
+  topics.forEach((t) => {
+    const size = 28 + Math.min(40, (topicSubtree(t.id).size - 1) * 6 + S.data.tasks.filter((k) => k.topic_id === t.id).length * 2);
+    els.push({ data: { id: 't' + t.id, kind: 'topic', ref: t.id, label: t.title, color: t.color || '#4f6bed', size, level: 3 } });
+    if (t.parent_id && tids.has(t.parent_id)) els.push({ data: { id: `e-t${t.parent_id}-t${t.id}`, source: 't' + t.parent_id, target: 't' + t.id, kind: 'sub' } });
+  });
+  if (!n.tasks) return els;
+  const tasks = S.data.tasks.filter((k) => tids.has(k.topic_id) && (n.done || k.status !== 'done'));
+  const pids = new Set();
+  tasks.forEach((k) => {
+    const late = k.due_date && k.status !== 'done' && k.due_date < today();
+    const label = k.title.length > 32 ? k.title.slice(0, 30) + '…' : k.title;
+    els.push({ data: { id: 'k' + k.id, kind: 'task', ref: k.id, label, status: k.status, late: late ? 1 : 0, level: 2 } });
+    els.push({ data: { id: `e-t${k.topic_id}-k${k.id}`, source: 't' + k.topic_id, target: 'k' + k.id, kind: 'has' } });
+    if (n.people) k.people.forEach((pid) => { pids.add(pid); els.push({ data: { id: `e-k${k.id}-p${pid}`, source: 'k' + k.id, target: 'p' + pid, kind: 'who' } }); });
+    if (n.notes) S.data.notes.filter((x) => x.task_id === k.id).forEach((x) => {
+      els.push({ data: { id: 'n' + x.id, kind: 'note', ref: x.id, label: x.body.length > 26 ? x.body.slice(0, 24) + '…' : x.body, level: 1 } });
+      els.push({ data: { id: `e-n${x.id}`, source: 'k' + k.id, target: 'n' + x.id, kind: 'note' } });
+      if (n.people && x.person_id && k.people.includes(x.person_id)) els.push({ data: { id: `e-n${x.id}-p`, source: 'n' + x.id, target: 'p' + x.person_id, kind: 'notefor' } });
+    });
+  });
+  S.data.people.filter((p) => pids.has(p.id)).forEach((p) => els.push({ data: { id: 'p' + p.id, kind: 'person', ref: p.id, label: p.name, level: 0 } }));
+  return els;
+}
+const NET_STYLE = [
+  { selector: 'node', style: { label: 'data(label)', 'font-size': 11, color: '#1d2330', 'text-valign': 'bottom', 'text-margin-y': 4,
+    'text-wrap': 'ellipsis', 'text-max-width': 140, 'min-zoomed-font-size': 7, 'text-background-color': '#fff', 'text-background-opacity': 0.7, 'text-background-padding': 1 } },
+  { selector: 'node[kind="topic"]', style: { 'background-color': 'data(color)', width: 'data(size)', height: 'data(size)', 'font-size': 13, 'font-weight': 600, 'border-width': 3, 'border-color': '#fff' } },
+  { selector: 'node[kind="task"]', style: { shape: 'round-rectangle', width: 16, height: 12, 'background-color': '#9aa3b5' } },
+  { selector: 'node[status="doing"]', style: { 'background-color': '#e9a23b' } },
+  { selector: 'node[status="done"]', style: { 'background-color': '#2f9e6b', opacity: 0.6 } },
+  { selector: 'node[late=1]', style: { 'border-width': 3, 'border-color': '#d64545', color: '#d64545' } },
+  { selector: 'node[kind="person"]', style: { shape: 'diamond', width: 26, height: 26, 'background-color': '#8e5bd6', 'font-weight': 600 } },
+  { selector: 'node[kind="note"]', style: { shape: 'tag', width: 10, height: 10, 'background-color': '#c3c8d4', 'font-size': 9, color: '#6b7385' } },
+  { selector: 'edge', style: { width: 1.2, 'line-color': '#cfd4de', 'curve-style': 'bezier' } },
+  { selector: 'edge[kind="sub"]', style: { width: 3, 'line-color': '#9aa6d8', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#9aa6d8' } },
+  { selector: 'edge[kind="who"]', style: { 'line-color': '#c9b3ea' } },
+  { selector: 'edge[kind="note"], edge[kind="notefor"]', style: { 'line-style': 'dashed', 'line-color': '#dde1e8' } },
+  { selector: '.faded', style: { opacity: 0.12 } },
+  { selector: 'node:selected', style: { 'overlay-color': '#4f6bed', 'overlay-opacity': 0.15, 'overlay-padding': 6 } },
+];
+async function drawNetwork() {
+  const el = document.getElementById('net');
+  if (!el) return;
+  let lib;
+  try { lib = await loadCytoscape(); } catch (e) { el.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  if (!document.body.contains(el)) return;
+  const els = netElements();
+  if (!els.length) { el.innerHTML = '<div class="empty">Još nema tema. Napravi ih u kartici „Teme“.</div>'; return; }
+  const key = JSON.stringify([S.net, els.map((x) => x.data.id)]);
+  const cached = S.netCache?.key === key ? S.netCache.pos : null;
+  cy?.destroy();
+  cy = lib({ container: el, elements: els, style: NET_STYLE, wheelSensitivity: 0.25, minZoom: 0.1, maxZoom: 3 });
+  const roots = cy.nodes('[kind="topic"]').filter((nd) => nd.incomers('edge[kind="sub"]').empty());
+  const layout = cached ? { name: 'preset', positions: (nd) => cached[nd.id()] }
+    : S.net.layout === 'breadthfirst' ? { name: 'breadthfirst', directed: true, roots, spacingFactor: 1.1, animate: false }
+    : S.net.layout === 'concentric' ? { name: 'concentric', concentric: (nd) => nd.data('level'), levelWidth: () => 1, minNodeSpacing: 18, animate: false }
+    : { name: 'cose', animate: false, nodeRepulsion: () => 26000, nodeOverlap: 20, idealEdgeLength: (ed) => (ed.data('kind') === 'sub' ? 150 : 85),
+        componentSpacing: 120, gravity: 0.35, numIter: 2500, randomize: true, padding: 30 };
+  cy.layout(layout).run();
+  if (cached && S.netCache.view) cy.viewport(S.netCache.view); else cy.fit(undefined, 30);
+  const remember = () => {
+    const pos = {}; cy.nodes().forEach((nd) => { pos[nd.id()] = { ...nd.position() }; });
+    S.netCache = { key, pos, view: { zoom: cy.zoom(), pan: { ...cy.pan() } } };
+  };
+  remember();
+  cy.on('dragfree viewport', remember);
+  cy.on('tap', 'node', (e) => netSelect(e.target));
+  cy.on('tap', (e) => { if (e.target === cy) { cy.elements().removeClass('faded'); $('#net-info').hidden = true; } });
+}
+function netSelect(nd) {
+  const near = nd.closedNeighborhood();
+  if (nd.data('kind') === 'topic') near.merge(nd.successors()); // tema: sve ispod nje
+  cy.elements().addClass('faded'); near.removeClass('faded');
+  const box = $('#net-info'), ref = nd.data('ref');
+  let html = '';
+  if (nd.data('kind') === 'topic') {
+    const t = topic(ref), ids = topicSubtree(ref), all = S.data.tasks.filter((k) => ids.has(k.topic_id));
+    html = `<div class="small muted">Tema</div><h3>${esc(topicPath(t))}</h3>
+      <div class="small">${all.filter((k) => k.status !== 'done').length} otvorenih / ${all.length} zadataka${ids.size > 1 ? ` · ${ids.size - 1} podtema` : ''}</div>
+      <div class="row"><button data-act="topic" data-id="${ref}">Otvori temu →</button><button data-act="netFocus" data-id="${ref}">Samo ova grana</button></div>`;
+  } else if (nd.data('kind') === 'task') {
+    const k = S.data.tasks.find((x) => x.id === ref);
+    html = `<div class="small muted">Zadatak · ${esc(topicPath(topic(k.topic_id)))}</div><h3>${esc(k.title)}</h3>
+      <div class="small">${STATUS[k.status]}${k.due_date ? ` · rok ${fmtDate(k.due_date)}` : ''}${k.people.length ? ' · ' + esc(k.people.map((i) => person(i)?.name).join(', ')) : ''}</div>
+      <div class="row"><button data-act="calTask" data-id="${ref}">Detalji</button></div>`;
+  } else if (nd.data('kind') === 'person') {
+    const p = person(ref), mine = S.data.tasks.filter((k) => k.people.includes(ref));
+    html = `<div class="small muted">Osoba</div><h3>${esc(p.name)}</h3>
+      <div class="small">${mine.filter((k) => k.status !== 'done').length} otvorenih / ${mine.length} zadataka${p.email ? ' · ' + esc(p.email) : ''}</div>
+      <div class="row"><button data-act="openPerson" data-id="${ref}">Zadaci osobe →</button></div>`;
+  } else {
+    const x = S.data.notes.find((y) => y.id === ref);
+    html = `<div class="small muted">Bilješka${x.person_id ? ' za ' + esc(person(x.person_id)?.name) : ''}</div>
+      <div style="white-space:pre-wrap">${esc(x.body)}</div>
+      <div class="row"><button data-act="calTask" data-id="${x.task_id}">Zadatak</button></div>`;
+  }
+  box.innerHTML = html + `<button class="ghost net-x" data-act="netClose" title="Zatvori">✕</button>`;
+  box.hidden = false;
+}
+
 /* ---- Korisnici (samo administrator) ---- */
 async function loadAdmin() {
   try { S.admin = { ...S.admin, ...(await authOp('listUsers')) }; } catch (e) { toast(e.message); }
@@ -641,19 +1064,25 @@ function colorPicker(current) {
   return `<div class="colors">${COLORS.map((c, i) => `<input type="radio" name="color" id="c${i}" value="${c}" ${c === current ? 'checked' : ''}>
     <label for="c${i}" style="background:${c}"></label>`).join('')}</div>`;
 }
-function topicDialog(t) {
-  openDialog(`<h2>${t ? 'Uredi temu' : 'Nova tema'}</h2>
+function topicDialog(t, parentId = null) {
+  const exclude = t ? topicSubtree(t.id) : new Set();
+  const parentSel = t ? t.parent_id : parentId;
+  const subCount = t ? topicSubtree(t.id).size - 1 : 0;
+  const taskCount = t ? S.data.tasks.filter((k) => topicSubtree(t.id).has(k.topic_id)).length : 0;
+  openDialog(`<h2>${t ? 'Uredi temu' : parentId ? `Nova podtema u „${esc(topic(parentId)?.title)}“` : 'Nova tema'}</h2>
+    <label class="small muted">Nadređena tema</label>
+    <select name="parent_id"><option value="">— glavna tema (bez nadređene) —</option>${topicOptions(parentSel, { exclude })}</select>
     <div class="with-mic"><input id="dt-title" name="title" required placeholder="Naziv teme" value="${esc(t?.title)}">${micBtn('dt-title')}</div>
     <div class="with-mic"><textarea id="dt-desc" name="description" placeholder="Opis (nije obavezno)">${esc(t?.description)}</textarea>${micBtn('dt-desc')}</div>
-    ${colorPicker(t?.color || COLORS[S.data.topics.length % COLORS.length])}
+    ${colorPicker(t?.color || topic(parentId)?.color || COLORS[S.data.topics.length % COLORS.length])}
     ${t ? `<label class="row small"><input type="checkbox" name="archived" style="width:auto" ${t.archived ? 'checked' : ''}> Arhivirana</label>
-      <button type="button" class="danger" data-act="delTopic" data-id="${t.id}">Obriši temu i sve njene zadatke</button>` : ''}`,
+      <button type="button" class="danger" data-act="delTopic" data-id="${t.id}">Obriši temu${subCount ? `, ${subCount} podtema` : ''} i ${taskCount} zadataka</button>` : ''}`,
     async (fd) => {
       const body = Object.fromEntries(fd);
       if (t) await run('updateTopic', { ...body, id: t.id, archived: fd.has('archived') });
       else {
-        await run('addTopic', body);
-        S.topicId = Math.max(...S.data.topics.map((x) => x.id)); save(); render();
+        const data = await api({ op: 'addTopic', ...body }).catch(() => null);
+        if (data?.result) { S.topicId = data.result.topic_id; S.view = 'topics'; save(); render(); }
       }
     });
 }
@@ -667,7 +1096,8 @@ function taskDialog(k) {
       <select name="priority" style="width:auto">${Object.entries(PRIO).map(([v, l]) => `<option value="${v}" ${v === k.priority ? 'selected' : ''}>${l}</option>`).join('')}</select>
       <input type="date" name="due_date" value="${k.due_date || ''}" style="width:auto">
     </div>
-    <select name="topic_id">${S.data.topics.map((t) => `<option value="${t.id}" ${t.id === k.topic_id ? 'selected' : ''}>Tema: ${esc(t.title)}</option>`).join('')}</select>
+    <label class="small muted">Tema</label>
+    <select name="topic_id">${topicOptions(k.topic_id)}</select>
     <button type="button" class="danger" data-act="delTask" data-id="${k.id}">Obriši zadatak</button>`,
     (fd, form) => run('updateTask', { ...Object.fromEntries(fd), id: k.id, topic_id: Number(fd.get('topic_id')), people: selectedChips(form) }));
 }
@@ -746,8 +1176,7 @@ function quickStep1(text = '') {
 
 function quickStep2(text, p) {
   const dlg = $('#dlg');
-  const topicOpts = S.data.topics.filter((t) => !t.archived || t.id === p.topic_id).map((t) =>
-    `<option value="${t.id}" ${t.id === p.topic_id ? 'selected' : ''}>${esc(t.title)}</option>`).join('');
+  const topicOpts = topicOptions(p.topic_id, { hideArchived: true });
   const newTopic = p.new_topic || (!p.topic_id && !S.data.topics.length ? 'Opće' : null);
   const fallbackTopic = !p.topic_id && !newTopic ? (S.topicId || S.data.topics[0]?.id) : null;
   const chips = S.data.people.map((x) =>
@@ -810,7 +1239,9 @@ function quickStep2(text, p) {
 document.addEventListener('click', async (e) => {
   const el = e.target.closest('[data-act], [data-mic]');
   if (!el) return;
+  if (el.tagName === 'A' && el.getAttribute('href') === '#') e.preventDefault();
   if (el.dataset.mic) { e.preventDefault(); return toggleMic(el); }
+  if (el.tagName === 'SELECT') return; // padajući izbornici se obrađuju na 'change'
   const id = Number(el.dataset.id);
   const act = el.dataset.act;
   if (act !== 'toggle') e.stopPropagation();
@@ -818,6 +1249,33 @@ document.addEventListener('click', async (e) => {
     case 'view': S.view = el.dataset.v; S.q = ''; if (S.view === 'admin') S.admin = null; save(); return render();
     case 'topic': S.topicId = id; S.view = 'topics'; S.q = ''; save(); return render();
     case 'clearSearch': S.q = ''; return render();
+    case 'calMode': S.cal.mode = el.dataset.v; save(); return render();
+    case 'calNav': {
+      const v = Number(el.dataset.v), a = parseDate(S.cal.anchor || today());
+      S.cal.anchor = v === 0 ? today() : isoDate(S.cal.mode === 'week' ? addDays(a, 7 * v) : new Date(a.getFullYear(), a.getMonth() + v, 1));
+      return render();
+    }
+    case 'calDone': S.cal.done = el.checked; save(); return render();
+    case 'calTask': { const k = S.data.tasks.find((x) => x.id === id); return k && taskInfo(k); }
+    case 'calDay': return dayDialog(el.dataset.day);
+    case 'calNew': if ($('#dlg').open) $('#dlg').close(); return newTaskOnDay(el.dataset.day);
+    case 'infoStatus': {
+      const k = S.data.tasks.find((x) => x.id === id);
+      await run('setStatus', { id, status: k.status === 'done' ? 'todo' : 'done' });
+      const k2 = S.data.tasks.find((x) => x.id === id); if (k2 && $('#dlg').open) taskInfo(k2);
+      return;
+    }
+    case 'infoEdit': $('#dlg').close(); return taskDialog(S.data.tasks.find((x) => x.id === id));
+    case 'infoOpen': {
+      const k = S.data.tasks.find((x) => x.id === id);
+      $('#dlg').close(); S.view = 'topics'; S.topicId = k.topic_id; S.open.add(id); S.statusFilter = k.status === 'done' ? 'all' : S.statusFilter; S.q = '';
+      save(); render(); setTimeout(() => document.querySelector(`.task-head[data-id="${id}"]`)?.scrollIntoView({ block: 'center' }), 30);
+      return;
+    }
+    case 'netOpt': S.net[el.dataset.k] = el.checked; save(); return render();
+    case 'netFit': return cy?.fit(undefined, 30);
+    case 'netFocus': S.net.topic = id; save(); return render();
+    case 'netClose': cy?.elements().removeClass('faded'); $('#net-info').hidden = true; return;
     case 'mailTask': return mailTask(id, Number(el.dataset.pid) || null);
     case 'mailPerson': {
       const p = person(id);
@@ -860,8 +1318,17 @@ document.addEventListener('click', async (e) => {
     case 'chip': el.classList.toggle('on'); el.dataset.manual = '1'; return;
     case 'quick': return quickStep1();
     case 'newTopic': return topicDialog(null);
+    case 'newSubtopic': return topicDialog(null, id);
+    case 'twisty': S.collapsed.has(id) ? S.collapsed.delete(id) : S.collapsed.add(id); save(); return render();
+    case 'withSub': S.withSub = el.checked; save(); return render();
     case 'editTopic': return topicDialog(topic(id));
-    case 'delTopic': if (confirm('Obrisati temu sa svim zadacima i bilješkama?')) { $('#dlg').close(); S.topicId = null; run('deleteTopic', { id }); } return;
+    case 'delTopic': {
+      const n = topicSubtree(id).size - 1;
+      if (confirm(`Obrisati temu${n ? ` i ${n} podtema` : ''} sa svim zadacima i bilješkama? Ovo se ne može vratiti.`)) {
+        $('#dlg').close(); S.topicId = topic(id)?.parent_id || null; run('deleteTopic', { id });
+      }
+      return;
+    }
     case 'editTask': return taskDialog(S.data.tasks.find((x) => x.id === id));
     case 'delTask': if (confirm('Obrisati zadatak i njegove bilješke?')) { $('#dlg').close(); run('deleteTask', { id }); } return;
     case 'editNote': return noteDialog(S.data.notes.find((x) => x.id === id));
@@ -879,7 +1346,12 @@ document.addEventListener('click', async (e) => {
 });
 
 document.addEventListener('change', (e) => {
-  if (e.target.dataset.act === 'pickPerson') { S.personId = Number(e.target.value); save(); render(); }
+  const act = e.target.dataset.act, v = Number(e.target.value);
+  if (act === 'pickPerson') { S.personId = v; save(); render(); }
+  if (act === 'calPerson') { S.cal.person = v; save(); render(); }
+  if (act === 'calTopic') { S.cal.topic = v; save(); render(); }
+  if (act === 'netTopic') { S.net.topic = v; save(); render(); }
+  if (act === 'netLayout') { S.net.layout = e.target.value; S.netCache = null; save(); render(); }
 });
 
 document.addEventListener('input', (e) => {
@@ -895,6 +1367,32 @@ document.addEventListener('input', (e) => {
     });
   }
 });
+
+// Kalendar: povuci zadatak na drugi dan = novi rok
+let dragTask = null;
+document.addEventListener('dragstart', (e) => {
+  const chip = e.target.closest?.('.cchip');
+  if (!chip) return;
+  dragTask = Number(chip.dataset.id);
+  e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(dragTask));
+});
+document.addEventListener('dragover', (e) => {
+  const day = dragTask && e.target.closest?.('[data-day].cday, [data-day].cl-day');
+  if (!day) return;
+  e.preventDefault();
+  document.querySelectorAll('.drop').forEach((x) => x !== day && x.classList.remove('drop'));
+  day.classList.add('drop');
+});
+document.addEventListener('drop', (e) => {
+  const day = dragTask && e.target.closest?.('[data-day].cday, [data-day].cl-day');
+  if (!day) return;
+  e.preventDefault();
+  const id = dragTask; dragTask = null;
+  const k = S.data.tasks.find((x) => x.id === id);
+  if (k && k.due_date !== day.dataset.day) run('setDue', { id, due_date: day.dataset.day }).then(() => toast(`Rok: ${fmtDate(day.dataset.day)}`));
+  else render();
+});
+document.addEventListener('dragend', () => { dragTask = null; document.querySelectorAll('.drop').forEach((x) => x.classList.remove('drop')); });
 
 // Enter u bilješci = spremi (Shift+Enter = novi red); Esc u tražilici = očisti
 document.addEventListener('keydown', (e) => {

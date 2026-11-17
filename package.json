@@ -6,12 +6,16 @@
   "description": "Teme → zadaci → ljudi s bilješkama. Neon Postgres + Vercel.",
   "scripts": {
     "dev": "node --env-file=.env dev-server.mjs",
-    "migrate": "node --env-file=.env migrate.mjs"
+    "migrate": "node --env-file=.env migrate.mjs",
+    "vendor": "cp node_modules/cytoscape/dist/cytoscape.min.js vendor/"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "cytoscape": "^3.35.0"
   }
 }

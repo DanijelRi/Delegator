@@ -67,8 +67,12 @@ export default async function handler(req, res) {
 
     const [people, topics] = await Promise.all([
       sql`SELECT id, name, role FROM people WHERE user_id = ${me.id} ORDER BY name`,
-      sql`SELECT id, title FROM topics WHERE user_id = ${me.id} AND NOT archived ORDER BY created_at`,
+      sql`SELECT id, parent_id, title FROM topics WHERE user_id = ${me.id} AND NOT archived ORDER BY created_at`,
     ]);
+    // Puni put teme (Sajam › Štand) da AI razlikuje istoimene podteme.
+    const byId = Object.fromEntries(topics.map((t) => [t.id, t]));
+    const path = (t, depth = 0) => (t.parent_id && byId[t.parent_id] && depth < 20 ? path(byId[t.parent_id], depth + 1) + ' › ' : '') + t.title;
+    topics.forEach((t) => { t.path = path(t); });
 
     // Na Vercelu OIDC token u produkciji stiže u zaglavlju zahtjeva, a ne u env varijabli.
     const key = process.env.AI_GATEWAY_API_KEY || req.headers['x-vercel-oidc-token'] || process.env.VERCEL_OIDC_TOKEN;
@@ -79,7 +83,7 @@ export default async function handler(req, res) {
       'Iz nje izvuci JEDAN zadatak i pozovi alat predlozi_zadatak.',
       `Današnji datum: ${todayInfo()}. "Do petka" znači najbliži idući petak (ako je danas petak, onda danas). "Sutra", "za tjedan dana", "do kraja mjeseca" izračunaj od današnjeg datuma.`,
       `Postojeće osobe: ${people.map((p) => p.name + (p.role ? ` (${p.role})` : '')).join(', ') || 'nema'}.`,
-      `Postojeće teme: ${topics.map((t) => t.title).join(' | ') || 'nema'}.`,
+      `Postojeće teme (podteme su zapisane kao "Tema › Podtema"; u odgovoru navedi točan zapis s popisa): ${topics.map((t) => t.path).join(' | ') || 'nema'}.`,
       body.topic_hint ? `Korisnik je trenutno u temi: "${body.topic_hint}" — koristi je ako rečenica ne upućuje na drugu temu.` : '',
       'Iznose, budžete, kontakte i upute stavi u bilješke za zaduženu osobu, ne u naslov.',
     ].filter(Boolean).join('\n');
@@ -130,7 +134,7 @@ export function normalize(raw, people, topics) {
     if (p) { if (!known.includes(p.id)) known.push(p.id); }
     else if (name && !unknown.includes(name.trim())) unknown.push(name.trim());
   }
-  const topic = topics.find((t) => norm(t.title) === norm(raw.topic));
+  const topic = topics.find((t) => norm(t.path || t.title) === norm(raw.topic)) || topics.find((t) => norm(t.title) === norm(raw.topic));
   return {
     topic_id: topic?.id || null,
     new_topic: !topic && raw.topic ? String(raw.topic).trim() : null,

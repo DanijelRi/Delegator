@@ -17,6 +17,14 @@ http.createServer(async (req, res) => {
     res.json = (obj) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(obj)); };
     return handler(req, res);
   }
+  // statične biblioteke (kopije iz node_modules, vidi `npm run vendor`)
+  const m = req.url.match(/^\/vendor\/([\w.-]+\.js)$/);
+  if (m) {
+    try {
+      res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+      return res.end(await readFile(new URL(`./vendor/${m[1]}`, import.meta.url)));
+    } catch { res.statusCode = 404; return res.end(); }
+  }
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.end(await readFile(new URL('./index.html', import.meta.url)));
 }).listen(port, () => console.log(`Delegator: http://localhost:${port}`));

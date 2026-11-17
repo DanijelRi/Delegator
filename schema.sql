@@ -100,3 +100,8 @@ CREATE INDEX IF NOT EXISTS notes_user_idx  ON notes (user_id);
 
 -- E-mail osobe kojoj se delegira (za gumb „Pošalji mailom“).
 ALTER TABLE people ADD COLUMN IF NOT EXISTS email text;
+
+-- Podteme: tema može imati nadređenu temu (stablo bilo koje dubine).
+-- Brisanje teme briše i njene podteme sa zadacima (sučelje to jasno najavi prije brisanja).
+ALTER TABLE topics ADD COLUMN IF NOT EXISTS parent_id int REFERENCES topics(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS topics_parent_idx ON topics (parent_id);
