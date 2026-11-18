@@ -918,6 +918,7 @@ function calendarView() {
         <select data-act="calPerson" style="width:auto"><option value="0">Svi ljudi</option>${S.data.people.map((p) => `<option value="${p.id}" ${p.id === c.person ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
         <select data-act="calTopic" style="width:auto;max-width:220px"><option value="0">Sve teme</option>${topicOptions(c.topic)}</select>
         <label class="row small muted" style="gap:4px"><input type="checkbox" data-act="calDone" style="width:auto" ${c.done ? 'checked' : ''}> gotovi</label>
+        <button class="primary" data-act="ical" title="Rokovi iz Delegatora u kalendaru na mobitelu (Google / Apple)">📲 Dodaj u Google/Apple kalendar</button>
       </div>
     </div>
     ${body}
@@ -1526,7 +1527,7 @@ document.addEventListener('click', async (e) => {
     case 'calList': S.view = 'calendar'; S.cal.mode = 'list'; save(); return render();
     case 'boardNew': return newTaskOnDay('');
     case 'boardAllDone': S.board.allDone = true; save(); return render();
-    case 'ical': $('#dlg').close(); return icalDialog();
+    case 'ical': if ($('#dlg').open) $('#dlg').close(); return icalDialog();
     case 'install': $('#dlg').close(); if (installEvt) { installEvt.prompt(); installEvt = null; } return;
     case 'icalReset': if (confirm('Napraviti novu poveznicu? Stara odmah prestaje raditi, pa ćeš se u kalendaru morati ponovno pretplatiti.')) return icalDialog(true); return;
     case 'calNav': {
