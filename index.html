@@ -195,6 +195,34 @@
   /* navigacija: na mobitelu se kartice pomiču vodoravno */
   @media (max-width: 760px) { nav { overflow-x: auto; flex-wrap: nowrap; max-width: 100%; scrollbar-width: none; } nav button { white-space: nowrap; } header h1 { width: 100%; } }
 
+  /* prilozi */
+  .atts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; white-space: normal; }
+  .atts.small { margin-top: 4px; }
+  .att { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 3px 4px 3px 8px; font-size: 13px; max-width: 100%; }
+  .att a { text-decoration: none; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+  .att a.muted { color: var(--muted); } .att .ghost { padding: 0 6px; }
+  .att-img { padding: 0; border-radius: 8px; overflow: hidden; width: 76px; height: 76px; border: 1px solid var(--line); background: #f1f3f6; }
+  .atts.small .att-img { width: 52px; height: 52px; }
+  .att-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .attach-btn { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); font-size: 13px; padding: 4px 8px; border-radius: 8px; border: 1px dashed var(--line); background: transparent; white-space: nowrap; }
+  .attach-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .attach-btn.mic { border-style: solid; justify-content: center; font-size: 17px; padding: 0; }
+  .note .attach-btn { border: 0; padding: 2px 6px; }
+  .task-files { gap: 8px; }
+  [data-dropzone].drop, form.drop { outline: 2px dashed var(--accent); outline-offset: 2px; background: var(--accent-soft); }
+  .lightbox { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px; background: #f1f3f6; }
+  dialog:has(.lightbox) { width: min(1000px, 96vw); }
+
+  /* osobne bilješke */
+  .pgrid { columns: 3 280px; column-gap: 12px; }
+  .pcard { break-inside: avoid; margin-bottom: 12px; border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .pcard .pbody { white-space: pre-wrap; word-break: break-word; }
+  .pcard button.on { filter: none; } .pcard button:not(.on)[data-act=pinPnote] { filter: grayscale(1); opacity: .5; }
+  .pfoot { gap: 2px; } .pfoot .attach-btn { border: 0; }
+  .pcolors label { width: 22px; height: 22px; border: 1px solid var(--line); }
+  .pcolors input:checked + label { border: 2px solid var(--ink); }
+  .pres { display: block; width: 100%; text-align: left; border: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
   /* mreža */
   .net-wrap { display: flex; flex-direction: column; gap: 10px; }
   .net-bar { gap: 12px; }
@@ -221,7 +249,7 @@
 <script>
 /* ========= stanje ========= */
 const S = {
-  data: { people: [], topics: [], tasks: [], notes: [] },
+  data: { people: [], topics: [], tasks: [], notes: [], pnotes: [], attachments: [] },
   view: localStorage.getItem('view') || 'overview', // overview | topics | board | calendar | network | person | people | admin
   topicId: Number(localStorage.getItem('topicId')) || null,
   personId: Number(localStorage.getItem('personId')) || null,
@@ -373,7 +401,8 @@ function matchesQuery(task) {
   const ts = terms();
   if (!ts.length) return true;
   const hay = [task.title, task.description, topic(task.topic_id)?.title, ...task.people.map((id) => person(id)?.name),
-    ...S.data.notes.filter((n) => n.task_id === task.id).map((n) => n.body)].join(' ');
+    ...S.data.notes.filter((n) => n.task_id === task.id).map((n) => n.body),
+    ...taskFiles(task).map((a) => a.name)].join(' ');
   return hasAll(hay, ts);
 }
 // Escape + <mark> oko pogodaka trenutnog upita.
@@ -417,6 +446,8 @@ function taskMailText(k, pid) {
     lines.push('', 'Bilješke:');
     notes.forEach((n) => lines.push(`– ${n.person_id && !pid ? person(n.person_id)?.name + ': ' : ''}${n.body}`));
   }
+  const files = taskFiles(k);
+  if (files.length) lines.push('', `Prilozi (u Delegatoru): ${files.map((a) => a.name).join(', ')}`);
   return lines.join('\n');
 }
 function mailTask(taskId, pid) {
@@ -482,11 +513,12 @@ function render() {
   document.querySelectorAll('[data-draft]').forEach((el) => { if (el.value) drafts[el.id] = el.value; });
 
   app.innerHTML = headerView() + `<main>${
-    terms().length && S.view !== 'board' ? searchView()
+    terms().length && S.view !== 'board' && S.view !== 'pnotes' ? searchView()
       : S.view === 'people' ? peopleView() : S.view === 'person' ? personView()
       : S.view === 'admin' && S.user?.is_admin ? adminView()
       : S.view === 'calendar' ? calendarView() : S.view === 'network' ? networkView()
-      : S.view === 'board' ? boardView() : S.view === 'overview' ? overviewView() : topicsView()
+      : S.view === 'board' ? boardView() : S.view === 'overview' ? overviewView()
+      : S.view === 'pnotes' ? pnotesView() : topicsView()
   }</main><button class="fab" data-act="quick" title="Brzi unos glasom">🎤</button>`;
 
   Object.entries(drafts).forEach(([id, v]) => { const el = document.getElementById(id); if (el && !el.value) el.value = v; });
@@ -498,7 +530,7 @@ function headerView() {
   const tab = (v, label) => `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}">${label}</button>`;
   return `<header>
     <h1>✅ Delegator</h1>
-    <nav>${tab('overview', '🏠 Pregled')}${tab('topics', 'Teme')}${tab('board', '🗂 Ploča')}${tab('calendar', '📅 Kalendar')}${tab('network', '🕸 Mreža')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
+    <nav>${tab('overview', '🏠 Pregled')}${tab('topics', 'Teme')}${tab('board', '🗂 Ploča')}${tab('calendar', '📅 Kalendar')}${tab('network', '🕸 Mreža')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${tab('pnotes', '📝 Bilješke')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
     <button class="primary" data-act="quick" title="Izdiktiraj ili upiši zadatak, AI ga razvrsta">⚡ Brzi unos</button>
     <input type="search" class="search" id="search" placeholder="Traži kroz sve teme i bilješke…" value="${esc(S.q)}" autocomplete="off">
     <button class="ghost" data-act="userMenu" title="Račun">👤 ${esc(S.user?.name || '')}</button>
@@ -607,6 +639,10 @@ function topicsView() {
         <button class="ghost" data-act="editTopic" data-id="${t.id}">Uredi</button>
       </div>
       ${t.description ? `<div class="muted">${esc(t.description)}</div>` : ''}
+      <div class="row task-files" data-dropzone="topic:${t.id}">
+        ${attachList(filesOf('topic', t.id))}
+        ${attachBtn(`topic:${t.id}`, '📎 Dokument teme', 'Dokumenti cijele teme (ugovor, plan, ponuda…)')}
+      </div>
       ${kids.length ? `<div class="subcards">${cards}</div>` : ''}
       ${newTaskForm(t.id)}
     </div>
@@ -649,6 +685,7 @@ function taskView(k, opts = {}) {
   const late = k.due_date && k.status !== 'done' && k.due_date < today();
   const t = topic(k.topic_id);
   const noteCount = S.data.notes.filter((n) => n.task_id === k.id).length;
+  const fileCount = taskFiles(k).length;
   const head = `<div class="task-head" data-act="toggle" data-id="${k.id}">
     <button class="status st-${k.status}" data-act="status" data-id="${k.id}" title="Klikni za promjenu statusa">${STATUS[k.status]}</button>
     <div class="grow">
@@ -659,6 +696,7 @@ function taskView(k, opts = {}) {
         ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtSpan(k)}${late ? ' (kasni)' : ''}</span>` : ''}
         ${k.repeat ? `<span title="Ponavlja se">🔁 ${REPEAT[k.repeat].toLowerCase()}</span>` : ''}
         ${noteCount ? `<span>📝 ${noteCount}</span>` : ''}
+        ${fileCount ? `<span title="Prilozi">📎 ${fileCount}</span>` : ''}
       </div>
     </div>
     <div class="chips" style="justify-content:flex-end">${k.people.map((id) => person(id)).filter(Boolean)
@@ -674,6 +712,10 @@ function taskView(k, opts = {}) {
   return `<div class="task ${k.status}">${head}
     <div class="task-body stack">
       ${k.description ? `<div style="white-space:pre-wrap">${hl(k.description)}</div>` : ''}
+      <div class="row task-files" data-dropzone="task:${k.id}">
+        ${attachList(filesOf('task', k.id))}
+        ${attachBtn(`task:${k.id}`, '📎 Prilog zadatku')}
+      </div>
       ${blocks}
       <div class="row">
         <button class="ghost" data-act="editTask" data-id="${k.id}">✏️ Uredi zadatak</button>
@@ -691,17 +733,177 @@ function notesBlock(k, p, notes) {
   return `<div class="notes-block">
     <div class="row"><h3 class="grow">${p.name ? `Bilješke za: ${esc(p.name)}` : 'Opće bilješke'}</h3>
       ${canMail ? `<button class="ghost small" data-act="mailTask" data-id="${k.id}" data-pid="${p.id}" title="${esc(mailTitle)}">✉️ Pošalji mailom</button>` : ''}</div>
-    ${notes.map((n) => `<div class="note">
-        <div class="note-body">${hl(n.body)}</div>
+    ${notes.map((n) => `<div class="note" data-dropzone="note:${n.id}">
+        <div class="note-body">${hl(n.body)}${attachList(filesOf('note', n.id), { small: true })}</div>
         <span class="note-time">${fmtTime(n.created_at)}</span>
+        ${attachBtn(`note:${n.id}`, '📎', 'Priloži datoteku ovoj bilješci')}
         <button class="ghost small" data-act="editNote" data-id="${n.id}" title="Uredi">✏️</button>
         <button class="ghost small danger" data-act="delNote" data-id="${n.id}" title="Obriši">✕</button>
       </div>`).join('')}
     <form class="with-mic" data-form="note" data-task="${k.id}" data-person="${p.id}" style="margin-top:6px">
       <textarea id="${fid}" name="body" data-draft rows="1" placeholder="${p.name ? `Upute ili bilješka za ${esc(p.name)}…` : 'Bilješka…'}"></textarea>
-      ${micBtn(fid)}<button class="primary" style="height:38px">Spremi</button>
+      ${micBtn(fid)}<label class="attach-btn mic" title="Nova bilješka s prilogom (PDF, fotografija…)">📎<input type="file" multiple data-upload-new-note hidden></label>
+      <button class="primary" style="height:38px">Spremi</button>
     </form>
   </div>`;
+}
+
+/* ========= prilozi (PDF, fotografije, dokumenti) ========= */
+const MAX_FILE = 20 * 1024 * 1024;
+const filesOf = (kind, id) => S.data.attachments.filter((a) => a[kind + '_id'] === id);
+// svi prilozi zadatka: na zadatku i u njegovim bilješkama
+const taskFiles = (k) => S.data.attachments.filter((a) => a.task_id === k.id
+  || (a.note_id && S.data.notes.some((n) => n.id === a.note_id && n.task_id === k.id)));
+const fileUrl = (a, dl = false) => `/api/files?id=${a.id}${dl ? '&dl=1' : ''}`;
+const isImage = (a) => /^image\/(png|jpe?g|gif|webp|avif|heic|heif)$/i.test(a.mime || '');
+function fileIcon(a) {
+  const m = a.mime || '', n = a.name.toLowerCase();
+  if (m === 'application/pdf') return '📕';
+  if (/word|document|rtf|odt/.test(m) || /\.(docx?|odt|rtf)$/.test(n)) return '📘';
+  if (/sheet|excel|csv/.test(m) || /\.(xlsx?|ods|csv)$/.test(n)) return '📗';
+  if (/presentation|powerpoint/.test(m) || /\.(pptx?|odp)$/.test(n)) return '📙';
+  if (/^audio\//.test(m)) return '🎵';
+  if (/^video\//.test(m)) return '🎬';
+  if (/zip|compressed|rar|7z/.test(m)) return '🗜️';
+  if (/^image\//.test(m)) return '🖼️';
+  return '📄';
+}
+const fmtSize = (b) => (b < 1024 ? `${b} B` : b < 1048576 ? `${Math.round(b / 1024)} kB` : `${(b / 1048576).toFixed(1)} MB`);
+// Popis priloga: slike kao sličice, ostalo kao „čip“ s ikonom. small = sažeto (u retku bilješke).
+function attachList(list, { small = false, readonly = false } = {}) {
+  if (!list.length) return '';
+  return `<div class="atts ${small ? 'small' : ''}">${list.map((a) => isImage(a)
+    ? `<button type="button" class="att-img" data-act="viewFile" data-id="${a.id}" title="${esc(a.name)} · ${fmtSize(a.size || 0)}">
+        <img src="${fileUrl(a)}&t=1" alt="${esc(a.name)}" loading="lazy"></button>`
+    : `<span class="att"><a href="${fileUrl(a)}" target="_blank" rel="noopener" title="Otvori">${fileIcon(a)} ${hl(a.name)}</a>
+        <span class="muted">${fmtSize(a.size || 0)}</span>
+        <a href="${fileUrl(a, true)}" class="muted" title="Preuzmi" download>⬇</a>
+        ${readonly ? '' : `<button type="button" class="ghost danger" data-act="delFile" data-id="${a.id}" title="Obriši prilog">✕</button>`}</span>`).join('')}</div>`;
+}
+// Gumb 📎: na mobitelu nudi fotoaparat, galeriju i datoteke.
+const attachBtn = (target, label = '📎', title = 'Dodaj prilog (PDF, fotografija, dokument)') =>
+  `<label class="attach-btn ghost" title="${title}">${label}<input type="file" multiple data-upload="${target}" hidden></label>`;
+
+// Velike fotografije s mobitela smanji (najviše 2400 px, JPEG) — brži prijenos, manje mjesta.
+async function shrinkImage(file) {
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1.5 * 1024 * 1024) return file;
+  try {
+    const img = await createImageBitmap(file);
+    const scale = Math.min(1, 2400 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.85));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.(png|webp|jpe?g)$/i, '') + '.jpg', { type: 'image/jpeg' });
+  } catch { return file; }
+}
+// Sličica (najviše 320 px) za brz prikaz popisa — cijela slika učitava se tek na klik.
+async function uploadThumb(id, file) {
+  try {
+    const img = await createImageBitmap(file);
+    const scale = Math.min(1, 320 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(img.width * scale)); c.height = Math.max(1, Math.round(img.height * scale));
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.75));
+    if (blob) await fetch(`/api/files?thumb=${id}`, { method: 'POST', body: blob, headers: { 'Content-Type': 'image/jpeg', 'x-file-name': 'thumb.jpg' } });
+  } catch { /* bez sličice prikazuje se cijela slika */ }
+}
+// target = "task:12" | "note:5" | "topic:3" | "pnote:7"
+async function uploadFiles(target, fileList) {
+  const [kind, id] = target.split(':');
+  const files = [...fileList];
+  if (!files.length) return;
+  if (S.offline) return toast('📴 Bez interneta — prilozi nisu mogući');
+  let ok = 0;
+  for (const [i, f0] of files.entries()) {
+    const f = await shrinkImage(f0);
+    if (f.size > MAX_FILE) { toast(`„${f.name}“ je prevelik (najviše 20 MB)`); continue; }
+    toast(`📎 Prenosim ${files.length > 1 ? `${i + 1}/${files.length}: ` : ''}${f.name}…`);
+    try {
+      const res = await fetch(`/api/files?${kind}=${id}`, {
+        method: 'POST', body: f,
+        headers: { 'Content-Type': f.type || 'application/octet-stream', 'x-file-name': encodeURIComponent(f.name) },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Greška ' + res.status);
+      S.data.attachments.push(json.attachment); ok++;
+      if (/^image\/(jpeg|png|webp)$/.test(f.type)) await uploadThumb(json.attachment.id, f);
+    } catch (e) { toast(`Prilog „${f.name}“ nije spremljen: ${e.message}`); }
+  }
+  render();
+  if (ok) toast(ok > 1 ? `📎 Spremljeno ${ok} priloga` : '📎 Prilog spremljen');
+}
+// 📎 u obrascu nove bilješke: najprije napravi bilješku (tekst iz polja ili nazivi datoteka), onda priloži.
+async function uploadToNewNote(form, fileList) {
+  const files = [...fileList];
+  const body = form.body.value.trim() || '📎 ' + files.map((f) => f.name).join(', ');
+  const before = new Set(S.data.notes.map((n) => n.id));
+  form.body.value = ''; // prije spremanja, inače ga render() vrati kao nacrt
+  await run('addNote', { task_id: Number(form.dataset.task), person_id: Number(form.dataset.person) || null, body });
+  const note = S.data.notes.find((n) => !before.has(n.id));
+  if (!note) return;
+  await uploadFiles(`note:${note.id}`, files);
+}
+function viewFile(a) {
+  const dlg = $('#dlg');
+  dlg.innerHTML = `<div class="stack">
+    <div class="row"><h3 class="grow" style="margin:0">${esc(a.name)}</h3><span class="muted small">${fmtSize(a.size || 0)}</span></div>
+    <img src="${fileUrl(a)}" alt="${esc(a.name)}" class="lightbox">
+    <div class="row">
+      <a class="btnlink" href="${fileUrl(a)}" target="_blank" rel="noopener">↗ Otvori</a>
+      <a class="btnlink" href="${fileUrl(a, true)}" download>⬇ Preuzmi</a>
+      <button class="ghost danger" data-act="delFile" data-id="${a.id}">🗑 Obriši</button>
+      <button style="margin-left:auto" onclick="this.closest('dialog').close()">Zatvori</button>
+    </div></div>`;
+  if (!dlg.open) dlg.showModal();
+}
+
+/* ---- Bilješke: osobne, vidi ih samo prijavljeni korisnik ---- */
+const PNOTE_COLORS = ['', '#fff8c5', '#e6f4ea', '#e8f0fe', '#fce8e6', '#f3e8fd', '#e4f7fb', '#f1f3f4'];
+const pnoteColors = (cur, name = 'color') => `<div class="colors pcolors">${PNOTE_COLORS.map((c, i) =>
+  `<input type="radio" name="${name}" id="${name}${i}" value="${c}" ${c === (cur || '') ? 'checked' : ''}>
+   <label for="${name}${i}" style="background:${c || '#fff'}" title="${c ? 'Boja' : 'Bez boje'}"></label>`).join('')}</div>`;
+function pnotesView() {
+  const ts = terms();
+  const list = S.data.pnotes.filter((n) => !ts.length
+    || hasAll([n.title, n.body, ...filesOf('pnote', n.id).map((a) => a.name)].join(' '), ts));
+  const card = (n) => `<div class="pcard" style="background:${esc(n.color || '#fff')}" data-dropzone="pnote:${n.id}">
+      <div class="row">
+        <strong class="grow">${hl(n.title || '')}</strong>
+        <button class="ghost small ${n.pinned ? 'on' : ''}" data-act="pinPnote" data-id="${n.id}" title="${n.pinned ? 'Otkvači' : 'Prikvači na vrh'}">📌</button>
+      </div>
+      ${n.body ? `<div class="pbody">${hl(n.body)}</div>` : ''}
+      ${attachList(filesOf('pnote', n.id))}
+      <div class="row small muted pfoot">
+        <span class="grow">${fmtTime(n.updated_at)}</span>
+        ${attachBtn(`pnote:${n.id}`)}
+        <button class="ghost small" data-act="editPnote" data-id="${n.id}" title="Uredi">✏️</button>
+        <button class="ghost small danger" data-act="delPnote" data-id="${n.id}" title="Obriši">🗑</button>
+      </div></div>`;
+  const pinned = list.filter((n) => n.pinned), rest = list.filter((n) => !n.pinned);
+  return `<div class="stack" style="max-width:1100px;margin:0 auto">
+    <form class="panel stack pnew" data-form="pnote">
+      <div class="row"><h2 class="grow">📝 Moje bilješke</h2><span class="muted small">Vidiš ih samo ti.</span></div>
+      <input name="title" placeholder="Naslov (nije obavezno)" autocomplete="off">
+      <div class="with-mic"><textarea id="pn-body" name="body" data-draft rows="3" placeholder="Zapiši ideju, sastanak, popis… (možeš i izdiktirati)"></textarea>${micBtn('pn-body')}</div>
+      <div class="row">${pnoteColors('', 'pncolor')}
+        <label class="attach-btn" title="Spremi bilješku s prilozima">📎 Prilog<input type="file" multiple data-upload-new-pnote hidden></label>
+        <button class="primary" style="margin-left:auto">Spremi bilješku</button></div>
+    </form>
+    ${pinned.length ? `<div class="small muted">📌 Prikvačene</div><div class="pgrid">${pinned.map(card).join('')}</div>` : ''}
+    ${pinned.length && rest.length ? '<div class="small muted">Ostale</div>' : ''}
+    <div class="pgrid">${rest.map(card).join('')}</div>
+    ${!list.length ? `<div class="panel empty">${ts.length ? 'Nijedna bilješka ne odgovara pretrazi.' : 'Još nema bilježaka. Zapiši prvu gore — tekst, fotografiju, PDF…'}</div>` : ''}
+  </div>`;
+}
+function pnoteDialog(n) {
+  openDialog(`<h2>Uredi bilješku</h2>
+    <input name="title" placeholder="Naslov" value="${esc(n.title)}">
+    <div class="with-mic"><textarea id="dp-body" name="body" rows="8">${esc(n.body)}</textarea>${micBtn('dp-body')}</div>
+    ${pnoteColors(n.color, 'color')}`,
+    (fd) => run('updatePnote', { id: n.id, title: fd.get('title'), body: fd.get('body'), color: fd.get('color') }));
 }
 
 /* ---- Rezultati pretrage (kroz sve teme) ---- */
@@ -710,7 +912,8 @@ function searchView() {
   const tasks = S.data.tasks.filter(matchesQuery);
   sortTasks(tasks);
   const people = S.data.people.filter((p) => hasAll([p.name, p.role, p.email].join(' '), ts));
-  const topics = S.data.topics.filter((t) => hasAll([t.title, t.description].join(' '), ts));
+  const topics = S.data.topics.filter((t) => hasAll([t.title, t.description, ...filesOf('topic', t.id).map((a) => a.name)].join(' '), ts));
+  const pnotes = S.data.pnotes.filter((n) => hasAll([n.title, n.body, ...filesOf('pnote', n.id).map((a) => a.name)].join(' '), ts));
   const noteHits = (k) => S.data.notes.filter((n) => n.task_id === k.id && ts.some((t) => fold(n.body).includes(t)));
   const list = tasks.map((k) => {
     const hits = S.open.has(k.id) ? [] : noteHits(k);
@@ -727,7 +930,9 @@ function searchView() {
       `<button class="chip" data-act="topic" data-id="${t.id}"><span class="dot" style="display:inline-block;background:${esc(t.color)}"></span> ${hl(t.title)}</button>`).join('')}</div>` : ''}
     ${people.length ? `<div class="panel row small"><span class="muted">Ljudi:</span>${people.map((p) =>
       `<button class="chip" data-act="openPerson" data-id="${p.id}">${hl(p.name)}</button>`).join('')}</div>` : ''}
-    <div>${list || '<div class="panel empty">Ništa nije pronađeno. Probaj kraću riječ.</div>'}</div>
+    ${pnotes.length ? `<div class="panel stack"><div class="small muted">📝 Moje bilješke</div>${pnotes.slice(0, 6).map((n) =>
+      `<button class="pres" data-act="openPnotes" style="background:${esc(n.color || '#fafbfc')}"><strong>${hl(n.title || '')}</strong> ${hl((n.body || '').slice(0, 160))}</button>`).join('')}</div>` : ''}
+    <div>${list || (pnotes.length ? '' : '<div class="panel empty">Ništa nije pronađeno. Probaj kraću riječ.</div>')}</div>
   </div>`;
 }
 
@@ -943,7 +1148,8 @@ function taskInfo(k) {
     </div>
     ${k.people.length ? `<div class="chips">${k.people.map(person).filter(Boolean).map((p) => `<span class="chip static">${esc(p.name)}</span>`).join('')}</div>` : ''}
     ${k.description ? `<div style="white-space:pre-wrap">${esc(k.description)}</div>` : ''}
-    ${notes.length ? `<div class="notes-block">${notes.map((n) => `<div class="note"><div class="note-body">${n.person_id ? `<strong>${esc(person(n.person_id)?.name)}:</strong> ` : ''}${esc(n.body)}</div><span class="note-time">${fmtTime(n.created_at)}</span></div>`).join('')}</div>` : ''}
+    ${notes.length ? `<div class="notes-block">${notes.map((n) => `<div class="note"><div class="note-body">${n.person_id ? `<strong>${esc(person(n.person_id)?.name)}:</strong> ` : ''}${esc(n.body)}${attachList(filesOf('note', n.id), { small: true, readonly: true })}</div><span class="note-time">${fmtTime(n.created_at)}</span></div>`).join('')}</div>` : ''}
+    ${attachList(filesOf('task', k.id), { readonly: true })}
     <div class="row">
       <button data-act="infoStatus" data-id="${k.id}">${k.status === 'done' ? '↺ Vrati u rad' : '✓ Gotovo'}</button>
       <button data-act="infoEdit" data-id="${k.id}">✏️ Uredi</button>
@@ -1210,6 +1416,7 @@ function boardView() {
             ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtSpan(k)}</span>` : ''}
             ${k.repeat ? '<span title="Ponavlja se">🔁</span>' : ''}
             ${S.data.notes.some((n) => n.task_id === k.id) ? `<span>📝 ${S.data.notes.filter((n) => n.task_id === k.id).length}</span>` : ''}
+            ${taskFiles(k).length ? `<span>📎 ${taskFiles(k).length}</span>` : ''}
             <span class="kp">${k.people.map(person).filter(Boolean).map((p) => `<b title="${esc(p.name)}">${esc(initials(p.name))}</b>`).join('')}</span>
           </div></div>`;
       }).join('') || '<div class="muted small kempty">Povuci karticu ovamo</div>'}
@@ -1523,6 +1730,24 @@ document.addEventListener('click', async (e) => {
     case 'view': S.view = el.dataset.v; S.q = ''; if (S.view === 'admin') S.admin = null; save(); return render();
     case 'topic': S.topicId = id; S.view = 'topics'; S.q = ''; save(); return render();
     case 'clearSearch': S.q = ''; return render();
+    case 'viewFile': { const a = S.data.attachments.find((x) => x.id === id); return a && viewFile(a); }
+    case 'delFile': {
+      const a = S.data.attachments.find((x) => x.id === id);
+      if (!a || !confirm(`Obrisati prilog „${a.name}“?`)) return;
+      if ($('#dlg').open) $('#dlg').close();
+      const res = await fetch(`/api/files?id=${id}`, { method: 'DELETE' }).catch(() => null);
+      if (!res?.ok) return toast('Prilog nije obrisan');
+      S.data.attachments = S.data.attachments.filter((x) => x.id !== id); render(); toast('Prilog obrisan');
+      return;
+    }
+    case 'openPnotes': S.view = 'pnotes'; save(); return render();
+    case 'pinPnote': { const n = S.data.pnotes.find((x) => x.id === id); return run('pinPnote', { id, pinned: !n.pinned }); }
+    case 'editPnote': return pnoteDialog(S.data.pnotes.find((x) => x.id === id));
+    case 'delPnote': {
+      const n = S.data.pnotes.find((x) => x.id === id), f = filesOf('pnote', id).length;
+      if (confirm(`Obrisati bilješku${n.title ? ` „${n.title}“` : ''}${f ? ` i ${f} priloga` : ''}?`)) run('deletePnote', { id });
+      return;
+    }
     case 'calMode': S.cal.mode = el.dataset.v; save(); return render();
     case 'calList': S.view = 'calendar'; S.cal.mode = 'list'; save(); return render();
     case 'boardNew': return newTaskOnDay('');
@@ -1568,7 +1793,7 @@ document.addEventListener('click', async (e) => {
       try { await authOp('logout'); } catch {}
       try { await caches.delete('delegator-data'); } catch {}
       Object.assign(S, { user: null, loaded: false, needLogin: true, auth: { mode: 'login' }, admin: null, q: '',
-        data: { people: [], topics: [], tasks: [], notes: [] } });
+        data: { people: [], topics: [], tasks: [], notes: [], pnotes: [], attachments: [] } });
       S.open.clear();
       return render();
     case 'toLogin': history.replaceState(null, '', location.pathname); S.auth = { mode: 'login' }; return render();
@@ -1613,7 +1838,7 @@ document.addEventListener('click', async (e) => {
     case 'editTask': return taskDialog(S.data.tasks.find((x) => x.id === id));
     case 'delTask': if (confirm('Obrisati zadatak i njegove bilješke?')) { $('#dlg').close(); run('deleteTask', { id }); } return;
     case 'editNote': return noteDialog(S.data.notes.find((x) => x.id === id));
-    case 'delNote': if (confirm('Obrisati bilješku?')) run('deleteNote', { id }); return;
+    case 'delNote': { const f = filesOf('note', id).length; if (confirm(`Obrisati bilješku${f ? ` i ${f} priloga` : ''}?`)) run('deleteNote', { id }); return; }
     case 'editPerson': return personDialog(person(id));
     case 'delPerson': if (confirm(`Ukloniti osobu ${person(id).name}? Bit će maknuta sa svih zadataka.`)) run('deletePerson', { id }); return;
     case 'openPerson': S.personId = id; S.view = 'person'; S.q = ''; save(); return render();
@@ -1626,7 +1851,24 @@ document.addEventListener('click', async (e) => {
   }
 });
 
+// Nova osobna bilješka s prilozima: spremi bilješku pa priloži datoteke.
+async function uploadToNewPnote(form, files) {
+  const title = form.title.value.trim(), body = form.body.value.trim();
+  const color = form.querySelector('[name=pncolor]:checked')?.value || '';
+  form.reset(); // prije spremanja, inače ga render() vrati kao nacrt
+  const d = await api({ op: 'addPnote', title: title || files.map((f) => f.name).join(', '), body, color }).catch(() => null);
+  if (!d?.result?.pnote_id) return;
+  await uploadFiles(`pnote:${d.result.pnote_id}`, files);
+}
 document.addEventListener('change', (e) => {
+  const inp = e.target;
+  if (inp.type === 'file' && inp.files?.length) {
+    const files = [...inp.files]; inp.value = '';
+    if (inp.dataset.upload) return uploadFiles(inp.dataset.upload, files);
+    if ('uploadNewNote' in inp.dataset) return uploadToNewNote(inp.closest('form'), files);
+    if ('uploadNewPnote' in inp.dataset) return uploadToNewPnote(inp.closest('form'), files);
+    return;
+  }
   const act = e.target.dataset.act, v = Number(e.target.value);
   if (act === 'pickPerson') { S.personId = v; save(); render(); }
   if (act === 'calPerson') { S.cal.person = v; save(); render(); }
@@ -1662,7 +1904,16 @@ document.addEventListener('dragstart', (e) => {
   dragFrom = chip.closest('[data-day]')?.dataset.day || null;
   e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(dragTask));
 });
+// Datoteke povučene s računala na zadatak, bilješku ili temu
+const fileDrag = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+const dropTarget = (e) => e.target.closest?.('[data-dropzone], form[data-form="note"], form[data-form="pnote"]');
 document.addEventListener('dragover', (e) => {
+  if (fileDrag(e)) {
+    const z = dropTarget(e);
+    document.querySelectorAll('.drop').forEach((x) => x !== z && x.classList.remove('drop'));
+    if (z) { e.preventDefault(); z.classList.add('drop'); }
+    return;
+  }
   const col = dragTask && dragFrom === 'board' && e.target.closest?.('.kcol');
   if (col) { e.preventDefault(); document.querySelectorAll('.drop').forEach((x) => x !== col && x.classList.remove('drop')); col.classList.add('drop'); return; }
   const day = dragTask && dragFrom !== 'board' && e.target.closest?.('[data-day].cday, [data-day].cl-day');
@@ -1672,6 +1923,15 @@ document.addEventListener('dragover', (e) => {
   day.classList.add('drop');
 });
 document.addEventListener('drop', (e) => {
+  if (fileDrag(e)) {
+    const z = dropTarget(e);
+    document.querySelectorAll('.drop').forEach((x) => x.classList.remove('drop'));
+    if (!z) return;
+    e.preventDefault();
+    const files = [...e.dataTransfer.files];
+    if (z.dataset.dropzone) return uploadFiles(z.dataset.dropzone, files);
+    return z.dataset.form === 'note' ? uploadToNewNote(z, files) : uploadToNewPnote(z, files);
+  }
   const col = dragTask && dragFrom === 'board' && e.target.closest?.('.kcol');
   if (col) {
     e.preventDefault();
@@ -1692,6 +1952,19 @@ document.addEventListener('drop', (e) => {
   else render();
 });
 document.addEventListener('dragend', () => { dragTask = null; document.querySelectorAll('.drop').forEach((x) => x.classList.remove('drop')); });
+
+// Zalijepljena slika (npr. snimka zaslona) u bilješku ili zadatak postaje prilog
+document.addEventListener('paste', (e) => {
+  const files = [...(e.clipboardData?.files || [])];
+  if (!files.length) return;
+  const z = e.target.closest?.('[data-dropzone], form[data-form="note"], form[data-form="pnote"], .task-body');
+  if (!z) return;
+  e.preventDefault();
+  if (z.dataset.dropzone) return uploadFiles(z.dataset.dropzone, files);
+  if (z.dataset.form === 'note') return uploadToNewNote(z, files);
+  if (z.dataset.form === 'pnote') return uploadToNewPnote(z, files);
+  const tz = z.querySelector('[data-dropzone^="task:"]'); if (tz) uploadFiles(tz.dataset.dropzone, files);
+});
 
 // Enter u bilješci = spremi (Shift+Enter = novi red); Esc u tražilici = očisti
 document.addEventListener('keydown', (e) => {
@@ -1741,6 +2014,12 @@ document.addEventListener('submit', async (e) => {
     await run('addTask', { ...fd, topic_id: Number(f.dataset.topic), people });
     return;
   }
+  if (kind === 'pnote') {
+    if (!fd.title.trim() && !fd.body.trim()) return toast('Upiši naslov ili tekst bilješke');
+    f.reset(); // prije spremanja: render() bi inače vratio tekst iz polja kao nacrt
+    await run('addPnote', { title: fd.title, body: fd.body, color: fd.pncolor });
+    return;
+  }
   if (kind === 'note') {
     if (!fd.body.trim()) return;
     f.reset();
@@ -1762,7 +2041,7 @@ async function boot() {
   if (me.user) {
     if (inv) toast('Već si prijavljen');
     const v = params.get('v'), quick = params.get('brzi');
-    if (v && ['overview', 'topics', 'board', 'calendar', 'network', 'person', 'people'].includes(v)) { S.view = v; save(); }
+    if (v && ['overview', 'topics', 'board', 'calendar', 'network', 'person', 'people', 'pnotes'].includes(v)) { S.view = v; save(); }
     if (location.search) history.replaceState(null, '', location.pathname);
     await api().catch(() => {});
     if (quick && S.loaded && !S.offline) quickStep1();

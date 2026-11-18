@@ -5,17 +5,20 @@ import data from './api/data.js';
 import parse from './api/parse.js';
 import auth from './api/auth.js';
 import ical from './api/ical.js';
+import files from './api/files.js';
 
 const port = process.env.PORT || 3000;
 http.createServer(async (req, res) => {
-  const routes = { '/api/data': data, '/api/parse': parse, '/api/auth': auth, '/api/ical': ical };
+  const routes = { '/api/data': data, '/api/parse': parse, '/api/auth': auth, '/api/ical': ical, '/api/files': files };
   const handler = routes[req.url.split('?')[0]];
   if (handler) {
     req.query = Object.fromEntries(new URL(req.url, 'http://x').searchParams);
-    let raw = '';
-    for await (const chunk of req) raw += chunk;
-    req.body = raw ? JSON.parse(raw) : {};
     res.status = (code) => { res.statusCode = code; return res; };
+    if (handler !== files) { // prilozi čitaju tijelo sami, kao tok bajtova
+      let raw = '';
+      for await (const chunk of req) raw += chunk;
+      req.body = raw ? JSON.parse(raw) : {};
+    }
     res.json = (obj) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(obj)); };
     return handler(req, res);
   }

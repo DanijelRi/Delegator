@@ -1,6 +1,7 @@
 // Prijava, registracija na pozivnicu, nova lozinka i administracija korisnika.
 // GET  /api/auth              -> {user, setup}  (setup = još nema nijednog korisnika)
 // POST /api/auth {op, ...}    -> vidi objekt ops
+import { del } from '@vercel/blob';
 import { sql, hashPassword, checkPassword, startSession, endSession, currentUser,
   readBody, newToken, hashToken, txt } from './_lib.js';
 
@@ -145,7 +146,9 @@ const ops = {
   // Briše korisnika i SVE njegove podatke (teme, zadatke, ljude, bilješke).
   async deleteUser(b, req, res, me) {
     if (Number(b.user_id) === me.id) throw fail(400, 'Ne možeš obrisati sam sebe');
+    const files = await sql`SELECT blob_url, thumb_url FROM attachments WHERE user_id = ${Number(b.user_id)}`;
     await sql`DELETE FROM users WHERE id = ${Number(b.user_id)}`;
+    if (files.length) await del(files.flatMap((f) => [f.blob_url, f.thumb_url]).filter(Boolean)).catch((e) => console.error('Blob del', e.message));
   },
 };
 

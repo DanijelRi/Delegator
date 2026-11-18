@@ -2,10 +2,11 @@
 // GET  /api/data            -> vraća sve podatke korisnika
 // POST /api/data {op, ...}  -> izvrši operaciju i vrati sve podatke
 // Svaki upit je ograničen na user_id prijavljenog korisnika — nitko ne vidi tuđe podatke.
+import { del } from '@vercel/blob';
 import { sql, currentUser, readBody, txt } from './_lib.js';
 
 async function loadAll(uid) {
-  const [people, topics, tasks, notes] = await Promise.all([
+  const [people, topics, tasks, notes, pnotes, attachments] = await Promise.all([
     sql`SELECT id, name, role, email FROM people WHERE user_id = ${uid} ORDER BY name`,
     sql`SELECT id, parent_id, title, description, color, archived FROM topics WHERE user_id = ${uid} ORDER BY archived, created_at`,
     sql`SELECT t.id, t.topic_id, t.title, t.description, t.status, t.priority,
@@ -16,8 +17,10 @@ async function loadAll(uid) {
         WHERE t.user_id = ${uid}
         GROUP BY t.id ORDER BY t.created_at`,
     sql`SELECT id, task_id, person_id, body, created_at FROM notes WHERE user_id = ${uid} ORDER BY created_at`,
+    sql`SELECT id, title, body, color, pinned, created_at, updated_at FROM pnotes WHERE user_id = ${uid} ORDER BY pinned DESC, updated_at DESC`,
+    sql`SELECT id, task_id, note_id, topic_id, pnote_id, name, mime, size, created_at FROM attachments WHERE user_id = ${uid} ORDER BY created_at`,
   ]);
-  return { people, topics, tasks, notes };
+  return { people, topics, tasks, notes, pnotes, attachments };
 }
 
 const ids = (a) => (Array.isArray(a) ? a.map(Number).filter(Number.isInteger) : []);
@@ -68,6 +71,12 @@ async function spawnNext(id, uid) {
     SELECT id FROM t`;
   await sql`UPDATE tasks SET repeat = NULL WHERE id = ${k.id}`; // ponavljanje prelazi na novi zadatak
   return { next_id: created.id, next_due: due };
+}
+
+// Prije brisanja retka uzmi adrese njegovih priloga, a nakon brisanja obriši i same datoteke iz Bloba.
+async function purge(rows) {
+  const urls = rows.flatMap((r) => [r.blob_url, r.thumb_url]).filter(Boolean);
+  if (urls.length) await del(urls).catch((e) => console.error('Blob del', e.message));
 }
 
 const notFound = () => Object.assign(new Error('Nije pronađeno'), { status: 404 });
@@ -122,7 +131,18 @@ const ops = {
                color = ${b.color || '#4f6bed'}, archived = ${!!b.archived}
                WHERE id = ${b.id} AND user_id = ${uid}`;
   },
-  deleteTopic: (b, uid) => sql`DELETE FROM topics WHERE id = ${b.id} AND user_id = ${uid}`,
+  deleteTopic: async (b, uid) => {
+    const files = await sql`
+      WITH RECURSIVE sub AS (
+        SELECT id FROM topics WHERE id = ${b.id} AND user_id = ${uid}
+        UNION SELECT t.id FROM topics t JOIN sub ON t.parent_id = sub.id),
+      tk AS (SELECT id FROM tasks WHERE topic_id IN (SELECT id FROM sub)),
+      nt AS (SELECT id FROM notes WHERE task_id IN (SELECT id FROM tk))
+      SELECT blob_url, thumb_url FROM attachments WHERE user_id = ${uid}
+        AND (topic_id IN (SELECT id FROM sub) OR task_id IN (SELECT id FROM tk) OR note_id IN (SELECT id FROM nt))`;
+    await sql`DELETE FROM topics WHERE id = ${b.id} AND user_id = ${uid}`;
+    await purge(files);
+  },
 
   // --- zadaci ---
   addTask: async (b, uid) => {
@@ -168,7 +188,12 @@ const ops = {
     const start = due && k.start && k.due ? new Date(Date.parse(k.start) + daysBetween(k.due, due) * 864e5).toISOString().slice(0, 10) : null;
     return sql`UPDATE tasks SET due_date = ${due}, start_date = ${start} WHERE id = ${b.id} AND user_id = ${uid}`;
   },
-  deleteTask: (b, uid) => sql`DELETE FROM tasks WHERE id = ${b.id} AND user_id = ${uid}`,
+  deleteTask: async (b, uid) => {
+    const files = await sql`SELECT blob_url, thumb_url FROM attachments WHERE user_id = ${uid}
+      AND (task_id = ${b.id} OR note_id IN (SELECT id FROM notes WHERE task_id = ${b.id}))`;
+    await sql`DELETE FROM tasks WHERE id = ${b.id} AND user_id = ${uid}`;
+    await purge(files);
+  },
 
   // --- brzi unos (potvrđeni AI prijedlog iz /api/parse) ---
   // {topic_id | new_topic, title, description, priority, due_date, people:[id], new_people:[ime],
@@ -223,7 +248,26 @@ const ops = {
                VALUES (${uid}, ${b.task_id}, ${b.person_id || null}, ${txt(b.body)})`;
   },
   updateNote: (b, uid) => sql`UPDATE notes SET body = ${txt(b.body)} WHERE id = ${b.id} AND user_id = ${uid}`,
-  deleteNote: (b, uid) => sql`DELETE FROM notes WHERE id = ${b.id} AND user_id = ${uid}`,
+  deleteNote: async (b, uid) => {
+    const files = await sql`SELECT blob_url, thumb_url FROM attachments WHERE user_id = ${uid} AND note_id = ${b.id}`;
+    await sql`DELETE FROM notes WHERE id = ${b.id} AND user_id = ${uid}`;
+    await purge(files);
+  },
+
+  // --- osobne bilješke (kartica „Bilješke“, vidi ih samo autor) ---
+  addPnote: async (b, uid) => {
+    if (!txt(b.title) && !txt(b.body)) throw Object.assign(new Error('Bilješka je prazna'), { status: 400 });
+    const [n] = await sql`INSERT INTO pnotes (user_id, title, body, color) VALUES (${uid}, ${txt(b.title)}, ${txt(b.body)}, ${txt(b.color)}) RETURNING id`;
+    return { pnote_id: n.id };
+  },
+  updatePnote: (b, uid) => sql`UPDATE pnotes SET title = ${txt(b.title)}, body = ${txt(b.body)}, color = ${txt(b.color)}, updated_at = now()
+                               WHERE id = ${b.id} AND user_id = ${uid}`,
+  pinPnote: (b, uid) => sql`UPDATE pnotes SET pinned = ${!!b.pinned} WHERE id = ${b.id} AND user_id = ${uid}`,
+  deletePnote: async (b, uid) => {
+    const files = await sql`SELECT blob_url, thumb_url FROM attachments WHERE user_id = ${uid} AND pnote_id = ${b.id}`;
+    await sql`DELETE FROM pnotes WHERE id = ${b.id} AND user_id = ${uid}`;
+    await purge(files);
+  },
 };
 
 export default async function handler(req, res) {
@@ -243,7 +287,7 @@ export default async function handler(req, res) {
     }
     const data = await loadAll(me.id);
     data.user = me;
-    if (['quickAdd', 'addTopic', 'setStatus', 'updateTask'].includes(body?.op)) data.result = result || null;
+    if (['quickAdd', 'addTopic', 'setStatus', 'updateTask', 'addPnote'].includes(body?.op)) data.result = result || null;
     return res.status(200).json(data);
   } catch (e) {
     if (!e.status) console.error(e);

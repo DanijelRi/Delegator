@@ -115,3 +115,37 @@ ALTER TABLE tasks ADD COLUMN IF NOT EXISTS repeat text;
 -- Tajni token za pretplatu na kalendar (Google/Apple): /api/ical?t=TOKEN
 ALTER TABLE users ADD COLUMN IF NOT EXISTS ical_token text;
 CREATE UNIQUE INDEX IF NOT EXISTS users_ical_idx ON users (ical_token);
+
+-- Osobne bilješke (kartica „Bilješke“): vidi ih samo korisnik koji ih je napisao.
+CREATE TABLE IF NOT EXISTS pnotes (
+  id         serial PRIMARY KEY,
+  user_id    int NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title      text,
+  body       text,
+  color      text,
+  pinned     boolean NOT NULL DEFAULT false,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS pnotes_user_idx ON pnotes (user_id);
+
+-- Prilozi (PDF, fotografije, dokumenti). Datoteka je privatna u Vercel Blobu (blob_url),
+-- ovdje su samo podaci o njoj. Pripada točno jednom: zadatku, bilješci zadatka, temi ili osobnoj bilješci.
+CREATE TABLE IF NOT EXISTS attachments (
+  id         serial PRIMARY KEY,
+  user_id    int NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  task_id    int REFERENCES tasks(id) ON DELETE CASCADE,
+  note_id    int REFERENCES notes(id) ON DELETE CASCADE,
+  topic_id   int REFERENCES topics(id) ON DELETE CASCADE,
+  pnote_id   int REFERENCES pnotes(id) ON DELETE CASCADE,
+  name       text NOT NULL,
+  mime       text,
+  size       int,
+  blob_url   text NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  CHECK (num_nonnulls(task_id, note_id, topic_id, pnote_id) = 1)
+);
+CREATE INDEX IF NOT EXISTS attachments_user_idx ON attachments (user_id);
+
+-- Mala sličica fotografije (do 320 px) za brzi prikaz popisa; cijela slika samo na klik.
+ALTER TABLE attachments ADD COLUMN IF NOT EXISTS thumb_url text;
