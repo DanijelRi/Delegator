@@ -232,6 +232,16 @@
   .demo-banner span { flex: 1; min-width: 220px; }
   main:has(.cal) .demo-banner, main:has(.board) .demo-banner, main:has(.net-wrap) .demo-banner { margin-bottom: 10px; }
 
+  /* javljanja osoba */
+  .badge { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; vertical-align: 1px; }
+  .note.from-person { background: #eef6ff; border-radius: 6px; padding: 6px 8px; border-bottom: 0; margin: 2px 0; }
+  .note.from-person .who { font-weight: 600; color: var(--accent); }
+  .note.unseen { box-shadow: inset 3px 0 0 var(--danger); }
+  .newsrow { display: block; width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--card); }
+  .newsrow.unseen { border-left: 4px solid var(--danger); background: #fffafa; }
+  .newsrow span { white-space: pre-wrap; } .newsrow small { display: block; margin-top: 2px; }
+  .news .stack > * + *, .news > .newsrow + .newsrow { margin-top: 6px; }
+
   /* brzi unos s fotografijom */
   .qa-photo { display: flex; align-items: center; gap: 8px; min-height: 0; }
   .qa-photo img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); flex: none; }
@@ -558,7 +568,7 @@ function headerView() {
   const tab = (v, label) => `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}">${label}</button>`;
   return `<header>
     <h1>✅ Delegator</h1>
-    <nav>${tab('overview', '🏠 Pregled')}${tab('topics', 'Teme')}${tab('board', '🗂 Ploča')}${tab('calendar', '📅 Kalendar')}${tab('network', '🕸 Mreža')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${tab('pnotes', '📝 Bilješke')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
+    <nav>${tab('overview', `🏠 Pregled${unseen().length ? ` <span class="badge">${unseen().length}</span>` : ''}`)}${tab('topics', 'Teme')}${tab('board', '🗂 Ploča')}${tab('calendar', '📅 Kalendar')}${tab('network', '🕸 Mreža')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${tab('pnotes', '📝 Bilješke')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
     <button class="primary" data-act="quick" title="Izdiktiraj ili upiši zadatak, AI ga razvrsta">⚡ Brzi unos</button>
     <input type="search" class="search" id="search" placeholder="Traži kroz sve teme i bilješke…" value="${esc(S.q)}" autocomplete="off">
     <button class="ghost" data-act="userMenu" title="Račun">👤 ${esc(S.user?.name || '')}</button>
@@ -761,8 +771,8 @@ function notesBlock(k, p, notes) {
   return `<div class="notes-block">
     <div class="row"><h3 class="grow">${p.name ? `Bilješke za: ${esc(p.name)}` : 'Opće bilješke'}</h3>
       ${canMail ? `<button class="ghost small" data-act="mailTask" data-id="${k.id}" data-pid="${p.id}" title="${esc(mailTitle)}">✉️ Pošalji mailom</button>` : ''}</div>
-    ${notes.map((n) => `<div class="note" data-dropzone="note:${n.id}">
-        <div class="note-body">${hl(n.body)}${attachList(filesOf('note', n.id), { small: true })}</div>
+    ${notes.map((n) => `<div class="note ${n.from_person ? 'from-person' : ''} ${n.from_person && !n.seen ? 'unseen' : ''}" data-dropzone="note:${n.id}">
+        <div class="note-body">${n.from_person ? `<span class="who">${esc(person(n.person_id)?.name.split(' ')[0] || 'Osoba')} se javio/la:</span> ` : ''}${hl(n.body)}${attachList(filesOf('note', n.id), { small: true })}</div>
         <span class="note-time">${fmtTime(n.created_at)}</span>
         ${attachBtn(`note:${n.id}`, '📎', 'Priloži datoteku ovoj bilješci')}
         <button class="ghost small" data-act="editNote" data-id="${n.id}" title="Uredi">✏️</button>
@@ -975,6 +985,7 @@ function peopleView() {
         <div class="muted small">${p.email ? esc(p.email) : '<em>bez e-maila</em>'}</div></div>
       <span class="muted small">${open} otvorenih / ${mine.length}</span>
       <button class="ghost" data-act="openPerson" data-id="${p.id}">Zadaci →</button>
+      <button class="ghost" data-act="shareLink" data-id="${p.id}" title="Poveznica na kojoj ${esc(p.name)} vidi svoje zadatke i javlja napredak">🔗</button>
       <button class="ghost" data-act="editPerson" data-id="${p.id}">✏️</button>
       <button class="ghost danger" data-act="delPerson" data-id="${p.id}">✕</button>
     </div>`;
@@ -1006,6 +1017,7 @@ function personView() {
           `<option value="${x.id}" ${x.id === p.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
         ${p.role ? `<span class="muted">${esc(p.role)}</span>` : ''}
         <button style="margin-left:auto" data-act="copyPerson" data-id="${p.id}" title="Kopira popis otvorenih zadataka za slanje porukom">📋 Kopiraj popis</button>
+        <button class="primary" data-act="shareLink" data-id="${p.id}" title="Poveznica na kojoj ${esc(p.name)} vidi svoje zadatke i javlja napredak">🔗 Poveznica za ${esc(p.name.split(' ')[0])}</button>
         <button data-act="mailPerson" data-id="${p.id}" title="${p.email ? 'Otvori mail s popisom otvorenih zadataka' : 'Osoba nema e-mail — dodaj ga u kartici „Ljudi“'}">✉️ Pošalji popis mailom</button>
       </div>
       ${filtersView()}
@@ -1161,6 +1173,7 @@ function calendarView() {
 
 // Detalji zadatka (iz kalendara i mreže)
 function taskInfo(k) {
+  { const u = unseen().filter((n) => n.task_id === k.id).map((n) => n.id); if (u.length) run('markSeen', { ids: u }); }
   const t = topic(k.topic_id);
   const late = k.due_date && k.status !== 'done' && k.due_date < today();
   const notes = S.data.notes.filter((n) => n.task_id === k.id);
@@ -1176,7 +1189,7 @@ function taskInfo(k) {
     </div>
     ${k.people.length ? `<div class="chips">${k.people.map(person).filter(Boolean).map((p) => `<span class="chip static">${esc(p.name)}</span>`).join('')}</div>` : ''}
     ${k.description ? `<div style="white-space:pre-wrap">${esc(k.description)}</div>` : ''}
-    ${notes.length ? `<div class="notes-block">${notes.map((n) => `<div class="note"><div class="note-body">${n.person_id ? `<strong>${esc(person(n.person_id)?.name)}:</strong> ` : ''}${esc(n.body)}${attachList(filesOf('note', n.id), { small: true, readonly: true })}</div><span class="note-time">${fmtTime(n.created_at)}</span></div>`).join('')}</div>` : ''}
+    ${notes.length ? `<div class="notes-block">${notes.map((n) => `<div class="note ${n.from_person ? 'from-person' : ''}"><div class="note-body">${n.person_id ? `<strong>${esc(person(n.person_id)?.name)}${n.from_person ? ' (javljanje)' : ''}:</strong> ` : ''}${esc(n.body)}${attachList(filesOf('note', n.id), { small: true, readonly: true })}</div><span class="note-time">${fmtTime(n.created_at)}</span></div>`).join('')}</div>` : ''}
     ${attachList(filesOf('task', k.id), { readonly: true })}
     <div class="row">
       <button data-act="infoStatus" data-id="${k.id}">${k.status === 'done' ? '↺ Vrati u rad' : '✓ Gotovo'}</button>
@@ -1396,6 +1409,7 @@ function overviewView() {
     </div>
     <div class="ov-grid">
       <div class="stack">
+        ${newsSection()}
         ${late.length ? section('⚠️ Kasni', late, '') : ''}
         ${section('📌 Danas', now, 'Za danas nema rokova.')}
         ${section('📅 Sljedećih 7 dana', soon, 'Nema rokova idući tjedan.')}
@@ -1545,9 +1559,85 @@ async function tourEnd() {
   if (!S.user?.onboarded) await run('onboarded');
 }
 
+/* ========= poveznice za osobe, javljanja, obavijesti ========= */
+const unseen = () => S.data.notes.filter((n) => n.from_person && !n.seen);
+function newsSection() {
+  const recent = S.data.notes.filter((n) => n.from_person && (!n.seen || Date.now() - new Date(n.created_at) < 3 * 864e5))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 8);
+  if (!recent.length) return '';
+  const u = recent.filter((n) => !n.seen);
+  return `<div class="panel stack news"><div class="row"><h3 class="grow">📨 Javljanja ljudi ${u.length ? `<span class="badge">${u.length} novo</span>` : ''}</h3>
+      ${u.length ? `<button class="ghost small" data-act="seenAll">✓ Označi pročitano</button>` : ''}</div>
+    ${recent.map((n) => { const k = S.data.tasks.find((x) => x.id === n.task_id);
+      return `<button class="newsrow ${n.seen ? '' : 'unseen'}" data-act="calTask" data-id="${n.task_id}">
+        <b>${esc(person(n.person_id)?.name || 'Osoba')}</b> · ${esc(k?.title || '')}<br><span>${esc(n.body)}</span>
+        <small class="muted">${fmtTime(n.created_at)}</small></button>`; }).join('')}</div>`;
+}
+async function shareDialog(pid, reset = false) {
+  const p = person(pid);
+  const d = await api({ op: 'shareLink', id: pid, reset }).catch(() => null);
+  if (!d?.result?.token) return;
+  const url = `${location.origin}/z/${d.result.token}`;
+  const msg = `Bok ${p.name.split(' ')[0]}, ovdje su tvoji zadaci od mene — možeš označiti napredak i javiti mi se: ${url}`;
+  const dlg = $('#dlg');
+  dlg.innerHTML = `<div class="stack">
+    <h2>🔗 Poveznica za ${esc(p.name)}</h2>
+    <div class="muted small">${esc(p.name.split(' ')[0])} na njoj vidi <b>samo svoje zadatke</b> (rokove, upute za sebe i opće bilješke, priloge) i može označiti <b>U tijeku / Gotovo</b> ili ti napisati poruku. Ne treba račun. Ti dobiješ javljanje u Pregledu${'Notification' in window ? ' i obavijest na mobitel' : ''}.</div>
+    <input readonly value="${esc(url)}" onclick="this.select()">
+    <div class="row">
+      <button class="primary" data-act="copyText" data-text="${esc(url)}">📋 Kopiraj</button>
+      <a class="btnlink" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">💬 WhatsApp</a>
+      <a class="btnlink" href="mailto:${esc(p.email || '')}?subject=${encodeURIComponent('Tvoji zadaci')}&body=${encodeURIComponent(msg)}">✉️ Mail</a>
+      <a class="btnlink" href="${esc(url)}" target="_blank" rel="noopener">👁 Pogledaj kao ${esc(p.name.split(' ')[0])}</a>
+    </div>
+    <div class="muted small">Tko ima poveznicu, vidi zadatke te osobe — ne objavljuj je javno. Ako je procurila, napravi novu (stara odmah prestaje raditi).</div>
+    <div class="row"><button class="ghost danger small" data-act="shareReset" data-id="${pid}">↻ Nova poveznica</button>
+      <button style="margin-left:auto" onclick="this.closest('dialog').close()">Zatvori</button></div></div>`;
+  if (!dlg.open) dlg.showModal();
+}
+// --- Web Push ---
+const b64ToBytes = (b64) => { const s = atob((b64 + '='.repeat((4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(s, (c) => c.charCodeAt(0)); };
+async function pushState() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return isIOS() && !isStandalone() ? 'ios-install' : 'unsupported';
+  const reg = await navigator.serviceWorker.ready;
+  return (await reg.pushManager.getSubscription()) ? 'on' : Notification.permission === 'denied' ? 'denied' : 'off';
+}
+async function updatePushBtn() {
+  const b = $('#push-btn'); if (!b) return;
+  const st = await pushState().catch(() => 'unsupported');
+  b.dataset.state = st;
+  b.textContent = { on: '🔕 Isključi obavijesti na ovom uređaju', off: '🔔 Uključi obavijesti (jutarnji sažetak, javljanja)',
+    denied: '🔔 Obavijesti su blokirane u pregledniku', 'ios-install': '🔔 Obavijesti: najprije dodaj aplikaciju na početni zaslon',
+    unsupported: '🔔 Ovaj preglednik ne podržava obavijesti' }[st];
+  b.disabled = st === 'unsupported';
+}
+async function pushToggle(btn) {
+  const st = btn.dataset.state;
+  if (st === 'ios-install') return toast('Na iPhoneu: Safari → Dijeli → Dodaj na početni zaslon, pa otvori aplikaciju s ikone i uključi obavijesti.');
+  if (st === 'denied') return toast('Obavijesti su blokirane — dopusti ih u postavkama preglednika za ovu stranicu.');
+  const reg = await navigator.serviceWorker.ready;
+  if (st === 'on') {
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) { await fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'unsubscribe', endpoint: sub.endpoint }) }); await sub.unsubscribe(); }
+    toast('🔕 Obavijesti isključene'); return updatePushBtn();
+  }
+  try {
+    const cfg = await (await fetch('/api/push')).json();
+    if (!cfg.publicKey) throw new Error(cfg.error || 'Obavijesti nisu podešene');
+    if (await Notification.requestPermission() !== 'granted') { toast('Bez dopuštenja nema obavijesti'); return updatePushBtn(); }
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(cfg.publicKey) });
+    const r = await fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'subscribe', sub: sub.toJSON() }) });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Pretplata nije spremljena');
+    await fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'test' }) });
+    toast('🔔 Uključeno — upravo stiže probna obavijest');
+  } catch (e) { toast(e.message); }
+  updatePushBtn();
+}
+
 /* ---- Korisnici (samo administrator) ---- */
 async function loadAdmin() {
   try { S.admin = { ...S.admin, ...(await authOp('listUsers')) }; } catch (e) { toast(e.message); }
+  try { const r = await fetch('/api/backup'); if (r.ok) S.admin.backups = (await r.json()).backups; else S.admin.backups = []; } catch { S.admin.backups = []; }
   render();
 }
 function linkBox(label, url, mailSubject, mailBody) {
@@ -1582,6 +1672,14 @@ function adminView() {
         <button class="ghost small" data-act="resetUser" data-id="${u.id}" title="Napravi poveznicu za novu lozinku">🔑 Nova lozinka</button>
         ${u.id !== S.user.id ? `<button class="ghost small danger" data-act="delUser" data-id="${u.id}" title="Obriši korisnika i sve njegove podatke">✕</button>` : ''}
       </div>`).join('')}
+    </div>
+    <div class="panel stack" id="backups"><div class="row"><h3 class="grow">💾 Sigurnosne kopije</h3>
+      <button class="small" data-act="backupNow">Napravi kopiju sada</button></div>
+      <div class="muted small">Svake noći automatski se sprema kopija cijele baze (svi korisnici); čuva se 30 dana. Same datoteke priloga čuva Vercel Blob odvojeno.</div>
+      ${S.admin.backups ? (S.admin.backups.slice(0, 10).map((b) => `<div class="row small" style="border-bottom:1px solid var(--line);padding:4px 0">
+        <span class="grow">💾 ${esc(b.name.replace('delegator-', '').replace('.json', ''))}</span><span class="muted">${fmtSize(b.size)}</span>
+        <a href="/api/backup?file=${encodeURIComponent(b.name)}" download>⬇ Preuzmi</a></div>`).join('') || '<div class="muted small">Još nema kopija — prva nastaje noćas ili klikni „Napravi kopiju sada“.</div>')
+        : '<div class="muted small">Učitavam…</div>'}
     </div>
     ${invites.length ? `<div class="panel stack"><h3>Neiskorištene poveznice</h3>${invites.map((i) =>
       `<div class="small muted">${i.kind === 'reset' ? `🔑 nova lozinka za ${esc(i.for_name)}` : `✉️ pozivnica${i.note ? ' — ' + esc(i.note) : ''}`}
@@ -1677,10 +1775,12 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
 window.addEventListener('online', () => { if (S.offline) api().catch(() => {}); });
 
 function userMenu() {
+  setTimeout(updatePushBtn, 0);
   const dlg = $('#dlg');
   dlg.innerHTML = `<div class="stack">
     <h2>${esc(S.user.name)}</h2><div class="muted small">${esc(S.user.email)}${S.user.is_admin ? ' · administrator' : ''}</div>
     ${installButton()}
+    <button data-act="pushToggle" id="push-btn" disabled>🔔 Obavijesti na ovom uređaju…</button>
     <button data-act="tourStart">❓ Vodič kroz aplikaciju</button>
     ${hasDemo() ? '' : '<button data-act="addDemo">🎓 Dodaj primjere (probnu temu)</button>'}
     <button data-act="ical">📅 Rokovi u Google/Apple kalendaru</button>
@@ -1888,6 +1988,16 @@ document.addEventListener('click', async (e) => {
     case 'view': S.view = el.dataset.v; S.q = ''; if (S.view === 'admin') S.admin = null; save(); return render();
     case 'topic': S.topicId = id; S.view = 'topics'; S.q = ''; save(); return render();
     case 'clearSearch': S.q = ''; return render();
+    case 'shareLink': if ($('#dlg').open) $('#dlg').close(); return shareDialog(id);
+    case 'shareReset': if (confirm('Napraviti novu poveznicu? Stara odmah prestaje raditi pa osobi trebaš poslati novu.')) return shareDialog(id, true); return;
+    case 'seenAll': return run('markSeen', { ids: unseen().map((n) => n.id) });
+    case 'pushToggle': return pushToggle(el);
+    case 'backupNow': {
+      el.disabled = true; el.textContent = 'Spremam…';
+      const r = await fetch('/api/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => null);
+      const j = await r?.json().catch(() => ({}));
+      toast(r?.ok ? `💾 Kopija spremljena (${fmtSize(j.bytes || 0)})` : 'Kopija nije uspjela'); return loadAdmin();
+    }
     case 'tourNext': {
       if (S.tour?.step === 0 && $('#tour-demo')?.checked && !hasDemo()) {
         el.disabled = true; el.textContent = 'Pripremam primjere…';
@@ -2001,7 +2111,9 @@ document.addEventListener('click', async (e) => {
     }
     case 'filter': S.statusFilter = el.dataset.v; return render();
     case 'toggle': if (e.target.closest('button, a, input, textarea, select, form')) return;
-      S.open.has(id) ? S.open.delete(id) : S.open.add(id); return render();
+      S.open.has(id) ? S.open.delete(id) : S.open.add(id);
+      if (S.open.has(id)) { const u = unseen().filter((n) => n.task_id === id).map((n) => n.id); if (u.length) run('markSeen', { ids: u }); }
+      return render();
     case 'status': { const k = S.data.tasks.find((x) => x.id === id); return setTaskStatus(id, NEXT_STATUS[k.status]); }
     case 'chip': el.classList.toggle('on'); el.dataset.manual = '1'; return;
     case 'quick': return quickStep1();

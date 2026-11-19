@@ -11,6 +11,9 @@ Teme → zadaci → ljudi → bilješke za svaku osobu. Diktiranje glasom na hrv
 - **🔁 Ponavljanje:** svaki dan / tjedan / 2 tjedna / mjesec / godinu — kad je gotov, sam se napravi sljedeći.
 - **Pretplata na kalendar:** rokovi se sami pojavljuju u Google/Apple kalendaru (👤 → Rokovi u kalendaru).
 - **📎 Prilozi:** PDF, fotografije i dokumenti uz zadatak, svaku bilješku i cijelu temu — gumb 📎, povlačenje datoteke ili lijepljenje snimke zaslona. Datoteke su privatne.
+- **🔗 Poveznica za osobu:** svakome kome delegiraš pošalješ osobnu poveznicu — vidi samo svoje zadatke, označi „U tijeku/Gotovo“ i javi se porukom, bez registracije. Ti dobiješ javljanje u Pregledu.
+- **🔔 Obavijesti na mobitel:** jutarnji sažetak (što kasni, što je danas) i obavijest kad se netko javi.
+- **💾 Noćne sigurnosne kopije** cijele baze (30 dana), administrator ih vidi u kartici „Korisnici“.
 - **📝 Bilješke:** osobne bilješke (vidiš ih samo ti) s bojama, prikvačivanjem, diktiranjem i prilozima.
 - **🕸 Mreža:** teme, zadaci, ljudi i bilješke kao jedan graf.
 - **📲 Instalacija na mobitel** (PWA) i čitanje bez interneta.

@@ -1,6 +1,6 @@
 // Service worker: aplikacija se otvara i bez interneta, a zadnji podaci mogu se čitati offline.
 // Promijeni VERSION pri svakoj promjeni ovog popisa datoteka.
-const VERSION = 'v1.2';
+const VERSION = 'v1.6';
 const SHELL = `delegator-shell-${VERSION}`;
 const DATA = 'delegator-data';
 const FILES = ['/', '/manifest.webmanifest', '/vendor/cytoscape.min.js', '/icons/icon-192.png', '/icons/icon-512.png'];
@@ -48,6 +48,7 @@ self.addEventListener('fetch', (e) => {
 
   // Stranica: mreža, a bez nje spremljena ljuska aplikacije.
   if (req.mode === 'navigate') {
+    if (url.pathname !== '/') return; // npr. /z/TOKEN (stranica osobe) ide samo s mreže i ne smije zamijeniti aplikaciju
     e.respondWith(fetch(req).then((res) => {
       const copy = res.clone(); caches.open(SHELL).then((c) => c.put('/', copy));
       return res;
@@ -58,4 +59,23 @@ self.addEventListener('fetch', (e) => {
   if (/^\/(vendor|icons)\/|^\/manifest\.webmanifest$/.test(url.pathname)) {
     e.respondWith(caches.match(req).then((hit) => hit || fetch(req)));
   }
+});
+
+// Push obavijesti: jutarnji sažetak rokova i javljanja osoba (vidi api/_push.js).
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { d = { title: 'Delegator', body: e.data?.text() }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Delegator', {
+    body: d.body || '', tag: d.tag, renotify: Boolean(d.tag), icon: '/icons/icon-192.png', badge: '/icons/icon-192.png',
+    data: { url: d.url || '/' },
+  }));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = new URL(e.notification.data?.url || '/', self.location.origin).href;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    const open = list.find((c) => new URL(c.url).origin === self.location.origin);
+    if (open) { open.focus(); return open.navigate(url).catch(() => {}); }
+    return self.clients.openWindow(url);
+  }));
 });

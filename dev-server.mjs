@@ -6,10 +6,14 @@ import parse from './api/parse.js';
 import auth from './api/auth.js';
 import ical from './api/ical.js';
 import files from './api/files.js';
+import guest from './api/guest.js';
+import push from './api/push.js';
+import cron from './api/cron.js';
+import backup from './api/backup.js';
 
 const port = process.env.PORT || 3000;
 http.createServer(async (req, res) => {
-  const routes = { '/api/data': data, '/api/parse': parse, '/api/auth': auth, '/api/ical': ical, '/api/files': files };
+  const routes = { '/api/data': data, '/api/parse': parse, '/api/auth': auth, '/api/ical': ical, '/api/files': files, '/api/guest': guest, '/api/push': push, '/api/cron': cron, '/api/backup': backup };
   const handler = routes[req.url.split('?')[0]];
   if (handler) {
     req.query = Object.fromEntries(new URL(req.url, 'http://x').searchParams);
@@ -34,5 +38,7 @@ http.createServer(async (req, res) => {
     } catch { res.statusCode = 404; return res.end(); }
   }
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.end(await readFile(new URL('./index.html', import.meta.url)));
+  // /z/TOKEN = stranica za osobu kojoj se delegira (na Vercelu isto radi rewrite u vercel.json)
+  const page = path.startsWith('/z/') ? './guest.html' : './index.html';
+  res.end(await readFile(new URL(page, import.meta.url)));
 }).listen(port, () => console.log(`Delegator: http://localhost:${port}`));

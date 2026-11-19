@@ -24,6 +24,31 @@
           "value": "application/manifest+json"
         }
       ]
+    },
+    {
+      "source": "/z/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/z/:token",
+      "destination": "/guest.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "0 6 * * *"
     }
   ]
 }

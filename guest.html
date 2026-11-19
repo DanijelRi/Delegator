@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#4f6bed">
+<title>Moji zadaci — Delegator</title>
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+<style>
+  /* Stranica za osobu kojoj se delegira: samo njeni zadaci, bez računa. Isti vizualni jezik kao aplikacija. */
+  :root { --bg: #f5f6f8; --card: #fff; --ink: #1d2330; --muted: #6b7385; --line: #e3e6ec;
+          --accent: #4f6bed; --accent-soft: #eef1fe; --danger: #d64545; --ok: #2f9e6b; --warn: #d98b1a; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #12151c; --card: #1b1f29; --ink: #e8ebf4; --muted: #9aa3ba; --line: #2a3040;
+          --accent: #8197ff; --accent-soft: #232b48; --danger: #f07a77; --ok: #4fc08d; --warn: #e9a23b; color-scheme: dark; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
+  header { padding: 8px 0 18px; }
+  header .brand { color: var(--muted); font-size: 14px; }
+  h1 { font-size: 24px; margin: 4px 0 2px; }
+  .sub { color: var(--muted); }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 24px 0 10px; }
+  h2.late { color: var(--danger); }
+  .card { background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--c, var(--accent)); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .card + .card { margin-top: 10px; }
+  .card.done { opacity: .75; } .card.done .t { text-decoration: line-through; }
+  .t { font-weight: 650; font-size: 17px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 14px; color: var(--muted); }
+  .due.late { color: var(--danger); font-weight: 600; } .hi { color: var(--danger); font-weight: 600; }
+  .desc { white-space: pre-wrap; }
+  .notes { display: flex; flex-direction: column; gap: 6px; background: var(--bg); border-radius: 8px; padding: 10px; font-size: 15px; }
+  .notes .n { white-space: pre-wrap; } .notes .me { color: var(--accent); }
+  .notes small { color: var(--muted); }
+  .files { display: flex; flex-wrap: wrap; gap: 8px; }
+  .files a { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; text-decoration: none; color: var(--ink); font-size: 14px; background: var(--card); }
+  .files img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 10px; padding: 9px 14px; cursor: pointer; }
+  button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  button.done-btn { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 600; }
+  button:disabled { opacity: .5; }
+  button:focus-visible, a:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  textarea { width: 100%; font: inherit; color: inherit; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; min-height: 70px; resize: vertical; }
+  .reply { display: flex; flex-direction: column; gap: 8px; }
+  .reply[hidden] { display: none; }
+  .empty, .error { text-align: center; color: var(--muted); padding: 40px 10px; }
+  .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 15px; }
+  footer { margin-top: 30px; color: var(--muted); font-size: 13px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">Učitavam…</div></div>
+<script>
+const token = (location.pathname.match(/^\/z\/([\w-]{20,})/) || [])[1] || new URLSearchParams(location.search).get('t');
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const fmtDate = (d) => d ? d.split('-').reverse().join('.') + '.' : '';
+const fileUrl = (a, thumb) => `/api/guest?t=${encodeURIComponent(token)}&file=${a.id}${thumb ? '&t=1' : ''}`;
+const isImg = (a) => /^image\/(png|jpe?g|webp|gif)$/i.test(a.mime || '');
+let D = null;
+function toast(m) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 2400); }
+
+async function load() {
+  if (!token) return fail('Poveznica nije potpuna. Otvori je ponovno iz poruke koju si dobio/la.');
+  try {
+    const r = await fetch(`/api/guest?t=${encodeURIComponent(token)}`);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return fail(j.error || 'Nešto nije u redu s poveznicom.');
+    D = j; render();
+  } catch { fail('Nema veze s internetom. Pokušaj ponovno.'); }
+}
+function fail(msg) { $('#app').innerHTML = `<div class="error"><div style="font-size:40px">🔗</div><p>${esc(msg)}</p></div>`; }
+
+function card(k) {
+  const td = today(), late = k.status !== 'done' && k.due_date && k.due_date < td;
+  const notes = D.notes.filter((n) => n.task_id === k.id);
+  const files = D.files.filter((a) => a.task_id === k.id || notes.some((n) => n.id === a.note_id));
+  const st = (v, l) => `<button data-st="${v}" data-id="${k.id}" class="${k.status === v ? 'on' : ''} ${v === 'done' && k.status !== 'done' ? 'done-btn' : ''}">${l}</button>`;
+  return `<article class="card ${k.status}" style="--c:${esc(k.color || '#4f6bed')}">
+    <div><div class="t">${k.priority === 'high' ? '❗ ' : ''}${esc(k.title)}</div>
+      <div class="meta"><span>${esc(k.topic)}</span>
+        ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${k.start_date ? fmtDate(k.start_date) + ' – ' : ''}${fmtDate(k.due_date)}${late ? ' · kasni' : ''}</span>` : ''}
+        ${k.priority === 'high' ? '<span class="hi">hitno</span>' : ''}${k.repeat ? '<span>🔁 ponavlja se</span>' : ''}</div></div>
+    ${k.description ? `<div class="desc">${esc(k.description)}</div>` : ''}
+    ${notes.length ? `<div class="notes">${notes.map((n) => `<div class="n ${n.from_person ? 'me' : ''}">${n.from_person ? '<b>Ti:</b> ' : ''}${esc(n.body)}
+      <small> · ${new Date(n.created_at).toLocaleDateString('hr-HR')}</small></div>`).join('')}</div>` : ''}
+    ${files.length ? `<div class="files">${files.map((a) => isImg(a)
+      ? `<a href="${fileUrl(a)}" target="_blank" rel="noopener" title="${esc(a.name)}"><img src="${fileUrl(a, true)}" alt="${esc(a.name)}" loading="lazy"></a>`
+      : `<a href="${fileUrl(a)}" target="_blank" rel="noopener">📎 ${esc(a.name)}</a>`).join('')}</div>` : ''}
+    <div class="actions">${st('todo', 'Za napraviti')}${st('doing', 'U tijeku')}${st('done', '✓ Gotovo')}
+      <button data-reply="${k.id}">💬 Javi se</button></div>
+    <form class="reply" data-id="${k.id}" hidden>
+      <textarea name="body" placeholder="Npr. „Naručeno, stiže u petak“ ili pitanje…" maxlength="2000"></textarea>
+      <div class="actions"><button type="submit" class="on">Pošalji</button><button type="button" data-cancel>Odustani</button></div>
+    </form>
+  </article>`;
+}
+function render() {
+  const td = today();
+  const open = D.tasks.filter((k) => k.status !== 'done');
+  const late = open.filter((k) => k.due_date && k.due_date < td), rest = open.filter((k) => !late.includes(k));
+  const done = D.tasks.filter((k) => k.status === 'done');
+  $('#app').innerHTML = `<header><div class="brand">✅ Delegator</div>
+      <h1>Bok ${esc(D.person.name.split(' ')[0])} 👋</h1>
+      <div class="sub">Zadaci koje ti je dodijelio/la <b>${esc(D.owner)}</b>. Označi napredak ili se javi — ${esc(D.owner.split(' ')[0])} to odmah vidi.</div></header>
+    ${late.length ? `<h2 class="late">⚠️ Kasni (${late.length})</h2>${late.map(card).join('')}` : ''}
+    <h2>Otvoreni (${rest.length})</h2>${rest.map(card).join('') || '<div class="empty">Nema otvorenih zadataka 🎉</div>'}
+    ${done.length ? `<h2>Gotovo nedavno</h2>${done.map(card).join('')}` : ''}
+    <footer>Ovo je tvoja osobna poveznica — ne prosljeđuj je drugima.</footer>`;
+}
+async function send(body) {
+  const r = await fetch('/api/guest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: token, ...body }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Greška');
+}
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.st) {
+    const k = D.tasks.find((x) => x.id === Number(b.dataset.id));
+    if (k.status === b.dataset.st) return;
+    b.disabled = true;
+    try { await send({ op: 'status', task_id: k.id, status: b.dataset.st }); toast(b.dataset.st === 'done' ? '✓ Super, označeno kao gotovo' : 'Spremljeno'); await load(); }
+    catch (err) { toast(err.message); b.disabled = false; }
+  }
+  if (b.dataset.reply) { const f = document.querySelector(`form.reply[data-id="${b.dataset.reply}"]`); f.hidden = false; f.body.focus(); }
+  if ('cancel' in b.dataset) b.closest('form').hidden = true;
+});
+document.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target, body = f.body.value.trim(); if (!body) return;
+  const btn = f.querySelector('[type=submit]'); btn.disabled = true;
+  try { await send({ op: 'comment', task_id: Number(f.dataset.id), body }); toast('💬 Poslano'); await load(); }
+  catch (err) { toast(err.message); btn.disabled = false; }
+});
+load();
+</script>
+</body>
+</html>

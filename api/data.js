@@ -3,6 +3,7 @@
 // POST /api/data {op, ...}  -> izvrši operaciju i vrati sve podatke
 // Svaki upit je ograničen na user_id prijavljenog korisnika — nitko ne vidi tuđe podatke.
 import { del } from '@vercel/blob';
+import { randomBytes } from 'node:crypto';
 import { sql, currentUser, readBody, txt } from './_lib.js';
 
 async function loadAll(uid) {
@@ -11,12 +12,12 @@ async function loadAll(uid) {
     sql`SELECT id, parent_id, title, description, color, archived, is_demo FROM topics WHERE user_id = ${uid} ORDER BY archived, created_at`,
     sql`SELECT t.id, t.topic_id, t.title, t.description, t.status, t.priority,
                to_char(t.due_date, 'YYYY-MM-DD') AS due_date, to_char(t.start_date, 'YYYY-MM-DD') AS start_date,
-               t.repeat, t.created_at,
+               t.repeat, t.created_at, t.completed_at,
                COALESCE(array_agg(tp.person_id) FILTER (WHERE tp.person_id IS NOT NULL), '{}') AS people
         FROM tasks t LEFT JOIN task_people tp ON tp.task_id = t.id
         WHERE t.user_id = ${uid}
         GROUP BY t.id ORDER BY t.created_at`,
-    sql`SELECT id, task_id, person_id, body, created_at FROM notes WHERE user_id = ${uid} ORDER BY created_at`,
+    sql`SELECT id, task_id, person_id, body, from_person, seen, created_at FROM notes WHERE user_id = ${uid} ORDER BY created_at`,
     sql`SELECT id, title, body, color, pinned, is_demo, created_at, updated_at FROM pnotes WHERE user_id = ${uid} ORDER BY pinned DESC, updated_at DESC`,
     sql`SELECT id, task_id, note_id, topic_id, pnote_id, name, mime, size, created_at FROM attachments WHERE user_id = ${uid} ORDER BY created_at`,
   ]);
@@ -54,7 +55,7 @@ function addPeriod(iso, repeat, n = 1) {
 }
 const daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
 // Zadatak koji se ponavlja upravo je završen: napravi sljedeći (isti ljudi, tema, opis), bez bilježaka.
-async function spawnNext(id, uid) {
+export async function spawnNext(id, uid) {
   const [k] = await sql`SELECT id, topic_id, title, description, priority, repeat,
       to_char(due_date, 'YYYY-MM-DD') AS due, to_char(start_date, 'YYYY-MM-DD') AS start
     FROM tasks WHERE id = ${id} AND user_id = ${uid}`;
@@ -200,7 +201,9 @@ const ops = {
     await sql.transaction([
       sql`UPDATE tasks SET title = ${txt(b.title)}, description = ${txt(b.description)},
           status = ${b.status}, priority = ${b.priority}, due_date = ${due}, start_date = ${start},
-          repeat = ${repeatOf(b.repeat)}, topic_id = ${b.topic_id} WHERE id = ${b.id} AND user_id = ${uid}`,
+          repeat = ${repeatOf(b.repeat)}, topic_id = ${b.topic_id},
+          completed_at = CASE WHEN ${b.status} = 'done' THEN COALESCE(completed_at, now()) ELSE NULL END
+          WHERE id = ${b.id} AND user_id = ${uid}`,
       sql`DELETE FROM task_people WHERE task_id = ${b.id}`,
       sql`INSERT INTO task_people (task_id, person_id) SELECT ${b.id}, unnest(${people}::int[])`,
     ]);
@@ -209,7 +212,9 @@ const ops = {
   setStatus: async (b, uid) => {
     const [before] = await sql`SELECT status FROM tasks WHERE id = ${b.id} AND user_id = ${uid}`;
     if (!before) throw notFound();
-    await sql`UPDATE tasks SET status = ${b.status} WHERE id = ${b.id} AND user_id = ${uid}`;
+    await sql`UPDATE tasks SET status = ${b.status},
+      completed_at = CASE WHEN ${b.status} = 'done' THEN COALESCE(completed_at, now()) ELSE NULL END
+      WHERE id = ${b.id} AND user_id = ${uid}`;
     if (b.status === 'done' && before.status !== 'done') return spawnNext(b.id, uid);
   },
   // Kalendar: novi rok (povlačenjem zadatka na drugi dan); prazno = bez roka.
@@ -288,6 +293,20 @@ const ops = {
     await purge(files);
   },
 
+  // --- poveznica za osobu kojoj se delegira (/z/TOKEN) ---
+  shareLink: async (b, uid) => {
+    const [p] = await sql`SELECT id, share_token FROM people WHERE id = ${b.id} AND user_id = ${uid}`;
+    if (!p) throw notFound();
+    let token = p.share_token;
+    if (!token || b.reset) {
+      token = randomBytes(24).toString('base64url');
+      await sql`UPDATE people SET share_token = ${token} WHERE id = ${p.id}`;
+    }
+    return { token };
+  },
+  // javljanja osoba (bilješke s from_person) označi pročitanima
+  markSeen: (b, uid) => sql`UPDATE notes SET seen = true WHERE user_id = ${uid} AND NOT seen AND id = ANY(${ids(b.ids)}::int[])`,
+
   // --- dobrodošlica ---
   createDemo: (b, uid) => createDemo(uid),
   // Briše sve probne podatke (i zadatke koje je korisnik sam dodao u probnu temu) zajedno s prilozima.
@@ -332,7 +351,7 @@ export default async function handler(req, res) {
     }
     const data = await loadAll(me.id);
     data.user = me;
-    if (['quickAdd', 'addTopic', 'setStatus', 'updateTask', 'addPnote'].includes(body?.op)) data.result = result || null;
+    if (['quickAdd', 'addTopic', 'setStatus', 'updateTask', 'addPnote', 'shareLink'].includes(body?.op)) data.result = result || null;
     return res.status(200).json(data);
   } catch (e) {
     if (!e.status) console.error(e);

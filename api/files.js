@@ -4,14 +4,13 @@
 // GET    /api/files?id=ID[&dl=1 | &t=1]                         preuzimanje / prikaz / sličica
 // Tijelo POST-a čitamo kao tok bajtova (req.body se namjerno ne dira, da ga Vercel ne pokuša parsirati).
 // DELETE /api/files?id=ID
-import { Readable } from 'node:stream';
-import { put, get, del } from '@vercel/blob';
+import { put, del } from '@vercel/blob';
+import { safeName, streamAttachment } from './_files.js';
 import { sql, currentUser } from './_lib.js';
 
 export const MAX_BYTES = 20 * 1024 * 1024; // 20 MB po datoteci
 const TARGETS = { task: 'task_id', note: 'note_id', topic: 'topic_id', pnote: 'pnote_id' };
 // Ove vrste smiju se prikazati u pregledniku; sve ostalo (npr. HTML, SVG) samo se preuzima, da ne može izvršiti skriptu.
-const INLINE = /^(image\/(png|jpe?g|gif|webp|heic|heif|avif)|application\/pdf|text\/plain|audio\/[\w.+-]+|video\/(mp4|webm|quicktime))$/i;
 
 const fail = (status, error) => Object.assign(new Error(error), { status });
 
@@ -26,7 +25,6 @@ async function owns(kind, id, uid) {
 }
 
 // Naziv datoteke bez putanje i čudnih znakova (za putanju u Blobu), a izvorni naziv čuvamo u bazi.
-const safeName = (n) => n.normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^\w.-]+/g, '_').replace(/^_+|_+$/g, '').slice(-80) || 'datoteka';
 
 async function readBody(req) {
   const declared = Number(req.headers['content-length'] || 0);
@@ -92,21 +90,7 @@ export default async function handler(req, res) {
     }
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-    const thumb = q.t && a.thumb_url;
-    const r = await get(thumb ? a.thumb_url : a.blob_url, { access: 'private' });
-    if (!r || r.statusCode !== 200) throw fail(404, 'Datoteka nije pronađena');
-    const inline = !q.dl && INLINE.test(a.mime || '');
-    res.setHeader('Content-Type', thumb ? 'image/jpeg' : a.mime || 'application/octet-stream');
-    const len = thumb ? r.blob.size : a.size;
-    if (len) res.setHeader('Content-Length', String(len));
-    res.setHeader('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename="${safeName(a.name)}"; filename*=UTF-8''${encodeURIComponent(a.name)}`);
-    // datoteka se nikad ne mijenja, pa je preglednik smije čuvati; „private“ = ne u dijeljenim spremnicima
-    // datoteke se ne mijenjaju; iznimka je sličica koja još ne postoji (može stići malo kasnije)
-    res.setHeader('Cache-Control', q.t && !thumb ? 'private, max-age=60' : 'private, max-age=604800, immutable');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'; sandbox");
-    res.statusCode = 200;
-    Readable.fromWeb(r.stream).pipe(res);
+    return streamAttachment(res, a, q);
   } catch (e) {
     if (!e.status) console.error(e);
     if (!res.headersSent) res.status(e.status || 500).json({ error: e.status ? e.message : 'Greška pri radu s prilogom' });

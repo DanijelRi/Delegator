@@ -155,3 +155,26 @@ ALTER TABLE users  ADD COLUMN IF NOT EXISTS onboarded boolean NOT NULL DEFAULT f
 ALTER TABLE topics ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false;
 ALTER TABLE people ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false;
 ALTER TABLE pnotes ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false;
+
+-- Kad je zadatak završen (za statistiku i „gotovo nedavno“). Stari gotovi zadaci dobiju datum nastanka kao procjenu.
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at timestamptz;
+UPDATE tasks SET completed_at = created_at WHERE status = 'done' AND completed_at IS NULL;
+
+-- Tajna poveznica za osobu kojoj se delegira (/z/TOKEN): vidi svoje zadatke, mijenja status, javlja se komentarom.
+ALTER TABLE people ADD COLUMN IF NOT EXISTS share_token text;
+CREATE UNIQUE INDEX IF NOT EXISTS people_share_idx ON people (share_token);
+
+-- Bilješka koju je napisala sama osoba preko svoje poveznice („javljanje“); seen = vlasnik ju je vidio.
+ALTER TABLE notes ADD COLUMN IF NOT EXISTS from_person boolean NOT NULL DEFAULT false;
+ALTER TABLE notes ADD COLUMN IF NOT EXISTS seen boolean NOT NULL DEFAULT true;
+
+-- Push obavijesti (Web Push) po uređaju korisnika.
+CREATE TABLE IF NOT EXISTS push_subs (
+  id         serial PRIMARY KEY,
+  user_id    int NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint   text NOT NULL UNIQUE,
+  p256dh     text NOT NULL,
+  auth       text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS push_subs_user_idx ON push_subs (user_id);
