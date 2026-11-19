@@ -28,9 +28,9 @@ http.createServer(async (req, res) => {
   }
   // statične datoteke: biblioteke (vidi `npm run vendor`), ikone, manifest i service worker
   const path = req.url.split('?')[0];
-  const m = path.match(/^\/((?:vendor|icons)\/(?:[\w-]+\/)*[\w.-]+\.(?:m?js|png|svg|wasm)|sw\.js|manifest\.webmanifest)$/);
+  const m = path.match(/^\/((?:vendor|icons)\/(?:[\w-]+\/)*[\w.-]+\.(?:m?js|png|svg|wasm|woff2)|sw\.js|manifest\.webmanifest)$/);
   if (m) {
-    const types = { js: 'text/javascript; charset=utf-8', mjs: 'text/javascript; charset=utf-8', png: 'image/png', svg: 'image/svg+xml', wasm: 'application/wasm', webmanifest: 'application/manifest+json' };
+    const types = { js: 'text/javascript; charset=utf-8', mjs: 'text/javascript; charset=utf-8', png: 'image/png', svg: 'image/svg+xml', wasm: 'application/wasm', woff2: 'font/woff2', webmanifest: 'application/manifest+json' };
     try {
       const body = await readFile(new URL(`./${m[1]}`, import.meta.url));
       res.setHeader('Content-Type', types[m[1].split('.').pop()]);

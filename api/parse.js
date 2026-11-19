@@ -88,7 +88,7 @@ export default async function handler(req, res) {
     if (!used.length) return res.status(429).json({ error: `Dnevni limit brzog unosa (${DAILY_LIMIT}) je potrošen. Sutra opet, a do tada zadatke dodaj ručno.` });
 
     const [people, topics] = await Promise.all([
-      sql`SELECT id, name, role FROM people WHERE user_id = ${me.id} ORDER BY name`,
+      sql`SELECT id, name, role, is_me FROM people WHERE user_id = ${me.id} ORDER BY is_me DESC, name`,
       sql`SELECT id, parent_id, title FROM topics WHERE user_id = ${me.id} AND NOT archived ORDER BY created_at`,
     ]);
     // Puni put teme (Sajam › Štand) da AI razlikuje istoimene podteme.
@@ -113,7 +113,9 @@ export default async function handler(req, res) {
       multi ? 'Ovo je ZAPISNIK ili POPIS: izvuci SVE zadatke koji se spominju (najviše 15), svaki kao zaseban zadatak sa svojom osobom, rokom i bilješkama, i pozovi alat predlozi_zadatke. Ne spajaj različite zadatke u jedan i ne izmišljaj zadatke kojih nema.'
         : 'Iz toga izvuci JEDAN zadatak i pozovi alat predlozi_zadatak.',
       `Današnji datum: ${todayInfo()}. "Do petka" znači najbliži idući petak (ako je danas petak, onda danas). "Sutra", "za tjedan dana", "do kraja mjeseca" izračunaj od današnjeg datuma.`,
-      `Postojeće osobe: ${people.map((p) => p.name + (p.role ? ` (${p.role})` : '')).join(', ') || 'nema'}.`,
+      `Postojeće osobe: ${people.map((p) => p.name + (p.is_me ? ' (= sam korisnik)' : p.role ? ` (${p.role})` : '')).join(', ') || 'nema'}.`,
+      'Osoba "Ja" je sam korisnik. Ako zadatak radi on sam (prvo lice: "moram", "trebam", "ja ću", "nazvat ću", "podsjeti me", "napravim") ili kaže "ja i Marko", stavi "Ja" u people. '
+        + 'Ako rečenica samo nabraja posao bez osobe, people ostavi prazan.',
       `Postojeće teme (podteme su zapisane kao "Tema › Podtema"; u odgovoru navedi točan zapis s popisa): ${topics.map((t) => t.path).join(' | ') || 'nema'}.`,
       body.topic_hint ? `Korisnik je trenutno u temi: "${body.topic_hint}" — koristi je ako rečenica ne upućuje na drugu temu.` : '',
       'Iznose, budžete, kontakte i upute stavi u bilješke za zaduženu osobu, ne u naslov.',
@@ -173,9 +175,11 @@ export function normalize(raw, people, topics) {
       const stem = a.length > 3 ? a.slice(0, -1) : a.slice(0, 2);
       return b.startsWith(stem) && Math.abs(b.length - a.length) <= 2;
     };
+    // „ja/meni/mene/sebi…“ = sam korisnik
+    if (['ja', 'meni', 'mene', 'me', 'mi', 'sebi', 'sebe', 'sam', 'moje', 'ja sam'].includes(n)) return people.find((p) => p.is_me) || null;
     return people.find((p) => norm(p.name) === n)
-      || people.find((p) => first(p.name) === first(n))
-      || people.find((p) => sameStem(first(p.name), first(n)))
+      || people.find((p) => !p.is_me && first(p.name) === first(n))
+      || people.find((p) => !p.is_me && sameStem(first(p.name), first(n)))
       || null;
   };
   const known = [], unknown = [];

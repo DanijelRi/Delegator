@@ -2,41 +2,85 @@
 <html lang="hr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Delegator — teme, zadaci, ljudi</title>
 <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<meta name="theme-color" content="#4f6bed">
+<meta name="theme-color" content="#f3f4f8" id="theme-color">
+<script>/* tema prije iscrtavanja, da nema bljeska */ try { const t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}</script>
+<link rel="preload" href="/vendor/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Delegator">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
+  /* Font Inter (lokalno u vendor/fonts, latinica + hrvatska slova) */
+  @font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 100 900;
+    src: url(/vendor/fonts/inter-latin-ext-wght-normal.woff2) format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+  @font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 100 900;
+    src: url(/vendor/fonts/inter-latin-wght-normal.woff2) format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+
+  /* Boje kao varijable: svijetla tema ovdje, tamna ispod (automatski po uređaju ili ručno u izborniku 👤). */
   :root {
-    --bg: #f5f6f8; --card: #fff; --ink: #1d2330; --muted: #6b7385; --line: #e3e6ec;
-    --accent: #4f6bed; --accent-soft: #eef1fe; --danger: #d64545; --ok: #2f9e6b; --warn: #d98b1a;
-    --radius: 10px;
+    color-scheme: light;
+    --bg: #f3f4f8; --card: #fff; --ink: #1a1f2b; --muted: #677084; --line: #e5e7ee; --line-strong: #cdd2dd;
+    --soft: #f7f8fa; --hover: #f0f2f6; --track: #eceef3; --input: #fff;
+    --accent: #4f6bed; --accent-solid: #4f6bed; --accent-ink: #3d58d8; --accent-soft: #eef1fe; --danger: #d64545; --ok: #2f9e6b; --warn: #d98b1a;
+    --st-todo-bg: #eef0f4; --st-todo: #4a5266; --st-doing-bg: #fff1dc; --st-doing: #a3650c; --st-done-bg: #e3f5ec; --st-done: #1f7a50;
+    --mark: #ffe58a; --from-person: #eef5ff; --unseen-bg: #fff8f8; --demo-bg: #fff8e1; --demo-line: #f3dfa2; --pdf-bg: #e9ecf2; --bar-new: #c9d1f6;
+    --pnote-mix: 100%;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+    --shadow: 0 4px 14px rgba(16,24,40,.08), 0 1px 3px rgba(16,24,40,.05);
+    --shadow-lg: 0 20px 48px rgba(16,24,40,.20);
+    --glass: rgba(255,255,255,.82);
+    --radius: 14px; --radius-sm: 10px;
+    --ease: cubic-bezier(.2,.8,.2,1);
+    --tabbar-h: 0px;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e1117; --card: #171b24; --ink: #e6e9f0; --muted: #98a0b3; --line: #262c39; --line-strong: #39404f;
+    --soft: #1b202a; --hover: #222836; --track: #252b38; --input: #12151d;
+    --accent: #7d94ff; --accent-solid: #5a72ee; --accent-ink: #9aacff; --accent-soft: #232a47; --danger: #f07a77; --ok: #4fc08d; --warn: #f0b04a;
+    --st-todo-bg: #262c39; --st-todo: #b9c0d0; --st-doing-bg: #3a2c14; --st-doing: #f0b04a; --st-done-bg: #15342a; --st-done: #6fd6a3;
+    --mark: #6a5a12; --from-person: #1b2540; --unseen-bg: #2a1b1e; --demo-bg: #2c2613; --demo-line: #4a3f1c; --pdf-bg: #0a0c11; --bar-new: #3b4677;
+    --pnote-mix: 22%;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.35); --shadow: 0 6px 18px rgba(0,0,0,.4); --shadow-lg: 0 24px 56px rgba(0,0,0,.6);
+    --glass: rgba(23,27,36,.82);
+  } }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0e1117; --card: #171b24; --ink: #e6e9f0; --muted: #98a0b3; --line: #262c39; --line-strong: #39404f;
+    --soft: #1b202a; --hover: #222836; --track: #252b38; --input: #12151d;
+    --accent: #7d94ff; --accent-solid: #5a72ee; --accent-ink: #9aacff; --accent-soft: #232a47; --danger: #f07a77; --ok: #4fc08d; --warn: #f0b04a;
+    --st-todo-bg: #262c39; --st-todo: #b9c0d0; --st-doing-bg: #3a2c14; --st-doing: #f0b04a; --st-done-bg: #15342a; --st-done: #6fd6a3;
+    --mark: #6a5a12; --from-person: #1b2540; --unseen-bg: #2a1b1e; --demo-bg: #2c2613; --demo-line: #4a3f1c; --pdf-bg: #0a0c11; --bar-new: #3b4677;
+    --pnote-mix: 22%;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.35); --shadow: 0 6px 18px rgba(0,0,0,.4); --shadow-lg: 0 24px 56px rgba(0,0,0,.6);
+    --glass: rgba(23,27,36,.82);
   }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); }
+  body { margin: 0; font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; background: var(--bg); color: var(--ink); }
   button, input, select, textarea { font: inherit; color: inherit; }
   button { cursor: pointer; border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 6px 12px; }
-  button:hover { border-color: #c9ceda; }
+  button:hover { border-color: var(--line-strong); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   button.ghost { border-color: transparent; background: transparent; color: var(--muted); padding: 4px 8px; }
-  button.ghost:hover { color: var(--ink); background: #eceef3; }
+  button.ghost:hover { color: var(--ink); background: var(--hover); }
   button.danger:hover { color: var(--danger); }
-  input, select, textarea { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff; width: 100%; }
+  input, select, textarea { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: var(--input); width: 100%; }
   textarea { resize: vertical; min-height: 38px; }
   input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
 
   header { position: sticky; top: 0; z-index: 5; background: var(--card); border-bottom: 1px solid var(--line);
            display: flex; gap: 12px; align-items: center; padding: 10px 16px; flex-wrap: wrap; }
   header h1 { font-size: 18px; margin: 0 8px 0 0; }
-  nav { display: flex; gap: 4px; }
-  nav button { border-color: transparent; }
-  nav button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  header nav { display: flex; gap: 4px; }
+  header nav button { border-color: transparent; }
+  header nav button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
   header .search { margin-left: auto; max-width: 260px; }
 
   main { max-width: 1200px; margin: 0 auto; padding: 16px 16px 96px; }
@@ -45,7 +89,7 @@
 
   .panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; }
   .topic-item { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 8px; cursor: pointer; }
-  .topic-item:hover { background: #f1f3f6; }
+  .topic-item:hover { background: var(--hover); }
   .topic-item.on { background: var(--accent-soft); }
   .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   .count { margin-left: auto; color: var(--muted); font-size: 12px; }
@@ -64,19 +108,19 @@
   .task-title { font-weight: 600; }
   .task-body { border-top: 1px solid var(--line); padding: 12px; }
   .status { flex: none; border-radius: 999px; font-size: 12px; padding: 2px 10px; border: 1px solid transparent; white-space: nowrap; }
-  .st-todo { background: #eef0f4; color: #4a5266; }
-  .st-doing { background: #fff3e0; color: #a3650c; }
-  .st-done { background: #e5f6ee; color: #1f7a50; }
+  .st-todo { background: var(--st-todo-bg); color: var(--st-todo); }
+  .st-doing { background: var(--st-doing-bg); color: var(--st-doing); }
+  .st-done { background: var(--st-done-bg); color: var(--st-done); }
   .prio-high { color: var(--danger); font-weight: 600; }
   .prio-low { color: var(--muted); }
   .due.late { color: var(--danger); font-weight: 600; }
 
   .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-  .chip { border-radius: 999px; padding: 3px 10px; font-size: 13px; border: 1px solid var(--line); background: #fff; }
+  .chip { border-radius: 999px; padding: 3px 10px; font-size: 13px; border: 1px solid var(--line); background: var(--card); }
   .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
   .chip.static { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
 
-  .notes-block { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fafbfc; }
+  .notes-block { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--soft); }
   .notes-block + .notes-block { margin-top: 8px; }
   .note { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px dashed var(--line); }
   .note:last-of-type { border-bottom: 0; }
@@ -103,10 +147,10 @@
   .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -2px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .login { max-width: 360px; margin: 10vh auto; }
-  .offline { width: 100%; background: #fff3e0; color: #a3650c; font-size: 13px; padding: 4px 10px; border-radius: 6px; text-align: center; }
-  mark { background: #ffe58a; color: inherit; border-radius: 3px; padding: 0 1px; }
+  .offline { width: 100%; background: var(--st-doing-bg); color: var(--st-doing); font-size: 13px; padding: 4px 10px; border-radius: 6px; text-align: center; }
+  mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1px; }
   .hits { margin: -4px 0 8px; padding: 6px 12px 8px 24px; border: 1px solid var(--line); border-top: 0;
-          border-radius: 0 0 var(--radius) var(--radius); background: #fafbfc; }
+          border-radius: 0 0 var(--radius) var(--radius); background: var(--soft); }
   .hits > * + * { margin-top: 4px; }
   a { color: var(--accent); }
 
@@ -116,7 +160,7 @@
   .twisty[data-act]:hover { color: var(--ink); }
   .crumbs a { color: var(--muted); text-decoration: none; } .crumbs a:hover { color: var(--accent); }
   .subcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
-  .subcard { text-align: left; display: flex; flex-direction: column; gap: 2px; border-left: 4px solid; padding: 8px 10px; background: #fafbfc; }
+  .subcard { text-align: left; display: flex; flex-direction: column; gap: 2px; border-left: 4px solid; padding: 8px 10px; background: var(--soft); }
 
   /* kalendar */
   main:has(.cal), main:has(.net-wrap) { max-width: none; padding-bottom: 24px; }
@@ -128,7 +172,7 @@
               gap: 4px; min-height: max(560px, calc(100vh - 215px)); }
   .cal-grid.week { grid-template-rows: 1fr; }
   .cday { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 4px; overflow: hidden; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-  .cday.weekend { background: #f8f9fb; } .cday.other { opacity: .45; }
+  .cday.weekend { background: var(--soft); } .cday.other { opacity: .45; }
   .cday.today { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
   .cday.drop, .cl-day.drop { background: var(--accent-soft); border-color: var(--accent); }
   .cd-h { display: flex; align-items: center; gap: 4px; font-size: 12px; min-height: 20px; }
@@ -140,14 +184,14 @@
   .cchip:hover { filter: brightness(.95); }
   .cchip .ct { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cchip .ci { display: flex; gap: 1px; flex: none; }
-  .cchip .ci b { font-size: 9px; background: #fff; border-radius: 3px; padding: 0 2px; color: var(--muted); font-weight: 600; }
+  .cchip .ci b { font-size: 9px; background: var(--card); border-radius: 3px; padding: 0 2px; color: var(--muted); font-weight: 600; }
   .cchip.st-done .ct { text-decoration: line-through; color: var(--muted); }
   .cchip.late .ct { color: var(--danger); font-weight: 600; }
   .cchip.big { flex-direction: column; align-items: stretch; padding: 5px 8px; font-size: 13px; }
   .cchip.big .ct { white-space: normal; } .cchip .cm { font-size: 11px; color: var(--muted); }
   .cal-list { display: flex; flex-direction: column; gap: 8px; max-width: 900px; }
   .cl-day { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; }
-  .cl-day.today { border-color: var(--accent); } .cl-day.late { border-color: #f0c3c3; }
+  .cl-day.today { border-color: var(--accent); } .cl-day.late { border-color: color-mix(in srgb, var(--danger) 35%, var(--line)); }
   .cl-h { font-weight: 600; font-size: 14px; } .cl-day .row .cchip { flex: 1; }
   .cal-foot { text-align: center; }
   @media (max-width: 760px) {
@@ -166,16 +210,16 @@
   @media (max-width: 900px) { .ov-grid { grid-template-columns: 1fr; } }
   .ov-row .cchip { flex: 1; } .ov-row > span { white-space: nowrap; }
   .loadrow { width: 100%; display: grid; grid-template-columns: minmax(90px, 140px) 1fr auto; gap: 10px; align-items: center; border: 0; padding: 6px 4px; text-align: left; background: none; }
-  .loadrow:hover { background: #f1f3f6; }
+  .loadrow:hover { background: var(--hover); }
   .loadrow .ln { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .bar { position: relative; height: 10px; background: #eef0f4; border-radius: 6px; overflow: hidden; }
+  .bar { position: relative; height: 10px; background: var(--track); border-radius: 6px; overflow: hidden; }
   .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 6px; }
   .bar i.late { background: var(--danger); } .bar i.ok { opacity: .85; }
 
   /* ploča */
   main:has(.board) { max-width: none; }
   .kanban { display: grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); gap: 12px; align-items: stretch; overflow-x: auto; }
-  .kcol { background: #eceef3; border-radius: var(--radius); padding: 8px; display: flex; flex-direction: column; gap: 8px; min-height: calc(100vh - 230px); border: 2px solid transparent; }
+  .kcol { background: var(--track); border-radius: var(--radius); padding: 8px; display: flex; flex-direction: column; gap: 8px; min-height: calc(100vh - 230px); border: 2px solid transparent; }
   .kcol.drop { border-color: var(--accent); background: var(--accent-soft); }
   .kh { display: flex; align-items: center; gap: 8px; padding: 2px 4px; }
   .kcard { background: var(--card); border: 1px solid var(--line); border-left: 4px solid; border-radius: 8px; padding: 8px 10px; cursor: grab; display: flex; flex-direction: column; gap: 3px; }
@@ -193,15 +237,15 @@
   .btnlink.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 
   /* navigacija: na mobitelu se kartice pomiču vodoravno */
-  @media (max-width: 760px) { nav { overflow-x: auto; flex-wrap: nowrap; max-width: 100%; scrollbar-width: none; } nav button { white-space: nowrap; } header h1 { width: 100%; } }
+  @media (max-width: 760px) { header nav { overflow-x: auto; flex-wrap: nowrap; max-width: 100%; scrollbar-width: none; } header nav button { white-space: nowrap; } header h1 { width: 100%; } }
 
   /* prilozi */
   .atts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; white-space: normal; }
   .atts.small { margin-top: 4px; }
-  .att { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 3px 4px 3px 8px; font-size: 13px; max-width: 100%; }
+  .att { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 3px 4px 3px 8px; font-size: 13px; max-width: 100%; }
   .att a { text-decoration: none; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
   .att a.muted { color: var(--muted); } .att .ghost { padding: 0 6px; }
-  .att-img { padding: 0; border-radius: 8px; overflow: hidden; width: 76px; height: 76px; border: 1px solid var(--line); background: #f1f3f6; }
+  .att-img { padding: 0; border-radius: 8px; overflow: hidden; width: 76px; height: 76px; border: 1px solid var(--line); background: var(--hover); }
   .atts.small .att-img { width: 52px; height: 52px; }
   .att-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .attach-btn { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); font-size: 13px; padding: 4px 8px; border-radius: 8px; border: 1px dashed var(--line); background: transparent; white-space: nowrap; }
@@ -210,7 +254,7 @@
   .note .attach-btn { border: 0; padding: 2px 6px; }
   .task-files { gap: 8px; }
   [data-dropzone].drop, form.drop { outline: 2px dashed var(--accent); outline-offset: 2px; background: var(--accent-soft); }
-  .lightbox { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px; background: #f1f3f6; }
+  .lightbox { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px; background: var(--hover); }
   dialog:has(.lightbox) { width: min(1000px, 96vw); }
 
   /* dobrodošlica */
@@ -227,7 +271,7 @@
   .tour-hl { position: relative; z-index: 6; outline: 3px solid var(--accent) !important; outline-offset: 3px; border-radius: 10px;
              animation: tourPulse 1.6s ease-in-out infinite; }
   @keyframes tourPulse { 50% { outline-color: rgba(79,107,237,.35); } }
-  .demo-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #fff8e1; border: 1px solid #f3dfa2;
+  .demo-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--demo-bg); border: 1px solid var(--demo-line);
                  border-radius: var(--radius); padding: 8px 12px; margin-bottom: 12px; font-size: 14px; }
   .demo-banner span { flex: 1; min-width: 220px; }
   main:has(.cal) .demo-banner, main:has(.board) .demo-banner, main:has(.net-wrap) .demo-banner { margin-bottom: 10px; }
@@ -237,20 +281,20 @@
   .wcol { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
   .wbars { flex: 1; width: 100%; display: flex; gap: 2px; align-items: flex-end; justify-content: center; border-bottom: 1px solid var(--line); }
   .wbars i { width: 40%; max-width: 18px; border-radius: 3px 3px 0 0; min-height: 1px; }
-  .wbars .d { background: var(--ok); } .wbars .m { background: #c9d1f6; }
+  .wbars .d { background: var(--ok); } .wbars .m { background: var(--bar-new); }
   .wcol small { font-size: 10px; color: var(--muted); }
   .tbl { overflow-x: auto; } .tbl table { width: 100%; border-collapse: collapse; font-size: 14px; }
   .tbl th, .tbl td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; } .tbl th { font-size: 12px; color: var(--muted); font-weight: 600; }
-  .pdfview { overflow: auto; display: flex; flex-direction: column; gap: 10px; background: #e9ecf2; padding: 10px; }
+  .pdfview { overflow: auto; display: flex; flex-direction: column; gap: 10px; background: var(--pdf-bg); padding: 10px; }
   .pdfview canvas { box-shadow: 0 2px 8px rgba(0,0,0,.15); background: #fff; }
 
   /* javljanja osoba */
   .badge { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; vertical-align: 1px; }
-  .note.from-person { background: #eef6ff; border-radius: 6px; padding: 6px 8px; border-bottom: 0; margin: 2px 0; }
+  .note.from-person { background: var(--from-person); border-radius: 6px; padding: 6px 8px; border-bottom: 0; margin: 2px 0; }
   .note.from-person .who { font-weight: 600; color: var(--accent); }
   .note.unseen { box-shadow: inset 3px 0 0 var(--danger); }
   .newsrow { display: block; width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--card); }
-  .newsrow.unseen { border-left: 4px solid var(--danger); background: #fffafa; }
+  .newsrow.unseen { border-left: 4px solid var(--danger); background: var(--unseen-bg); }
   .newsrow span { white-space: pre-wrap; } .newsrow small { display: block; margin-top: 2px; }
   .news .stack > * + *, .news > .newsrow + .newsrow { margin-top: 6px; }
 
@@ -260,16 +304,16 @@
   .qa-cam { border-style: solid; font-size: 14px; padding: 6px 10px; }
   .qa-multi { background: var(--accent-soft); border-radius: 8px; padding: 6px 10px; flex-wrap: nowrap; }
   .mlist { max-height: 60vh; overflow: auto; }
-  .mcard { border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: #fafbfc; }
+  .mcard { border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: var(--soft); }
   .mcard:has(.m-on:not(:checked)) { opacity: .5; }
   /* koraci */
-  .steps-block { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fafbfc; }
+  .steps-block { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--soft); }
   .step { display: flex; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; }
   .step.done span { text-decoration: line-through; color: var(--muted); }
   .step-add input { border-style: dashed; }
   .steps-done { color: var(--ok); font-weight: 600; }
   .qa-pdf { width: 64px; height: 64px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border: 1px solid var(--line); border-radius: 8px; background: #fff5f5; font-size: 26px; overflow: hidden; }
+            border: 1px solid var(--line); border-radius: 8px; background: var(--soft); font-size: 26px; overflow: hidden; }
   .qa-pdf small { font-size: 9px; color: var(--muted); max-width: 60px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* osobne bilješke */
@@ -299,6 +343,160 @@
   .colors label { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
   .colors input { display: none; }
   .colors input:checked + label { border-color: var(--ink); }
+
+  /* ===================== dizajn v2: dubina, tipografija, mobilna traka, animacije ===================== */
+  h1, h2, h3, .task-title, .kt, .cal-title, .stat b { letter-spacing: -.011em; }
+  h2 { font-size: 22px; font-weight: 700; } h3 { font-weight: 650; }
+  .task-title, .kt { font-weight: 600; }
+  button { border-radius: var(--radius-sm); padding: 7px 13px; transition: background .15s, border-color .15s, color .15s, box-shadow .15s, transform .1s; }
+  button:active { transform: scale(.97); }
+  button.primary, .chip.on, .btnlink.primary { background: var(--accent-solid); border-color: var(--accent-solid); }
+  button.primary { box-shadow: 0 1px 2px rgba(16,24,40,.12), 0 4px 12px color-mix(in srgb, var(--accent-solid) 28%, transparent); font-weight: 600; }
+  button.primary:hover { filter: brightness(1.06); border-color: var(--accent-solid); }
+  input, select, textarea { border-radius: var(--radius-sm); padding: 8px 11px; transition: border-color .15s, box-shadow .15s; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  input[type=checkbox], input[type=radio] { accent-color: var(--accent-solid); }
+
+  header { background: var(--glass); -webkit-backdrop-filter: saturate(1.6) blur(14px); backdrop-filter: saturate(1.6) blur(14px);
+           padding: 10px 20px; padding-top: max(10px, env(safe-area-inset-top)); }
+  header h1 { font-size: 18px; font-weight: 750; display: flex; align-items: center; gap: 8px; }
+  header h1 .logo { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; font-size: 15px;
+                    background: linear-gradient(135deg, #6a84ff, #4f6bed 55%, #3b52c9); color: #fff; box-shadow: 0 2px 8px rgba(79,107,237,.35); }
+  header nav { background: var(--track); border-radius: 12px; padding: 3px; gap: 2px; }
+  header nav button { border: 0; padding: 6px 11px; border-radius: 9px; color: var(--muted); font-weight: 500; background: transparent; }
+  header nav button:hover { color: var(--ink); background: color-mix(in srgb, var(--card) 60%, transparent); }
+  header nav button.on { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-sm); }
+  header .search { border-radius: 999px; padding-left: 34px; background: var(--input) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23889' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m11 11 3.5 3.5'/%3E%3C/svg%3E") no-repeat 12px 50%; }
+  .hdr-quick .lbl { display: inline; }
+  @media (min-width: 761px) {
+    header { flex-wrap: nowrap; }
+    header nav { min-width: 0; overflow-x: auto; scrollbar-width: none; flex: 0 1 auto; }
+    header nav button { white-space: nowrap; }
+    header .search { flex: 0 1 240px; min-width: 130px; }
+    header .offline { position: absolute; left: 0; right: 0; top: 100%; border-radius: 0; }
+  }
+  header h1, header .hdr-quick, .user-btn { flex: none; white-space: nowrap; }
+  @media (max-width: 1000px) and (min-width: 761px) { header nav .ne { display: none; } }
+  .user-btn .uname { display: none; }
+  header .search { margin-left: auto; }
+  @media (max-width: 1439px) and (min-width: 761px) {
+    :root { --hdr-h: 110px; }
+    header { flex-wrap: wrap; row-gap: 8px; }
+    header nav { order: 5; flex: 1 1 100%; overflow: visible; }
+    header nav button { flex: 1; padding: 6px 4px; }
+    header .search { flex: 1 1 200px; max-width: 360px; }
+  }
+  .stack.menu > button, .stack.menu > a { width: 100%; text-align: left; padding: 10px 14px; }
+  .stack.menu > .row button { width: auto; }
+
+  .panel, .task, .stat, .kcard, .pcard, .cl-day, .newsrow, .net-stage, .cday { box-shadow: var(--shadow-sm); }
+  .panel, .task { border-color: var(--line); }
+  .panel { padding: 14px; }
+  .task + .task { margin-top: 10px; }
+  .task { transition: box-shadow .2s var(--ease), transform .2s var(--ease), border-color .2s; }
+  .task:hover { box-shadow: var(--shadow); }
+  .task-head { padding: 12px 14px; }
+  .task-body { padding: 14px; }
+  .task.open, .task:has(.task-body) { box-shadow: var(--shadow); border-color: color-mix(in srgb, var(--accent) 30%, var(--line)); }
+  .status { font-weight: 600; font-size: 12px; padding: 3px 10px; letter-spacing: .01em; }
+  .status::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 6px; vertical-align: 1px; opacity: .85; }
+  .chip { padding: 4px 11px; transition: background .15s, border-color .15s, color .15s; }
+  .chip:hover { border-color: var(--line-strong); }
+  .stat { border: 1px solid var(--line); padding: 14px 16px; transition: transform .2s var(--ease), box-shadow .2s; }
+  .stat:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .stat b { font-size: 30px; font-weight: 750; font-variant-numeric: tabular-nums; }
+  .kcol { border-radius: var(--radius); padding: 10px; }
+  .kcard { border-radius: 12px; transition: box-shadow .2s var(--ease), transform .2s var(--ease); }
+  .kcard:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .kcard:active { cursor: grabbing; }
+  .pcard { border-radius: var(--radius); transition: box-shadow .2s var(--ease), transform .2s var(--ease);
+           background: color-mix(in srgb, var(--pc, var(--card)) var(--pnote-mix), var(--card)) !important; }
+  .pcard:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .pres { background: color-mix(in srgb, var(--pc, var(--soft)) var(--pnote-mix), var(--card)) !important; }
+  .pcolors label { background: color-mix(in srgb, var(--pc, var(--card)) var(--pnote-mix), var(--card)) !important; }
+  .cday { border-radius: 10px; box-shadow: none; }
+  .cchip { border-radius: 6px; transition: filter .15s; }
+  .subcard { border-radius: 12px; transition: box-shadow .2s, transform .2s var(--ease); }
+  .subcard:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .topic-item { border-radius: 10px; transition: background .15s; }
+  .topic-item.on { font-weight: 600; }
+  .side { top: calc(var(--hdr-h, 62px) + 14px); max-height: calc(100vh - var(--hdr-h, 62px) - 28px); }
+  .demo-banner { border-radius: var(--radius); }
+  .att { border-radius: 10px; } .att-img { border-radius: 10px; }
+  .newsrow { border-radius: 12px; }
+  .fab { background: var(--accent-solid); border-color: var(--accent-solid);
+         box-shadow: 0 8px 24px color-mix(in srgb, var(--accent-solid) 45%, transparent); transition: transform .2s var(--ease), box-shadow .2s; }
+  .fab:hover { transform: translateY(-2px) scale(1.04); }
+
+  /* dijalozi */
+  dialog { border: 1px solid var(--line); border-radius: 18px; padding: 20px; background: var(--card); color: var(--ink); box-shadow: var(--shadow-lg); }
+  dialog::backdrop { background: rgba(10, 14, 22, .45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+  dialog[open] { animation: dlgIn .22s var(--ease); }
+  dialog[open]::backdrop { animation: fadeIn .22s ease; }
+  @keyframes dlgIn { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+  @keyframes fadeIn { from { opacity: 0; } }
+
+  /* obavijest na dnu */
+  .toast { background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-weight: 500; box-shadow: var(--shadow-lg);
+           bottom: calc(20px + var(--tabbar-h) + env(safe-area-inset-bottom)); max-width: calc(100vw - 32px); text-align: center;
+           animation: toastIn .28s var(--ease); transition: opacity .25s, transform .25s; }
+  .toast.out { opacity: 0; transform: translate(-50%, 8px); }
+  .toast.ok::before { content: "✓"; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 8px; border-radius: 50%;
+                      background: var(--ok); color: #fff; font-size: 11px; font-weight: 800; vertical-align: 1px; }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px) scale(.96); } }
+
+  /* prijelaz između kartica i kratki „pop“ kad se nešto označi gotovim */
+  main.enter > * { animation: viewIn .28s var(--ease) both; }
+  @keyframes viewIn { from { opacity: 0; transform: translateY(6px); } }
+  .pop { animation: pop .45s var(--ease); }
+  @keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(1.06); } 100% { transform: scale(1); } }
+  .step input:checked { animation: check .35s var(--ease); }
+  .step.pop input { animation: check .4s var(--ease); }
+  @keyframes check { 0% { transform: scale(.6); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+  .task.pop { animation: doneGlow .9s ease; }
+  @keyframes doneGlow { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 55%, transparent); } 100% { box-shadow: 0 0 0 14px transparent; } }
+  .step span { transition: color .2s; }
+
+  /* donja traka na mobitelu */
+  .tabbar { display: none; }
+  .more-sheet { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .more-sheet button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 6px; border-radius: 14px; font-size: 13px; }
+  .more-sheet button .ic { font-size: 22px; }
+  .more-sheet button.on { background: var(--accent-soft); border-color: transparent; color: var(--accent); font-weight: 600; }
+  .chip.me:not(.on) { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
+  .theme-pick { display: flex; background: var(--track); border-radius: 12px; padding: 3px; gap: 2px; }
+  .theme-pick button { flex: 1; border: 0; background: transparent; color: var(--muted); padding: 7px 6px; border-radius: 9px; }
+  .theme-pick button.on { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-sm); }
+
+  @media (max-width: 760px) {
+    :root { --tabbar-h: 64px; }
+    header { padding: 8px 12px; padding-top: max(8px, env(safe-area-inset-top)); gap: 8px; }
+    header h1 { width: auto; flex: 1; font-size: 17px; }
+    header nav { display: none; }
+    .hdr-quick .lbl { display: none; }
+    header .search { order: 3; }
+    main { padding: 12px 12px calc(var(--tabbar-h) + 96px + env(safe-area-inset-bottom)) !important; }
+    .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 8;
+              height: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); padding: 4px 4px env(safe-area-inset-bottom);
+              background: var(--glass); -webkit-backdrop-filter: saturate(1.6) blur(16px); backdrop-filter: saturate(1.6) blur(16px);
+              border-top: 1px solid var(--line); }
+    .tabbar button { position: relative; border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                     gap: 2px; padding: 4px 2px; font-size: 11px; font-weight: 500; color: var(--muted); border-radius: 12px; }
+    .tabbar button .ic { font-size: 21px; line-height: 1; transition: transform .2s var(--ease); filter: grayscale(.6); opacity: .8; }
+    .tabbar button.on { color: var(--accent); font-weight: 650; }
+    .tabbar button.on .ic { transform: translateY(-1px) scale(1.08); filter: none; opacity: 1; }
+    .tabbar button.on::before { content: ""; position: absolute; top: 2px; width: 36px; height: 3px; border-radius: 3px; background: var(--accent); }
+    .tabbar .badge { position: absolute; top: 2px; left: calc(50% + 6px); }
+    .fab { bottom: calc(var(--tabbar-h) + 14px + env(safe-area-inset-bottom)); right: 14px; width: 54px; height: 54px; }
+    .tour { bottom: calc(var(--tabbar-h) + 12px + env(safe-area-inset-bottom)); }
+    dialog { padding: 18px 16px; border-radius: 20px; }
+    .kcol { min-height: 50vh; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
 </style>
 </head>
 <body>
@@ -354,6 +552,8 @@ async function api(body) {
   return json;
 }
 // Bez interneta: jednostavne promjene (status, korak, nova bilješka) čekaju u redu i šalju se kad se veza vrati.
+// Nakon ovih promjena kratka potvrda „✓ Spremljeno“ (ako već nema druge poruke).
+const SAVED_OPS = new Set(['addTask', 'updateTask', 'addNote', 'updateNote', 'addPnote', 'updatePnote', 'addPerson', 'updatePerson', 'updateTopic', 'addSub']);
 const QUEUEABLE = new Set(['setStatus', 'toggleSub', 'addNote', 'addPnote', 'setDue', 'markSeen']);
 const loadQueue = () => { try { return JSON.parse(localStorage.getItem('queue') || '[]'); } catch { return []; } };
 const saveQueue = (q) => { try { localStorage.setItem('queue', JSON.stringify(q)); } catch {} };
@@ -391,7 +591,10 @@ const run = (op, payload = {}) => {
     if (QUEUEABLE.has(op)) { queueChange(op, payload); return Promise.resolve(); }
     toast('📴 Bez interneta — ova promjena nije moguća dok se veza ne vrati'); return Promise.resolve();
   }
-  return api({ op, ...payload }).catch((e) => {
+  return api({ op, ...payload }).then((d) => {
+    if (SAVED_OPS.has(op) && !document.querySelector('.toast')) toast('Spremljeno', 'ok');
+    return d;
+  }).catch((e) => {
     if (e instanceof TypeError) { if (QUEUEABLE.has(op)) queueChange(op, payload); else toast('📴 Nema veze s internetom'); }
   });
 };
@@ -465,14 +668,18 @@ function addPeriod(iso, repeat, n = 1) {
 // Promjena statusa; zadatak koji se ponavlja dobije nasljednika kad je gotov.
 async function setTaskStatus(id, status) {
   const d = await run('setStatus', { id, status });
+  if (status === 'done') flash(`[data-task="${id}"], .kcard[data-id="${id}"]`);
   if (d?.result?.next_due) toast(`🔁 Sljedeći put: ${fmtDate(d.result.next_due)}`);
   return d;
 }
 const fmtDate = (d) => d ? d.split('-').reverse().join('.') + '.' : '';
 const fmtTime = (ts) => new Date(ts).toLocaleString('hr-HR', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
-function toast(msg) {
-  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
-  document.body.appendChild(t); setTimeout(() => t.remove(), 2200);
+function toast(msg, kind = '') {
+  document.querySelectorAll('.toast').forEach((x) => x.remove());   // nova poruka zamijeni staru
+  const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = msg; t.setAttribute('role', 'status');
+  document.body.appendChild(t);
+  const ms = Math.min(6000, 1800 + msg.length * 35);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, ms);
 }
 function save() {
   localStorage.setItem('view', S.view);
@@ -542,7 +749,7 @@ function taskMailText(k, pid) {
   const notes = S.data.notes.filter((n) => n.task_id === k.id && (pid ? n.person_id === pid || !n.person_id : true));
   if (notes.length) {
     lines.push('', 'Bilješke:');
-    notes.forEach((n) => lines.push(`– ${n.person_id && !pid ? person(n.person_id)?.name + ': ' : ''}${n.body}`));
+    notes.forEach((n) => lines.push(`– ${n.person_id && !pid ? outName(person(n.person_id)) + ': ' : ''}${n.body}`));
   }
   const files = taskFiles(k);
   if (files.length) lines.push('', `Prilozi (u Delegatoru): ${files.map((a) => a.name).join(', ')}`);
@@ -551,7 +758,7 @@ function taskMailText(k, pid) {
 function mailTask(taskId, pid) {
   const k = S.data.tasks.find((x) => x.id === taskId);
   const who = pid ? [person(pid)] : k.people.map(person);
-  const greet = pid ? `Bok ${person(pid).name.split(' ')[0]},\n\n` : 'Bok,\n\n';
+  const greet = pid ? `Bok ${outName(person(pid)).split(' ')[0]},\n\n` : 'Bok,\n\n';
   openMail(who.filter(Boolean).map((p) => p.email), `Zadatak: ${k.title}${k.due_date ? ` (rok ${fmtDate(k.due_date)})` : ''}`,
     greet + taskMailText(k, pid));
 }
@@ -593,6 +800,7 @@ function toggleMic(btn) {
 function peopleInText(text) {
   const words = text.toLowerCase().split(/[^\p{L}]+/u).filter(Boolean);
   return S.data.people.filter((p) => {
+    if (p.is_me) return words.some((w) => ['ja', 'meni', 'mene', 'sebi'].includes(w));   // „Ja“ samo na točnu riječ
     const first = p.name.toLowerCase().split(/\s+/)[0];
     const stem = first.length > 3 ? first.slice(0, -1) : first;
     return words.some((w) => w === first || (w.startsWith(stem) && w.length <= first.length + 3));
@@ -610,14 +818,15 @@ function render() {
   const drafts = {};
   document.querySelectorAll('[data-draft]').forEach((el) => { if (el.value) drafts[el.id] = el.value; });
 
-  app.innerHTML = headerView() + `<main>${demoBanner()}${
+  const enter = render.lastView !== S.view; render.lastView = S.view;
+  app.innerHTML = headerView() + `<main class="${enter ? 'enter' : ''}">${demoBanner()}${
     terms().length && S.view !== 'board' && S.view !== 'pnotes' ? searchView()
       : S.view === 'people' ? peopleView() : S.view === 'person' ? personView()
       : S.view === 'admin' && S.user?.is_admin ? adminView()
       : S.view === 'calendar' ? calendarView() : S.view === 'network' ? networkView()
       : S.view === 'board' ? boardView() : S.view === 'overview' ? overviewView()
       : S.view === 'pnotes' ? pnotesView() : S.view === 'stats' ? statsView() : topicsView()
-  }</main><button class="fab" data-act="quick" title="Brzi unos glasom">🎤</button>`;
+  }</main><button class="fab" data-act="quick" title="Brzi unos glasom">🎤</button>${tabbarView()}`;
 
   Object.entries(drafts).forEach(([id, v]) => { const el = document.getElementById(id); if (el && !el.value) el.value = v; });
   if (active) { const el = document.getElementById(active); if (el) { el.focus(); try { el.setSelectionRange(sel, sel); } catch {} } }
@@ -626,17 +835,55 @@ function render() {
 }
 
 function headerView() {
-  const tab = (v, label) => `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}">${label}</button>`;
+  const tab = (v, label) => `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}">${label.replace(/^([^\p{L}<]+) /u, '<span class="ne">$1 </span>')}</button>`;
   return `<header>
-    <h1>✅ Delegator</h1>
+    <h1><span class="logo">✓</span>Delegator</h1>
     <nav>${tab('overview', `🏠 Pregled${unseen().length ? ` <span class="badge">${unseen().length}</span>` : ''}`)}${tab('topics', 'Teme')}${tab('board', '🗂 Ploča')}${tab('calendar', '📅 Kalendar')}${tab('network', '🕸 Mreža')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${tab('pnotes', '📝 Bilješke')}${tab('stats', '📈 Statistika')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
-    <button class="primary" data-act="quick" title="Izdiktiraj ili upiši zadatak, AI ga razvrsta">⚡ Brzi unos</button>
+    <button class="primary hdr-quick" data-act="quick" title="Izdiktiraj ili upiši zadatak, AI ga razvrsta">⚡<span class="lbl"> Brzi unos</span></button>
     <input type="search" class="search" id="search" placeholder="Traži kroz sve teme i bilješke…" value="${esc(S.q)}" autocomplete="off">
-    <button class="ghost" data-act="userMenu" title="Račun">👤 ${esc(S.user?.name || '')}</button>
+    <button class="ghost user-btn" data-act="userMenu" title="Račun: ${esc(S.user?.name || '')}">👤<span class="uname"> ${esc(S.user?.name || '')}</span></button>
     ${loadQueue().length ? `<div class="offline">⏳ ${loadQueue().length} promjena čeka internet — poslat će se same</div>` : ''}
     ${S.offline ? '<div class="offline">📴 Bez interneta — prikazujem zadnje spremljene podatke (samo čitanje)</div>' : ''}
   </header>`;
 }
+
+// Mobitel: donja traka s glavnim karticama, ostale su pod „Više“.
+const TAB_MAIN = [['overview', '🏠', 'Pregled'], ['topics', '📁', 'Teme'], ['board', '🗂', 'Ploča'], ['calendar', '📅', 'Kalendar']];
+const tabMore = () => [['network', '🕸', 'Mreža'], ['person', '👥', 'Po osobi'], ['people', '🧑', 'Ljudi'], ['pnotes', '📝', 'Bilješke'],
+  ['stats', '📈', 'Statistika'], ...(S.user?.is_admin ? [['admin', '🔐', 'Korisnici']] : [])];
+function tabbarView() {
+  const n = unseen().length, inMore = tabMore().some(([v]) => v === S.view);
+  return `<nav class="tabbar" aria-label="Glavne kartice">${TAB_MAIN.map(([v, ic, label]) =>
+    `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}"><span class="ic">${ic}</span>${label}${v === 'overview' && n ? `<span class="badge">${n}</span>` : ''}</button>`).join('')}
+    <button class="${inMore ? 'on' : ''}" data-act="more"><span class="ic">☰</span>Više</button></nav>`;
+}
+function moreSheet() {
+  const dlg = $('#dlg');
+  dlg.innerHTML = `<div class="stack"><h2>Više</h2>
+    <div class="more-sheet">${tabMore().map(([v, ic, label]) =>
+      `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}"><span class="ic">${ic}</span>${label}</button>`).join('')}</div>
+    <div class="row" style="justify-content:flex-end"><button type="button" onclick="this.closest('dialog').close()">Zatvori</button></div></div>`;
+  dlg.showModal();
+}
+// Tema: auto (po uređaju) | light | dark — pamti se na ovom uređaju.
+const getTheme = () => { try { return localStorage.getItem('theme') || 'auto'; } catch { return 'auto'; } };
+function applyTheme(t = getTheme()) {
+  if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  const dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.getElementById('theme-color')?.setAttribute('content', dark ? '#0e1117' : '#f3f4f8');
+}
+function setTheme(t) {
+  try { if (t === 'auto') localStorage.removeItem('theme'); else localStorage.setItem('theme', t); } catch {}
+  applyTheme(t);
+  document.querySelectorAll('.theme-pick button').forEach((b) => b.classList.toggle('on', b.dataset.theme === t));
+  if (S.view === 'network') drawNetwork();
+}
+applyTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { applyTheme(); if (S.view === 'network' && getTheme() === 'auto') drawNetwork(); });
+const themePicker = () => `<div><div class="small muted" style="margin-bottom:4px">Izgled</div><div class="theme-pick">${[['auto', '🌓 Automatski'], ['light', '☀️ Svijetli'], ['dark', '🌙 Tamni']]
+  .map(([t, l]) => `<button type="button" class="${getTheme() === t ? 'on' : ''}" data-act="theme" data-theme="${t}">${l}</button>`).join('')}</div></div>`;
+// Kratko istakni element nakon sljedećeg iscrtavanja (npr. upravo završen zadatak).
+const flash = (sel) => requestAnimationFrame(() => document.querySelectorAll(sel).forEach((el) => { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }));
 
 /* ---- Prijava / registracija ---- */
 function loginView() {
@@ -761,10 +1008,19 @@ function sortTasks(arr) {
     || (a.due_date || '9999').localeCompare(b.due_date || '9999') || a.id - b.id);
 }
 
+// Osoba „Ja“ (sam korisnik) prikazuje se sa zvjezdicom.
+const me = () => S.data.people.find((p) => p.is_me);
+// Za tekst koji ide van aplikacije (mail, CSV, izvještaj, kopirani popis): „Ja“ → ime korisnika.
+const outName = (p) => p ? (p.is_me ? (S.user?.name || 'Ja') : p.name) : '';
+const pLabel = (p) => p ? (p.is_me ? '⭐ Ja' : p.name) : '';
+// Osobe koje je korisnik možda ranije napravio za sebe (isto ime kao račun) — nudimo spajanje s „Ja“.
+const selfDupes = () => { const u = fold(S.user?.name || ''), f = u.split(/\s+/)[0];
+  return u ? S.data.people.filter((p) => !p.is_me && !p.is_demo && (fold(p.name) === u || (f.length > 2 && fold(p.name) === f))) : []; };
+
 function peopleChips(name, selected) {
   if (!S.data.people.length) return `<span class="muted small">Dodaj ljude u kartici „Ljudi“ pa ih ovdje samo klikneš.</span>`;
   return `<div class="chips" data-chips="${name}">${S.data.people.map((p) =>
-    `<button type="button" class="chip ${selected.includes(p.id) ? 'on' : ''}" data-act="chip" data-id="${p.id}">${esc(p.name)}</button>`).join('')}</div>`;
+    `<button type="button" class="chip ${p.is_me ? 'me' : ''} ${selected.includes(p.id) ? 'on' : ''}" data-act="chip" data-id="${p.id}">${esc(pLabel(p))}</button>`).join('')}</div>`;
 }
 
 function newTaskForm(topicId) {
@@ -802,16 +1058,16 @@ function taskView(k, opts = {}) {
       </div>
     </div>
     <div class="chips" style="justify-content:flex-end">${k.people.map((id) => person(id)).filter(Boolean)
-      .map((p) => `<span class="chip static">${esc(p.name)}</span>`).join('')}</div>
+      .map((p) => `<span class="chip static">${esc(pLabel(p))}</span>`).join('')}</div>
   </div>`;
-  if (!isOpen) return `<div class="task ${k.status}">${head}</div>`;
+  if (!isOpen) return `<div class="task ${k.status}" data-task="${k.id}">${head}</div>`;
 
   const notes = S.data.notes.filter((n) => n.task_id === k.id);
   const blocks = [...k.people.map((id) => person(id)).filter(Boolean), { id: 0, name: null }]
     .filter((p) => !opts.onlyPerson || p.id === opts.onlyPerson || p.id === 0)
     .map((p) => notesBlock(k, p, notes.filter((n) => (n.person_id || 0) === p.id))).join('');
 
-  return `<div class="task ${k.status}">${head}
+  return `<div class="task ${k.status}" data-task="${k.id}">${head}
     <div class="task-body stack">
       ${k.description ? `<div style="white-space:pre-wrap">${hl(k.description)}</div>` : ''}
       ${stepsBlock(k)}
@@ -832,9 +1088,9 @@ function notesBlock(k, p, notes) {
   const mailTitle = p.name
     ? (p.email ? `Pošalji zadatak i bilješke na ${p.email}` : `${p.name} nema upisan e-mail — dodaj ga u kartici „Ljudi“`)
     : 'Pošalji zadatak sa svim bilješkama svim zaduženima';
-  const canMail = p.name || k.people.length;
+  const canMail = !p.is_me && (p.name || k.people.length);
   return `<div class="notes-block">
-    <div class="row"><h3 class="grow">${p.name ? `Bilješke za: ${esc(p.name)}` : 'Opće bilješke'}</h3>
+    <div class="row"><h3 class="grow">${p.is_me ? '⭐ Moje bilješke' : p.name ? `Bilješke za: ${esc(p.name)}` : 'Opće bilješke'}</h3>
       ${canMail ? `<button class="ghost small" data-act="mailTask" data-id="${k.id}" data-pid="${p.id}" title="${esc(mailTitle)}">✉️ Pošalji mailom</button>` : ''}</div>
     ${notes.map((n) => `<div class="note ${n.from_person ? 'from-person' : ''} ${n.from_person && !n.seen ? 'unseen' : ''}" data-dropzone="note:${n.id}">
         <div class="note-body">${n.from_person ? `<span class="who">${esc(person(n.person_id)?.name.split(' ')[0] || 'Osoba')} se javio/la:</span> ` : ''}${hl(n.body)}${attachList(filesOf('note', n.id), { small: true })}</div>
@@ -992,12 +1248,12 @@ async function renderPdf(a) {
 const PNOTE_COLORS = ['', '#fff8c5', '#e6f4ea', '#e8f0fe', '#fce8e6', '#f3e8fd', '#e4f7fb', '#f1f3f4'];
 const pnoteColors = (cur, name = 'color') => `<div class="colors pcolors">${PNOTE_COLORS.map((c, i) =>
   `<input type="radio" name="${name}" id="${name}${i}" value="${c}" ${c === (cur || '') ? 'checked' : ''}>
-   <label for="${name}${i}" style="background:${c || '#fff'}" title="${c ? 'Boja' : 'Bez boje'}"></label>`).join('')}</div>`;
+   <label for="${name}${i}" style="${c ? `--pc:${c}` : ''}" title="${c ? 'Boja' : 'Bez boje'}"></label>`).join('')}</div>`;
 function pnotesView() {
   const ts = terms();
   const list = S.data.pnotes.filter((n) => !ts.length
     || hasAll([n.title, n.body, ...filesOf('pnote', n.id).map((a) => a.name)].join(' '), ts));
-  const card = (n) => `<div class="pcard" style="background:${esc(n.color || '#fff')}" data-dropzone="pnote:${n.id}">
+  const card = (n) => `<div class="pcard" style="${n.color ? `--pc:${esc(n.color)}` : ''}" data-dropzone="pnote:${n.id}">
       <div class="row">
         <strong class="grow">${hl(n.title || '')}</strong>
         <button class="ghost small ${n.pinned ? 'on' : ''}" data-act="pinPnote" data-id="${n.id}" title="${n.pinned ? 'Otkvači' : 'Prikvači na vrh'}">📌</button>
@@ -1059,7 +1315,7 @@ function searchView() {
     ${people.length ? `<div class="panel row small"><span class="muted">Ljudi:</span>${people.map((p) =>
       `<button class="chip" data-act="openPerson" data-id="${p.id}">${hl(p.name)}</button>`).join('')}</div>` : ''}
     ${pnotes.length ? `<div class="panel stack"><div class="small muted">📝 Moje bilješke</div>${pnotes.slice(0, 6).map((n) =>
-      `<button class="pres" data-act="openPnotes" style="background:${esc(n.color || '#fafbfc')}"><strong>${hl(n.title || '')}</strong> ${hl((n.body || '').slice(0, 160))}</button>`).join('')}</div>` : ''}
+      `<button class="pres" data-act="openPnotes" style="${n.color ? `--pc:${esc(n.color)}` : ''}"><strong>${hl(n.title || '')}</strong> ${hl((n.body || '').slice(0, 160))}</button>`).join('')}</div>` : ''}
     <div>${list || (pnotes.length ? '' : '<div class="panel empty">Ništa nije pronađeno. Probaj kraću riječ.</div>')}</div>
   </div>`;
 }
@@ -1070,6 +1326,12 @@ function peopleView() {
   const rows = people.map((p) => {
     const mine = tasks.filter((k) => k.people.includes(p.id));
     const open = mine.filter((k) => k.status !== 'done').length;
+    if (p.is_me) return `<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)">
+      <div class="grow"><strong>⭐ Ja</strong> <span class="muted small">· ${esc(S.user?.name || '')}</span>
+        <div class="muted small">Dodaj sebe u zadatak kao i bilo koju osobu — tvoji zadaci su na Pregledu pod „Moji zadaci“.</div></div>
+      <span class="muted small">${open} otvorenih / ${mine.length}</span>
+      <button class="ghost" data-act="openPerson" data-id="${p.id}">Zadaci →</button>
+    </div>`;
     return `<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)">
       <div class="grow"><strong>${esc(p.name)}</strong> ${p.role ? `<span class="muted small">· ${esc(p.role)}</span>` : ''}
         <div class="muted small">${p.email ? esc(p.email) : '<em>bez e-maila</em>'}</div></div>
@@ -1080,8 +1342,11 @@ function peopleView() {
       <button class="ghost danger" data-act="delPerson" data-id="${p.id}">✕</button>
     </div>`;
   }).join('');
+  const dup = me() && selfDupes();
   return `<div class="panel stack" style="max-width:720px;margin:0 auto">
     <h2>Ljudi</h2>
+    ${dup?.length ? dup.map((d) => `<div class="demo-banner"><span>Je li „<strong>${esc(d.name)}</strong>“ zapravo ti? Spoji je s „⭐ Ja“ — svi njeni zadaci i bilješke prelaze na tebe.</span>
+      <button class="small primary" data-act="mergeMe" data-id="${d.id}">Spoji s „Ja“</button></div>`).join('') : ''}
     <form class="row" data-form="newPerson">
       <div class="with-mic grow"><input id="np-name" name="name" data-draft placeholder="Ime i prezime" required>${micBtn('np-name')}</div>
       <input name="role" placeholder="Uloga (nije obavezno)" style="max-width:180px">
@@ -1104,11 +1369,11 @@ function personView() {
     <div class="panel stack">
       <div class="row">
         <select data-act="pickPerson" style="width:auto;font-weight:600">${people.map((x) =>
-          `<option value="${x.id}" ${x.id === p.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+          `<option value="${x.id}" ${x.id === p.id ? 'selected' : ''}>${esc(pLabel(x))}</option>`).join('')}</select>
         ${p.role ? `<span class="muted">${esc(p.role)}</span>` : ''}
         <button style="margin-left:auto" data-act="copyPerson" data-id="${p.id}" title="Kopira popis otvorenih zadataka za slanje porukom">📋 Kopiraj popis</button>
-        <button class="primary" data-act="shareLink" data-id="${p.id}" title="Poveznica na kojoj ${esc(p.name)} vidi svoje zadatke i javlja napredak">🔗 Poveznica za ${esc(p.name.split(' ')[0])}</button>
-        <button data-act="mailPerson" data-id="${p.id}" title="${p.email ? 'Otvori mail s popisom otvorenih zadataka' : 'Osoba nema e-mail — dodaj ga u kartici „Ljudi“'}">✉️ Pošalji popis mailom</button>
+        ${p.is_me ? '' : `<button class="primary" data-act="shareLink" data-id="${p.id}" title="Poveznica na kojoj ${esc(p.name)} vidi svoje zadatke i javlja napredak">🔗 Poveznica za ${esc(p.name.split(' ')[0])}</button>
+        <button data-act="mailPerson" data-id="${p.id}" title="${p.email ? 'Otvori mail s popisom otvorenih zadataka' : 'Osoba nema e-mail — dodaj ga u kartici „Ljudi“'}">✉️ Pošalji popis mailom</button>`}
       </div>
       ${filtersView()}
     </div>
@@ -1120,7 +1385,7 @@ function personSummary(pid) {
   const p = person(pid);
   const mine = S.data.tasks.filter((k) => k.people.includes(pid) && k.status !== 'done');
   sortTasks(mine);
-  let out = `Bok ${p.name.split(' ')[0]}, tvoji otvoreni zadaci:\n`;
+  let out = `Bok ${outName(p).split(' ')[0]}, tvoji otvoreni zadaci:\n`;
   const byTopic = {};
   mine.forEach((k) => (byTopic[k.topic_id] ||= []).push(k));
   for (const [tid, list] of Object.entries(byTopic)) {
@@ -1130,7 +1395,7 @@ function personSummary(pid) {
       S.data.notes.filter((n) => n.task_id === k.id && n.person_id === pid).forEach((n) => (out += `   – ${n.body}\n`));
     });
   }
-  return mine.length ? out : `${p.name} nema otvorenih zadataka.`;
+  return mine.length ? out : `${outName(p)} nema otvorenih zadataka.`;
 }
 
 /* ---- Kalendar ---- */
@@ -1250,7 +1515,7 @@ function calendarView() {
       </div>
       <div class="row">
         <div class="chips">${mode('month', 'Mjesec')}${mode('week', 'Tjedan')}${mode('list', 'Popis')}</div>
-        <select data-act="calPerson" style="width:auto"><option value="0">Svi ljudi</option>${S.data.people.map((p) => `<option value="${p.id}" ${p.id === c.person ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
+        <select data-act="calPerson" style="width:auto"><option value="0">Svi ljudi</option>${S.data.people.map((p) => `<option value="${p.id}" ${p.id === c.person ? 'selected' : ''}>${esc(pLabel(p))}</option>`).join('')}</select>
         <select data-act="calTopic" style="width:auto;max-width:220px"><option value="0">Sve teme</option>${topicOptions(c.topic)}</select>
         <label class="row small muted" style="gap:4px"><input type="checkbox" data-act="calDone" style="width:auto" ${c.done ? 'checked' : ''}> gotovi</label>
         <button class="primary" data-act="ical" title="Rokovi iz Delegatora u kalendaru na mobitelu (Google / Apple)">📲 Dodaj u Google/Apple kalendar</button>
@@ -1277,7 +1542,7 @@ function taskInfo(k) {
       ${k.repeat ? `<span>🔁 ${REPEAT[k.repeat].toLowerCase()}</span>` : ''}
       ${k.priority !== 'normal' ? `<span class="prio-${k.priority}">${k.priority === 'high' ? '▲ visok' : '▽ nizak'}</span>` : ''}
     </div>
-    ${k.people.length ? `<div class="chips">${k.people.map(person).filter(Boolean).map((p) => `<span class="chip static">${esc(p.name)}</span>`).join('')}</div>` : ''}
+    ${k.people.length ? `<div class="chips">${k.people.map(person).filter(Boolean).map((p) => `<span class="chip static">${esc(pLabel(p))}</span>`).join('')}</div>` : ''}
     ${k.description ? `<div style="white-space:pre-wrap">${esc(k.description)}</div>` : ''}
     ${notes.length ? `<div class="notes-block">${notes.map((n) => `<div class="note ${n.from_person ? 'from-person' : ''}"><div class="note-body">${n.person_id ? `<strong>${esc(person(n.person_id)?.name)}${n.from_person ? ' (javljanje)' : ''}:</strong> ` : ''}${esc(n.body)}${attachList(filesOf('note', n.id), { small: true, readonly: true })}</div><span class="note-time">${fmtTime(n.created_at)}</span></div>`).join('')}</div>` : ''}
     ${attachList(filesOf('task', k.id), { readonly: true })}
@@ -1378,23 +1643,29 @@ function netElements() {
   S.data.people.filter((p) => pids.has(p.id)).forEach((p) => els.push({ data: { id: 'p' + p.id, kind: 'person', ref: p.id, label: p.name, level: 0 } }));
   return els;
 }
-const NET_STYLE = [
-  { selector: 'node', style: { label: 'data(label)', 'font-size': 11, color: '#1d2330', 'text-valign': 'bottom', 'text-margin-y': 4,
-    'text-wrap': 'ellipsis', 'text-max-width': 140, 'min-zoomed-font-size': 7, 'text-background-color': '#fff', 'text-background-opacity': 0.7, 'text-background-padding': 1 } },
-  { selector: 'node[kind="topic"]', style: { 'background-color': 'data(color)', width: 'data(size)', height: 'data(size)', 'font-size': 13, 'font-weight': 600, 'border-width': 3, 'border-color': '#fff' } },
-  { selector: 'node[kind="task"]', style: { shape: 'round-rectangle', width: 16, height: 12, 'background-color': '#9aa3b5' } },
+// Boje mreže prate temu (svijetla/tamna): čitaju se iz CSS varijabli pri crtanju.
+const netStyle = () => {
+  const v = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const dark = v('color-scheme') === 'dark';
+  const ink = v('--ink'), card = v('--card'), muted = v('--muted'), edge = dark ? '#3a4152' : '#cfd4de', edgeSoft = dark ? '#2c3240' : '#dde1e8';
+  return [
+  { selector: 'node', style: { label: 'data(label)', 'font-size': 11, color: ink, 'text-valign': 'bottom', 'text-margin-y': 4,
+    'text-wrap': 'ellipsis', 'text-max-width': 140, 'min-zoomed-font-size': 7, 'text-background-color': card, 'text-background-opacity': 0.7, 'text-background-padding': 1 } },
+  { selector: 'node[kind="topic"]', style: { 'background-color': 'data(color)', width: 'data(size)', height: 'data(size)', 'font-size': 13, 'font-weight': 600, 'border-width': 3, 'border-color': card } },
+  { selector: 'node[kind="task"]', style: { shape: 'round-rectangle', width: 16, height: 12, 'background-color': dark ? '#6c7489' : '#9aa3b5' } },
   { selector: 'node[status="doing"]', style: { 'background-color': '#e9a23b' } },
   { selector: 'node[status="done"]', style: { 'background-color': '#2f9e6b', opacity: 0.6 } },
-  { selector: 'node[late=1]', style: { 'border-width': 3, 'border-color': '#d64545', color: '#d64545' } },
+  { selector: 'node[late=1]', style: { 'border-width': 3, 'border-color': v('--danger'), color: v('--danger') } },
   { selector: 'node[kind="person"]', style: { shape: 'diamond', width: 26, height: 26, 'background-color': '#8e5bd6', 'font-weight': 600 } },
-  { selector: 'node[kind="note"]', style: { shape: 'tag', width: 10, height: 10, 'background-color': '#c3c8d4', 'font-size': 9, color: '#6b7385' } },
-  { selector: 'edge', style: { width: 1.2, 'line-color': '#cfd4de', 'curve-style': 'bezier' } },
+  { selector: 'node[kind="note"]', style: { shape: 'tag', width: 10, height: 10, 'background-color': dark ? '#4a5163' : '#c3c8d4', 'font-size': 9, color: muted } },
+  { selector: 'edge', style: { width: 1.2, 'line-color': edge, 'curve-style': 'bezier' } },
   { selector: 'edge[kind="sub"]', style: { width: 3, 'line-color': '#9aa6d8', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#9aa6d8' } },
   { selector: 'edge[kind="who"]', style: { 'line-color': '#c9b3ea' } },
-  { selector: 'edge[kind="note"], edge[kind="notefor"]', style: { 'line-style': 'dashed', 'line-color': '#dde1e8' } },
+  { selector: 'edge[kind="note"], edge[kind="notefor"]', style: { 'line-style': 'dashed', 'line-color': edgeSoft } },
   { selector: '.faded', style: { opacity: 0.12 } },
-  { selector: 'node:selected', style: { 'overlay-color': '#4f6bed', 'overlay-opacity': 0.15, 'overlay-padding': 6 } },
+  { selector: 'node:selected', style: { 'overlay-color': v('--accent'), 'overlay-opacity': 0.15, 'overlay-padding': 6 } },
 ];
+};
 async function drawNetwork() {
   const el = document.getElementById('net');
   if (!el) return;
@@ -1406,7 +1677,7 @@ async function drawNetwork() {
   const key = JSON.stringify([S.net, els.map((x) => x.data.id)]);
   const cached = S.netCache?.key === key ? S.netCache.pos : null;
   cy?.destroy();
-  cy = lib({ container: el, elements: els, style: NET_STYLE, wheelSensitivity: 0.25, minZoom: 0.1, maxZoom: 3 });
+  cy = lib({ container: el, elements: els, style: netStyle(), wheelSensitivity: 0.25, minZoom: 0.1, maxZoom: 3 });
   const roots = cy.nodes('[kind="topic"]').filter((nd) => nd.incomers('edge[kind="sub"]').empty());
   const layout = cached ? { name: 'preset', positions: (nd) => cached[nd.id()] }
     : S.net.layout === 'breadthfirst' ? { name: 'breadthfirst', directed: true, roots, spacingFactor: 1.1, animate: false }
@@ -1482,6 +1753,8 @@ function overviewView() {
       week: mine.filter((k) => k.due_date && k.due_date <= in7).length };
   }).filter((x) => x.open).sort((a, b) => b.open - a.open || b.late - a.late);
   const maxLoad = Math.max(1, ...load.map((x) => x.open));
+  const myOpen = me() ? open.filter((k) => k.people.includes(me().id)) : [];
+  sortTasks(myOpen); myOpen.sort((a, b) => (a.due_date || '9999').localeCompare(b.due_date || '9999'));
   const roots = childTopics(null).filter((t) => !t.archived);
   const progress = roots.map((t) => {
     const ids = topicSubtree(t.id), all = tasks.filter((k) => ids.has(k.topic_id));
@@ -1501,6 +1774,7 @@ function overviewView() {
     <div class="ov-grid">
       <div class="stack">
         ${newsSection()}
+        ${myOpen.length ? section('⭐ Moji zadaci', myOpen, '') : ''}
         ${late.length ? section('⚠️ Kasni', late, '') : ''}
         ${section('📌 Danas', now, 'Za danas nema rokova.')}
         ${section('📅 Sljedećih 7 dana', soon, 'Nema rokova idući tjedan.')}
@@ -1508,7 +1782,7 @@ function overviewView() {
       <div class="stack">
         <div class="panel stack"><h3>👥 Opterećenost ljudi</h3>
           ${load.map((x) => `<button class="loadrow" data-act="openPerson" data-id="${x.p.id}">
-            <span class="ln">${esc(x.p.name)}</span>
+            <span class="ln">${esc(pLabel(x.p))}</span>
             <span class="bar"><i style="width:${(x.open / maxLoad) * 100}%"></i>${x.late ? `<i class="late" style="width:${(x.late / maxLoad) * 100}%"></i>` : ''}</span>
             <span class="small muted">${x.open} otv.${x.late ? ` · <span class="due late">${x.late} kasni</span>` : ''}${x.week ? ` · ${x.week} ovaj tj.` : ''}</span></button>`).join('')
             || '<div class="muted small">Nitko nema otvorenih zadataka.</div>'}
@@ -1560,7 +1834,7 @@ function boardView() {
   return `<div class="stack board">
     <div class="panel row">
       <h2 class="grow">Ploča</h2>
-      <select data-act="boardPerson" style="width:auto"><option value="0">Svi ljudi</option>${S.data.people.map((p) => `<option value="${p.id}" ${p.id === b.person ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
+      <select data-act="boardPerson" style="width:auto"><option value="0">Svi ljudi</option>${S.data.people.map((p) => `<option value="${p.id}" ${p.id === b.person ? 'selected' : ''}>${esc(pLabel(p))}</option>`).join('')}</select>
       <select data-act="boardTopic" style="width:auto;max-width:220px"><option value="0">Sve teme</option>${topicOptions(b.topic)}</select>
     </div>
     <div class="kanban">${col('todo')}${col('doing')}${col('done')}</div>
@@ -1622,7 +1896,8 @@ const TOUR = [
 function showTour() {
   const st = TOUR[S.tour.step];
   document.querySelectorAll('.tour-hl').forEach((x) => x.classList.remove('tour-hl'));
-  const target = st.hl && document.querySelector(st.hl);
+  const vis = (sel) => [...document.querySelectorAll(sel)].find((el) => el.getClientRects().length);
+  const target = st.hl && (vis(st.hl) || vis(st.hl.replace(/^nav /, '.tabbar ')) || (st.hl.startsWith('nav ') && vis('.tabbar [data-act="more"]')));
   if (target) { target.classList.add('tour-hl'); target.scrollIntoView({ block: 'nearest' }); }
   const last = S.tour.step === TOUR.length - 1;
   const dots = TOUR.map((_, i) => `<i class="${i === S.tour.step ? 'on' : ''}"></i>`).join('');
@@ -1792,7 +2067,7 @@ function statsView() {
       ${stat(lateNow.length, 'kasni sada', lateNow.length ? 'bad' : '')}
     </div>
     <div class="panel stack"><div class="row"><h3 class="grow">Zadnjih 12 tjedana</h3>
-      <span class="small muted"><i class="lg" style="background:var(--ok)"></i> završeno <i class="lg" style="background:#c9d1f6"></i> novo</span></div>
+      <span class="small muted"><i class="lg" style="background:var(--ok)"></i> završeno <i class="lg" style="background:var(--bar-new)"></i> novo</span></div>
       <div class="wchart">${weeks.map((w) => `<div class="wcol" title="Tjedan od ${fmtDate(isoDate(w.start))}: završeno ${w.done}, novo ${w.made}">
         <div class="wbars"><i class="d" style="height:${(w.done / max) * 100}%"></i><i class="m" style="height:${(w.made / max) * 100}%"></i></div>
         <small>${w.start.getDate()}.${w.start.getMonth() + 1}.</small></div>`).join('')}</div></div>
@@ -1811,7 +2086,7 @@ function statsView() {
       <div class="row">
         <select id="ex-scope" style="width:auto;max-width:280px"><option value="all">Sve teme</option>
           <optgroup label="Tema">${topicTree().map(({ t, depth }) => `<option value="t${t.id}">${' '.repeat(depth)}${esc(t.title)}</option>`).join('')}</optgroup>
-          <optgroup label="Osoba">${people.map((p) => `<option value="p${p.id}">${esc(p.name)}</option>`).join('')}</optgroup></select>
+          <optgroup label="Osoba">${people.map((p) => `<option value="p${p.id}">${esc(pLabel(p))}</option>`).join('')}</optgroup></select>
         <label class="row small muted" style="gap:4px"><input type="checkbox" id="ex-done" style="width:auto" checked> i gotovi zadaci</label>
       </div>
       <div class="row"><button data-act="exportCsv">📊 Preuzmi za Excel (CSV)</button><button data-act="printReport">🖨 Izvještaj za ispis / PDF</button></div>
@@ -1834,10 +2109,10 @@ function downloadCsv() {
   const rows = [['Tema', 'Zadatak', 'Opis', 'Osobe', 'Status', 'Prioritet', 'Početak', 'Rok', 'Završeno', 'Ponavljanje', 'Koraci', 'Bilješke']];
   list.forEach((k) => {
     const st = stepsOf(k);
-    rows.push([topicPath(topic(k.topic_id)), k.title, k.description, k.people.map((i) => person(i)?.name).filter(Boolean).join(', '),
+    rows.push([topicPath(topic(k.topic_id)), k.title, k.description, k.people.map((i) => outName(person(i))).filter(Boolean).join(', '),
       STATUS[k.status], PRIO[k.priority], fmtDate(k.start_date), fmtDate(k.due_date), k.completed_at ? fmtDate(isoDate(new Date(k.completed_at))) : '',
       k.repeat ? REPEAT[k.repeat] : '', st.length ? `${st.filter((x) => x.done).length}/${st.length}: ` + st.map((x) => (x.done ? '✓ ' : '') + x.title).join('; ') : '',
-      S.data.notes.filter((n) => n.task_id === k.id).map((n) => (n.person_id ? person(n.person_id)?.name + ': ' : '') + n.body).join(' | ')]);
+      S.data.notes.filter((n) => n.task_id === k.id).map((n) => (n.person_id ? outName(person(n.person_id)) + ': ' : '') + n.body).join(' | ')]);
   });
   // Excel s hrvatskim postavkama očekuje ; i UTF-8 BOM (za čćšžđ)
   const csv = '﻿' + rows.map((r) => r.map(q).join(';')).join('\r\n');
@@ -1865,8 +2140,8 @@ function printReport() {
         const notes = S.data.notes.filter((n) => n.task_id === k.id);
         return `<tr><td><b>${esc(k.title)}</b>${k.priority === 'high' ? ' ❗' : ''}${k.description ? `<div class="n">${esc(k.description)}</div>` : ''}
           ${st.length ? `<div class="n">Koraci: ${st.map((x) => (x.done ? '☑ ' : '☐ ') + esc(x.title)).join(' · ')}</div>` : ''}
-          ${notes.length ? `<div class="n">${notes.map((n) => '– ' + (n.person_id ? esc(person(n.person_id)?.name) + ': ' : '') + esc(n.body)).join('<br>')}</div>` : ''}</td>
-          <td>${k.people.map((i) => esc(person(i)?.name || '')).join(', ')}</td>
+          ${notes.length ? `<div class="n">${notes.map((n) => '– ' + (n.person_id ? esc(outName(person(n.person_id))) + ': ' : '') + esc(n.body)).join('<br>')}</div>` : ''}</td>
+          <td>${k.people.map((i) => esc(outName(person(i)) || '')).join(', ')}</td>
           <td class="${k.status === 'done' ? 'done' : ''}">${STATUS[k.status]}</td><td class="${late ? 'late' : ''}">${fmtSpan(k)}${late ? ' (kasni)' : ''}</td></tr>`; }).join('')}
       </tbody></table>`).join('') || '<p>Nema zadataka za odabrani opseg.</p>'}
     <script>setTimeout(() => print(), 300)<\/script></body></html>`);
@@ -2027,8 +2302,9 @@ window.addEventListener('online', async () => { await flushQueue(); if (S.offlin
 function userMenu() {
   setTimeout(updatePushBtn, 0);
   const dlg = $('#dlg');
-  dlg.innerHTML = `<div class="stack">
+  dlg.innerHTML = `<div class="stack menu">
     <h2>${esc(S.user.name)}</h2><div class="muted small">${esc(S.user.email)}${S.user.is_admin ? ' · administrator' : ''}</div>
+    ${themePicker()}
     ${installButton()}
     <button data-act="pushToggle" id="push-btn" disabled>🔔 Obavijesti na ovom uređaju…</button>
     <button data-act="tourStart">❓ Vodič kroz aplikaciju</button>
@@ -2169,7 +2445,7 @@ function quickStep2(text, p) {
   const newTopic = p.new_topic || (!p.topic_id && !S.data.topics.length ? 'Opće' : null);
   const fallbackTopic = !p.topic_id && !newTopic ? (S.topicId || S.data.topics[0]?.id) : null;
   const chips = S.data.people.map((x) =>
-    `<button type="button" class="chip ${p.people.includes(x.id) ? 'on' : ''}" data-act="chip" data-id="${x.id}">${esc(x.name)}</button>`).join('')
+    `<button type="button" class="chip ${p.people.includes(x.id) ? 'on' : ''}" data-act="chip" data-id="${x.id}">${esc(pLabel(x))}</button>`).join('')
     + p.new_people.map((n) => `<button type="button" class="chip new on" data-act="chip" data-new="${esc(n)}" title="Nova osoba — bit će dodana na popis">+ ${esc(n)}</button>`).join('');
   const noteRow = (n, i) => `<div class="qa-note" data-note data-pid="${n.person_id || ''}" data-pname="${esc(n.person_name || '')}">
       <span class="lbl">${n.person_name ? 'za ' + esc(n.person_name) : 'Opća'}</span>
@@ -2235,7 +2511,7 @@ function quickStep2(text, p) {
 function quickStepMulti(text, list) {
   const dlg = $('#dlg');
   const card = (p, i) => {
-    const chips = S.data.people.map((x) => `<button type="button" class="chip ${p.people.includes(x.id) ? 'on' : ''}" data-act="chip" data-id="${x.id}">${esc(x.name)}</button>`).join('')
+    const chips = S.data.people.map((x) => `<button type="button" class="chip ${p.people.includes(x.id) ? 'on' : ''}" data-act="chip" data-id="${x.id}">${esc(pLabel(x))}</button>`).join('')
       + p.new_people.map((n) => `<button type="button" class="chip new on" data-act="chip" data-new="${esc(n)}" title="Nova osoba">+ ${esc(n)}</button>`).join('');
     return `<div class="mcard" data-i="${i}">
       <label class="row" style="gap:8px"><input type="checkbox" class="m-on" checked style="width:auto"><input class="m-title" value="${esc(p.title)}" style="flex:1;font-weight:600"></label>
@@ -2303,7 +2579,10 @@ document.addEventListener('click', async (e) => {
   const act = el.dataset.act;
   if (act !== 'toggle') e.stopPropagation();
   switch (act) {
-    case 'view': S.view = el.dataset.v; S.q = ''; if (S.view === 'admin') S.admin = null; save(); return render();
+    case 'view': S.view = el.dataset.v; S.q = ''; if (S.view === 'admin') S.admin = null; save();
+      if (el.closest('dialog')?.open) el.closest('dialog').close(); window.scrollTo(0, 0); return render();
+    case 'more': return moreSheet();
+    case 'theme': return setTheme(el.dataset.theme);
     case 'topic': S.topicId = id; S.view = 'topics'; S.q = ''; save(); return render();
     case 'clearSearch': S.q = ''; return render();
     case 'statsDays': S.stats.days = Number(el.dataset.v); return render();
@@ -2311,12 +2590,18 @@ document.addEventListener('click', async (e) => {
     case 'printReport': return printReport();
     case 'toggleSub': { const x = S.data.subtasks.find((y) => y.id === id); x.done = el.checked;
       await run('toggleSub', { id, done: el.checked }); const k = S.data.tasks.find((t) => t.id === x.task_id);
-      if ($('#dlg').open && k && $('#dlg .steps-block')) taskInfo(k); return; }
+      if ($('#dlg').open && k && $('#dlg .steps-block')) taskInfo(k);
+      if (x.done) flash(`.step:has([data-act="toggleSub"][data-id="${id}"])`); return; }
     case 'delSub': return run('deleteSub', { id });
     case 'saveTemplate': return templateDialog(topic(id));
     case 'delTemplate': {
       const x = S.data.templates.find((y) => y.id === id);
       if (confirm(`Obrisati predložak „${x.name}“? Teme napravljene iz njega ostaju.`)) { $('#dlg').close(); run('deleteTemplate', { id }); }
+      return;
+    }
+    case 'mergeMe': {
+      const d = person(id);
+      if (d && confirm(`Spojiti „${d.name}“ s „⭐ Ja“?\n\nSvi zadaci i bilješke te osobe prelaze na tebe, a „${d.name}“ se briše iz popisa ljudi. Njena poveznica za dijeljenje prestaje raditi.`)) await run('mergeIntoMe', { id });
       return;
     }
     case 'shareLink': if ($('#dlg').open) $('#dlg').close(); return shareDialog(id);
