@@ -380,7 +380,7 @@
   @media (max-width: 1000px) and (min-width: 761px) { header nav .ne { display: none; } }
   .user-btn .uname { display: none; }
   header .search { margin-left: auto; }
-  @media (max-width: 1439px) and (min-width: 761px) {
+  @media (max-width: 1599px) and (min-width: 761px) {
     :root { --hdr-h: 110px; }
     header { flex-wrap: wrap; row-gap: 8px; }
     header nav { order: 5; flex: 1 1 100%; overflow: visible; }
@@ -466,6 +466,24 @@
   .more-sheet button.on { background: var(--accent-soft); border-color: transparent; color: var(--accent); font-weight: 600; }
   .chip.me:not(.on) { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
   .row > h2.grow { min-width: auto; overflow-wrap: break-word; }   /* naslov se ne stisne u „Pl…“, filtri prijeđu u novi red */
+  /* ikone (Lucide) */
+  svg.i { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; stroke-width: 2; }
+  button > svg.i, a > svg.i, label > svg.i, h2 > svg.i, h3 > svg.i { margin-right: .1em; }
+  h2 > svg.i, h3 > svg.i { color: var(--accent); width: 1.05em; height: 1.05em; }
+  .row.small svg.i, .kcard svg.i, .task-head svg.i { width: 1.05em; height: 1.05em; opacity: .85; }
+  header nav button { display: inline-flex; align-items: center; gap: 6px; }
+  header nav button .ne { display: inline-flex; }
+  header nav button svg.i { width: 17px; height: 17px; margin: 0; }
+  .hdr-quick { display: inline-flex; align-items: center; gap: 6px; }
+  .user-btn { display: inline-flex; align-items: center; gap: 6px; } .user-btn svg.i { width: 24px; height: 24px; }
+  .fab { display: grid; place-items: center; } .fab svg.i { width: 26px; height: 26px; margin: 0; }
+  .mic { display: inline-grid; place-items: center; } .mic svg.i { width: 18px; height: 18px; margin: 0; }
+  .attach-btn.mic svg.i { width: 18px; height: 18px; }
+  .ghost svg.i:only-child { margin: 0; }
+  .tabbar button .ic svg.i { width: 24px; height: 24px; display: block; }
+  .more-sheet button .ic svg.i { width: 26px; height: 26px; display: block; margin: 0; }
+  .stack.menu > button, .stack.menu > a { display: flex; align-items: center; gap: 10px; }
+  .theme-pick button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
   .theme-pick { display: flex; background: var(--track); border-radius: 12px; padding: 3px; gap: 2px; }
   .theme-pick button { flex: 1; border: 0; background: transparent; color: var(--muted); padding: 7px 6px; border-radius: 9px; }
   .theme-pick button.on { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-sm); }
@@ -612,6 +630,11 @@ async function authOp(op, payload = {}) {
 }
 
 /* ========= pomoćne ========= */
+// IKONE:START — generira scripts/icons.mjs (Lucide, licenca ISC), ne uređivati ručno
+const ICONS = {"house":"<path d=\"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8\"/><path d=\"M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/>","folder":"<path d=\"M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z\"/>","square-kanban":"<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"/><path d=\"M8 7v7\"/><path d=\"M12 7v4\"/><path d=\"M16 7v9\"/>","calendar-days":"<path d=\"M8 2v3\"/><path d=\"M16 2v3\"/><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M3 9h18\"/><path d=\"M8 13h.01\"/><path d=\"M12 13h.01\"/><path d=\"M16 13h.01\"/><path d=\"M8 17h.01\"/><path d=\"M12 17h.01\"/><path d=\"M16 17h.01\"/>","network":"<rect x=\"16\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"/><rect x=\"2\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"/><rect x=\"9\" y=\"2\" width=\"6\" height=\"6\" rx=\"1\"/><path d=\"M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3\"/><path d=\"M12 12V8\"/>","users":"<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><path d=\"M16 3.128a4 4 0 0 1 0 7.744\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/>","user-round":"<circle cx=\"12\" cy=\"8\" r=\"5\"/><path d=\"M20 21a8 8 0 0 0-16 0\"/>","notebook-pen":"<path d=\"M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4\"/><path d=\"M2 6h4\"/><path d=\"M2 10h4\"/><path d=\"M2 14h4\"/><path d=\"M2 18h4\"/><path d=\"M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z\"/>","chart-no-axes-column":"<path d=\"M5 21v-6\"/><path d=\"M12 21V3\"/><path d=\"M19 21V9\"/>","shield-user":"<path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"/><path d=\"M6.376 18.91a6 6 0 0 1 11.249.003\"/><circle cx=\"12\" cy=\"11\" r=\"4\"/>","menu":"<path d=\"M4 5h16\"/><path d=\"M4 12h16\"/><path d=\"M4 19h16\"/>","zap":"<path d=\"M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z\"/>","mic":"<path d=\"M12 19v3\"/><path d=\"M19 10v2a7 7 0 0 1-14 0v-2\"/><rect x=\"9\" y=\"2\" width=\"6\" height=\"13\" rx=\"3\"/>","circle-user-round":"<path d=\"M17.925 20.056a6 6 0 0 0-11.851.001\"/><circle cx=\"12\" cy=\"11\" r=\"4\"/><circle cx=\"12\" cy=\"12\" r=\"10\"/>","paperclip":"<path d=\"m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551\"/>","mail":"<path d=\"m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7\"/><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"2\"/>","link":"<path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/>","pencil":"<path d=\"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z\"/><path d=\"m15 5 4 4\"/>","x":"<path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/>","trash-2":"<path d=\"M10 11v6\"/><path d=\"M14 11v6\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"/><path d=\"M3 6h18\"/><path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/>","send":"<path d=\"M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z\"/><path d=\"m21.854 2.147-10.94 10.939\"/>","triangle-alert":"<path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/>","pin":"<path d=\"M12 17v5\"/><path d=\"M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z\"/>","star":"<path d=\"M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z\"/>","inbox":"<polyline points=\"22 12 16 12 14 15 10 15 8 12 2 12\"/><path d=\"M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z\"/>","bell":"<path d=\"M10.268 21a2 2 0 0 0 3.464 0\"/><path d=\"M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326\"/>","bell-off":"<path d=\"M10.268 21a2 2 0 0 0 3.464 0\"/><path d=\"M17 17H4a1 1 0 0 1-.74-1.673C4.59 13.956 6 12.499 6 8a6 6 0 0 1 .258-1.742\"/><path d=\"m2 2 20 20\"/><path d=\"M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05\"/>","book-open":"<path d=\"M12 5v16\"/><path d=\"M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z\"/>","circle-help":"<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3\"/><path d=\"M12 17h.01\"/>","key-round":"<path d=\"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z\"/><circle cx=\"16.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"/>","log-out":"<path d=\"m16 17 5-5-5-5\"/><path d=\"M21 12H9\"/><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/>","smartphone":"<rect width=\"14\" height=\"20\" x=\"5\" y=\"2\" rx=\"2\" ry=\"2\"/><path d=\"M12 18h.01\"/>","graduation-cap":"<path d=\"M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z\"/><path d=\"M22 10v6\"/><path d=\"M6 12.5V16a6 3 0 0 0 12 0v-3.5\"/>","sun":"<circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2\"/><path d=\"M12 20v2\"/><path d=\"m4.93 4.93 1.41 1.41\"/><path d=\"m17.66 17.66 1.41 1.41\"/><path d=\"M2 12h2\"/><path d=\"M20 12h2\"/><path d=\"m6.34 17.66-1.41 1.41\"/><path d=\"m19.07 4.93-1.41 1.41\"/>","moon":"<path d=\"M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401\"/>","sun-moon":"<path d=\"M12 2v2\"/><path d=\"M14.837 16.385a6 6 0 1 1-7.223-7.222c.624-.147.97.66.715 1.248a4 4 0 0 0 5.26 5.259c.589-.255 1.396.09 1.248.715\"/><path d=\"M16 12a4 4 0 0 0-4-4\"/><path d=\"m19 5-1.256 1.256\"/><path d=\"M20 12h2\"/>","copy":"<rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/>","clipboard-list":"<rect width=\"8\" height=\"4\" x=\"8\" y=\"2\" rx=\"1\" ry=\"1\"/><path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2\"/><path d=\"M12 11h4\"/><path d=\"M12 16h4\"/><path d=\"M8 11h.01\"/><path d=\"M8 16h.01\"/>","repeat":"<path d=\"m17 2 4 4-4 4\"/><path d=\"M3 11v-1a4 4 0 0 1 4-4h14\"/><path d=\"m7 22-4-4 4-4\"/><path d=\"M21 13v1a4 4 0 0 1-4 4H3\"/>","message-square":"<path d=\"M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z\"/>","list-checks":"<path d=\"M13 5h8\"/><path d=\"M13 12h8\"/><path d=\"M13 19h8\"/><path d=\"m3 17 2 2 4-4\"/><path d=\"m3 7 2 2 4-4\"/>","calendar":"<path d=\"M8 2v3\"/><path d=\"M16 2v3\"/><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M3 9h18\"/>"};
+// IKONE:END
+// Ikona (Lucide): ic('mail') → <svg>; boja prati tekst (currentColor), veličina 1em ili klasa.
+const ic = (name, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 const $ = (sel, el = document) => el.querySelector(sel);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const person = (id) => S.data.people.find((p) => p.id === id);
@@ -773,7 +796,7 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let activeRec = null;
 function micBtn(targetId) {
   if (!SR) return '';
-  return `<button type="button" class="mic" title="Diktiraj (hrvatski)" data-mic="${targetId}">🎤</button>`;
+  return `<button type="button" class="mic" title="Diktiraj (hrvatski)" data-mic="${targetId}">${ic('mic')}</button>`;
 }
 function toggleMic(btn) {
   const target = document.getElementById(btn.dataset.mic);
@@ -828,7 +851,7 @@ function render() {
       : S.view === 'calendar' ? calendarView() : S.view === 'network' ? networkView()
       : S.view === 'board' ? boardView() : S.view === 'overview' ? overviewView()
       : S.view === 'pnotes' ? pnotesView() : S.view === 'stats' ? statsView() : topicsView()
-  }</main><button class="fab" data-act="quick" title="Brzi unos glasom">🎤</button>${tabbarView()}`;
+  }</main><button class="fab" data-act="quick" title="Brzi unos glasom">${ic('mic')}</button>${tabbarView()}`;
 
   Object.entries(drafts).forEach(([id, v]) => { const el = document.getElementById(id); if (el && !el.value) el.value = v; });
   if (active) { const el = document.getElementById(active); if (el) { el.focus(); try { el.setSelectionRange(sel, sel); } catch {} } }
@@ -837,33 +860,34 @@ function render() {
 }
 
 function headerView() {
-  const tab = (v, label) => `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}">${label.replace(/^([^\p{L}<]+) /u, '<span class="ne">$1 </span>')}</button>`;
+  const tab = (v, label) => { const t = [...TAB_MAIN, ...tabMore()].find((x) => x[0] === v);
+    return `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}"><span class="ne">${ic(t[1])}</span>${label}</button>`; };
   return `<header>
     <h1><span class="logo">✓</span>Delegator</h1>
-    <nav>${tab('overview', `🏠 Pregled${unseen().length ? ` <span class="badge">${unseen().length}</span>` : ''}`)}${tab('topics', 'Teme')}${tab('board', '🗂 Ploča')}${tab('calendar', '📅 Kalendar')}${tab('network', '🕸 Mreža')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${tab('pnotes', '📝 Bilješke')}${tab('stats', '📈 Statistika')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
-    <button class="primary hdr-quick" data-act="quick" title="Izdiktiraj ili upiši zadatak, AI ga razvrsta">⚡<span class="lbl"> Brzi unos</span></button>
+    <nav>${tab('overview', `Pregled${unseen().length ? ` <span class="badge">${unseen().length}</span>` : ''}`)}${tab('topics', 'Teme')}${tab('board', 'Ploča')}${tab('calendar', 'Kalendar')}${tab('network', 'Mreža')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${tab('pnotes', 'Bilješke')}${tab('stats', 'Statistika')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
+    <button class="primary hdr-quick" data-act="quick" title="Izdiktiraj ili upiši zadatak, AI ga razvrsta">${ic('zap')}<span class="lbl"> Brzi unos</span></button>
     <input type="search" class="search" id="search" placeholder="Traži kroz sve teme i bilješke…" value="${esc(S.q)}" autocomplete="off">
-    <button class="ghost user-btn" data-act="userMenu" title="Račun: ${esc(S.user?.name || '')}">👤<span class="uname"> ${esc(S.user?.name || '')}</span></button>
+    <button class="ghost user-btn" data-act="userMenu" title="Račun: ${esc(S.user?.name || '')}">${ic('circle-user-round')}<span class="uname"> ${esc(S.user?.name || '')}</span></button>
     ${loadQueue().length ? `<div class="offline">⏳ ${loadQueue().length} promjena čeka internet — poslat će se same</div>` : ''}
     ${S.offline ? '<div class="offline">📴 Bez interneta — prikazujem zadnje spremljene podatke (samo čitanje)</div>' : ''}
   </header>`;
 }
 
 // Mobitel: donja traka s glavnim karticama, ostale su pod „Više“.
-const TAB_MAIN = [['overview', '🏠', 'Pregled'], ['topics', '📁', 'Teme'], ['board', '🗂', 'Ploča'], ['calendar', '📅', 'Kalendar']];
-const tabMore = () => [['network', '🕸', 'Mreža'], ['person', '👥', 'Po osobi'], ['people', '🧑', 'Ljudi'], ['pnotes', '📝', 'Bilješke'],
-  ['stats', '📈', 'Statistika'], ...(S.user?.is_admin ? [['admin', '🔐', 'Korisnici']] : [])];
+const TAB_MAIN = [['overview', 'house', 'Pregled'], ['topics', 'folder', 'Teme'], ['board', 'square-kanban', 'Ploča'], ['calendar', 'calendar-days', 'Kalendar']];
+const tabMore = () => [['network', 'network', 'Mreža'], ['person', 'users', 'Po osobi'], ['people', 'user-round', 'Ljudi'], ['pnotes', 'notebook-pen', 'Bilješke'],
+  ['stats', 'chart-no-axes-column', 'Statistika'], ['admin', 'shield-user', 'Korisnici']].filter((x) => x[0] !== 'admin' || S.user?.is_admin);
 function tabbarView() {
   const n = unseen().length, inMore = tabMore().some(([v]) => v === S.view);
-  return `<nav class="tabbar" aria-label="Glavne kartice">${TAB_MAIN.map(([v, ic, label]) =>
-    `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}"><span class="ic">${ic}</span>${label}${v === 'overview' && n ? `<span class="badge">${n}</span>` : ''}</button>`).join('')}
-    <button class="${inMore ? 'on' : ''}" data-act="more"><span class="ic">☰</span>Više</button></nav>`;
+  return `<nav class="tabbar" aria-label="Glavne kartice">${TAB_MAIN.map(([v, icon, label]) =>
+    `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}"><span class="ic">${ic(icon)}</span>${label}${v === 'overview' && n ? `<span class="badge">${n}</span>` : ''}</button>`).join('')}
+    <button class="${inMore ? 'on' : ''}" data-act="more"><span class="ic">${ic('menu')}</span>Više</button></nav>`;
 }
 function moreSheet() {
   const dlg = $('#dlg');
   dlg.innerHTML = `<div class="stack"><h2>Više</h2>
-    <div class="more-sheet">${tabMore().map(([v, ic, label]) =>
-      `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}"><span class="ic">${ic}</span>${label}</button>`).join('')}</div>
+    <div class="more-sheet">${tabMore().map(([v, icon, label]) =>
+      `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}"><span class="ic">${ic(icon)}</span>${label}</button>`).join('')}</div>
     <div class="row" style="justify-content:flex-end"><button type="button" onclick="this.closest('dialog').close()">Zatvori</button></div></div>`;
   dlg.showModal();
 }
@@ -882,8 +906,8 @@ function setTheme(t) {
 }
 applyTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { applyTheme(); if (S.view === 'network' && getTheme() === 'auto') drawNetwork(); });
-const themePicker = () => `<div><div class="small muted" style="margin-bottom:4px">Izgled</div><div class="theme-pick">${[['auto', '🌓 Automatski'], ['light', '☀️ Svijetli'], ['dark', '🌙 Tamni']]
-  .map(([t, l]) => `<button type="button" class="${getTheme() === t ? 'on' : ''}" data-act="theme" data-theme="${t}">${l}</button>`).join('')}</div></div>`;
+const themePicker = () => `<div><div class="small muted" style="margin-bottom:4px">Izgled</div><div class="theme-pick">${[['auto', 'sun-moon', 'Automatski'], ['light', 'sun', 'Svijetli'], ['dark', 'moon', 'Tamni']]
+  .map(([t, i, l]) => `<button type="button" class="${getTheme() === t ? 'on' : ''}" data-act="theme" data-theme="${t}">${ic(i)} ${l}</button>`).join('')}</div></div>`;
 // Kratko istakni element nakon sljedećeg iscrtavanja (npr. upravo završen zadatak).
 const flash = (sel) => requestAnimationFrame(() => document.querySelectorAll(sel).forEach((el) => { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }));
 
@@ -986,13 +1010,13 @@ function topicsView() {
         <span class="dot" style="background:${esc(t.color)};width:14px;height:14px"></span>
         <h2 class="grow">${esc(t.title)}</h2>
         <button class="ghost" data-act="newSubtopic" data-id="${t.id}" title="Nova podtema unutar ove teme">+ Podtema</button>
-        <button class="ghost" data-act="saveTemplate" data-id="${t.id}" title="Spremi ovu temu kao predložak za sljedeći put">📋 Predložak</button>
+        <button class="ghost" data-act="saveTemplate" data-id="${t.id}" title="Spremi ovu temu kao predložak za sljedeći put">${ic('clipboard-list')} Predložak</button>
         <button class="ghost" data-act="editTopic" data-id="${t.id}">Uredi</button>
       </div>
       ${t.description ? `<div class="muted">${esc(t.description)}</div>` : ''}
       <div class="row task-files" data-dropzone="topic:${t.id}">
         ${attachList(filesOf('topic', t.id))}
-        ${attachBtn(`topic:${t.id}`, '📎 Dokument teme', 'Dokumenti cijele teme (ugovor, plan, ponuda…)')}
+        ${attachBtn(`topic:${t.id}`, `${ic('paperclip')} Dokument teme`, 'Dokumenti cijele teme (ugovor, plan, ponuda…)')}
       </div>
       ${kids.length ? `<div class="subcards">${cards}</div>` : ''}
       ${newTaskForm(t.id)}
@@ -1053,10 +1077,10 @@ function taskView(k, opts = {}) {
       <div class="row small muted" style="margin-top:4px">
         ${opts.showTopic && t ? `<span><span class="dot" style="display:inline-block;background:${esc(t.color)}"></span> ${hl(topicPath(t))}</span>` : ''}
         ${k.priority !== 'normal' ? `<span class="prio-${k.priority}">${k.priority === 'high' ? '▲ visok' : '▽ nizak'}</span>` : ''}
-        ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtSpan(k)}${late ? ' (kasni)' : ''}</span>` : ''}
-        ${k.repeat ? `<span title="Ponavlja se">🔁 ${REPEAT[k.repeat].toLowerCase()}</span>` : ''}
-        ${noteCount ? `<span>📝 ${noteCount}</span>` : ''}
-        ${fileCount ? `<span title="Prilozi">📎 ${fileCount}</span>` : ''}
+        ${k.due_date ? `<span class="due ${late ? 'late' : ''}">${ic('calendar')} ${fmtSpan(k)}${late ? ' (kasni)' : ''}</span>` : ''}
+        ${k.repeat ? `<span title="Ponavlja se">${ic('repeat')} ${REPEAT[k.repeat].toLowerCase()}</span>` : ''}
+        ${noteCount ? `<span title="Bilješke">${ic('message-square')} ${noteCount}</span>` : ''}
+        ${fileCount ? `<span title="Prilozi">${ic('paperclip')} ${fileCount}</span>` : ''}
         ${stepsBadge(k)}
       </div>
     </div>
@@ -1076,11 +1100,11 @@ function taskView(k, opts = {}) {
       ${stepsBlock(k)}
       <div class="row task-files" data-dropzone="task:${k.id}">
         ${attachList(filesOf('task', k.id))}
-        ${attachBtn(`task:${k.id}`, '📎 Prilog zadatku')}
+        ${attachBtn(`task:${k.id}`, `${ic('paperclip')} Prilog zadatku`)}
       </div>
       ${blocks}
       <div class="row">
-        <button class="ghost" data-act="editTask" data-id="${k.id}">✏️ Uredi zadatak</button>
+        <button class="ghost" data-act="editTask" data-id="${k.id}">${ic('pencil')} Uredi zadatak</button>
         <span class="muted small" style="margin-left:auto">Kreirano ${fmtTime(k.created_at)}</span>
       </div>
     </div></div>`;
@@ -1094,17 +1118,17 @@ function notesBlock(k, p, notes) {
   const canMail = !p.is_me && (p.name || k.people.length);
   return `<div class="notes-block">
     <div class="row"><h3 class="grow">${p.is_me ? '⭐ Moje bilješke' : p.name ? `Bilješke za: ${esc(p.name)}` : 'Opće bilješke'}</h3>
-      ${canMail ? `<button class="ghost small" data-act="mailTask" data-id="${k.id}" data-pid="${p.id}" title="${esc(mailTitle)}">✉️ Pošalji mailom</button>` : ''}</div>
+      ${canMail ? `<button class="ghost small" data-act="mailTask" data-id="${k.id}" data-pid="${p.id}" title="${esc(mailTitle)}">${ic('mail')} Pošalji mailom</button>` : ''}</div>
     ${notes.map((n) => `<div class="note ${n.from_person ? 'from-person' : ''} ${n.from_person && !n.seen ? 'unseen' : ''}" data-dropzone="note:${n.id}">
         <div class="note-body">${n.from_person ? `<span class="who">${esc(person(n.person_id)?.name.split(' ')[0] || 'Osoba')} se javio/la:</span> ` : ''}${hl(n.body)}${attachList(filesOf('note', n.id), { small: true })}</div>
         <span class="note-time">${fmtTime(n.created_at)}</span>
         ${attachBtn(`note:${n.id}`, '📎', 'Priloži datoteku ovoj bilješci')}
-        <button class="ghost small" data-act="editNote" data-id="${n.id}" title="Uredi">✏️</button>
-        <button class="ghost small danger" data-act="delNote" data-id="${n.id}" title="Obriši">✕</button>
+        <button class="ghost small" data-act="editNote" data-id="${n.id}" title="Uredi">${ic('pencil')}</button>
+        <button class="ghost small danger" data-act="delNote" data-id="${n.id}" title="Obriši">${ic('x')}</button>
       </div>`).join('')}
     <form class="with-mic" data-form="note" data-task="${k.id}" data-person="${p.id}" style="margin-top:6px">
       <textarea id="${fid}" name="body" data-draft rows="1" placeholder="${p.name ? `Upute ili bilješka za ${esc(p.name)}…` : 'Bilješka…'}"></textarea>
-      ${micBtn(fid)}<label class="attach-btn mic" title="Nova bilješka s prilogom (PDF, fotografija…)">📎<input type="file" multiple data-upload-new-note hidden></label>
+      ${micBtn(fid)}<label class="attach-btn mic" title="Nova bilješka s prilogom (PDF, fotografija…)">${ic('paperclip')}<input type="file" multiple data-upload-new-note hidden></label>
       <button class="primary" style="height:38px">Spremi</button>
     </form>
   </div>`;
@@ -1140,7 +1164,7 @@ function attachList(list, { small = false, readonly = false } = {}) {
     : `<span class="att"><a href="${fileUrl(a)}" ${a.mime === 'application/pdf' ? `data-act="viewFile" data-id="${a.id}"` : ''} target="_blank" rel="noopener" title="Otvori">${fileIcon(a)} ${hl(a.name)}</a>
         <span class="muted">${fmtSize(a.size || 0)}</span>
         <a href="${fileUrl(a, true)}" class="muted" title="Preuzmi" download>⬇</a>
-        ${readonly ? '' : `<button type="button" class="ghost danger" data-act="delFile" data-id="${a.id}" title="Obriši prilog">✕</button>`}</span>`).join('')}</div>`;
+        ${readonly ? '' : `<button type="button" class="ghost danger" data-act="delFile" data-id="${a.id}" title="Obriši prilog">${ic('x')}</button>`}</span>`).join('')}</div>`;
 }
 // Gumb 📎: na mobitelu nudi fotoaparat, galeriju i datoteke.
 const attachBtn = (target, label = '📎', title = 'Dodaj prilog (PDF, fotografija, dokument)') =>
@@ -1218,7 +1242,7 @@ function viewFile(a) {
     <div class="row">
       <a class="btnlink" href="${fileUrl(a)}" target="_blank" rel="noopener">↗ Otvori</a>
       <a class="btnlink" href="${fileUrl(a, true)}" download>⬇ Preuzmi</a>
-      <button class="ghost danger" data-act="delFile" data-id="${a.id}">🗑 Obriši</button>
+      <button class="ghost danger" data-act="delFile" data-id="${a.id}">${ic('trash-2')} Obriši</button>
       <button style="margin-left:auto" onclick="this.closest('dialog').close()">Zatvori</button>
     </div></div>`;
   if (!dlg.open) dlg.showModal();
@@ -1266,17 +1290,17 @@ function pnotesView() {
       <div class="row small muted pfoot">
         <span class="grow">${fmtTime(n.updated_at)}</span>
         ${attachBtn(`pnote:${n.id}`)}
-        <button class="ghost small" data-act="editPnote" data-id="${n.id}" title="Uredi">✏️</button>
-        <button class="ghost small danger" data-act="delPnote" data-id="${n.id}" title="Obriši">🗑</button>
+        <button class="ghost small" data-act="editPnote" data-id="${n.id}" title="Uredi">${ic('pencil')}</button>
+        <button class="ghost small danger" data-act="delPnote" data-id="${n.id}" title="Obriši">${ic('trash-2')}</button>
       </div></div>`;
   const pinned = list.filter((n) => n.pinned), rest = list.filter((n) => !n.pinned);
   return `<div class="stack" style="max-width:1100px;margin:0 auto">
     <form class="panel stack pnew" data-form="pnote">
-      <div class="row"><h2 class="grow">📝 Moje bilješke</h2><span class="muted small">Vidiš ih samo ti.</span></div>
+      <div class="row"><h2 class="grow">${ic('notebook-pen')} Moje bilješke</h2><span class="muted small">Vidiš ih samo ti.</span></div>
       <input name="title" placeholder="Naslov (nije obavezno)" autocomplete="off">
       <div class="with-mic"><textarea id="pn-body" name="body" data-draft rows="3" placeholder="Zapiši ideju, sastanak, popis… (možeš i izdiktirati)"></textarea>${micBtn('pn-body')}</div>
       <div class="row">${pnoteColors('', 'pncolor')}
-        <label class="attach-btn" title="Spremi bilješku s prilozima">📎 Prilog<input type="file" multiple data-upload-new-pnote hidden></label>
+        <label class="attach-btn" title="Spremi bilješku s prilozima">${ic('paperclip')} Prilog<input type="file" multiple data-upload-new-pnote hidden></label>
         <button class="primary" style="margin-left:auto">Spremi bilješku</button></div>
     </form>
     ${pinned.length ? `<div class="small muted">📌 Prikvačene</div><div class="pgrid">${pinned.map(card).join('')}</div>` : ''}
@@ -1340,9 +1364,9 @@ function peopleView() {
         <div class="muted small">${p.email ? esc(p.email) : '<em>bez e-maila</em>'}</div></div>
       <span class="muted small">${open} otvorenih / ${mine.length}</span>
       <button class="ghost" data-act="openPerson" data-id="${p.id}">Zadaci →</button>
-      <button class="ghost" data-act="shareLink" data-id="${p.id}" title="Poveznica na kojoj ${esc(p.name)} vidi svoje zadatke i javlja napredak">🔗</button>
-      <button class="ghost" data-act="editPerson" data-id="${p.id}">✏️</button>
-      <button class="ghost danger" data-act="delPerson" data-id="${p.id}">✕</button>
+      <button class="ghost" data-act="shareLink" data-id="${p.id}" title="Poveznica na kojoj ${esc(p.name)} vidi svoje zadatke i javlja napredak">${ic('link')}</button>
+      <button class="ghost" data-act="editPerson" data-id="${p.id}" title="Uredi">${ic('pencil')}</button>
+      <button class="ghost danger" data-act="delPerson" data-id="${p.id}" title="Obriši">${ic('x')}</button>
     </div>`;
   }).join('');
   const dup = me() && selfDupes();
@@ -1374,9 +1398,9 @@ function personView() {
         <select data-act="pickPerson" style="width:auto;font-weight:600">${people.map((x) =>
           `<option value="${x.id}" ${x.id === p.id ? 'selected' : ''}>${esc(pLabel(x))}</option>`).join('')}</select>
         ${p.role ? `<span class="muted">${esc(p.role)}</span>` : ''}
-        <button style="margin-left:auto" data-act="copyPerson" data-id="${p.id}" title="Kopira popis otvorenih zadataka za slanje porukom">📋 Kopiraj popis</button>
-        ${p.is_me ? '' : `<button class="primary" data-act="shareLink" data-id="${p.id}" title="Poveznica na kojoj ${esc(p.name)} vidi svoje zadatke i javlja napredak">🔗 Poveznica za ${esc(p.name.split(' ')[0])}</button>
-        <button data-act="mailPerson" data-id="${p.id}" title="${p.email ? 'Otvori mail s popisom otvorenih zadataka' : 'Osoba nema e-mail — dodaj ga u kartici „Ljudi“'}">✉️ Pošalji popis mailom</button>`}
+        <button style="margin-left:auto" data-act="copyPerson" data-id="${p.id}" title="Kopira popis otvorenih zadataka za slanje porukom">${ic('copy')} Kopiraj popis</button>
+        ${p.is_me ? '' : `<button class="primary" data-act="shareLink" data-id="${p.id}" title="Poveznica na kojoj ${esc(p.name)} vidi svoje zadatke i javlja napredak">${ic('link')} Poveznica za ${esc(p.name.split(' ')[0])}</button>
+        <button data-act="mailPerson" data-id="${p.id}" title="${p.email ? 'Otvori mail s popisom otvorenih zadataka' : 'Osoba nema e-mail — dodaj ga u kartici „Ljudi“'}">${ic('mail')} Pošalji popis mailom</button>`}
       </div>
       ${filtersView()}
     </div>
@@ -1484,7 +1508,7 @@ function calendarView() {
     const days = Object.keys(byDay).filter((d) => d >= td).sort().slice(0, 60);
     title = 'Popis rokova';
     body = `<div class="cal-list">
-      ${late.length ? `<div class="cl-day late"><div class="cl-h">⚠️ Kasni (${late.length})</div>${late.map((k) => `<div class="row">${calChip(k, true)}<span class="small due late">${fmtDate(k.due_date)}</span></div>`).join('')}</div>` : ''}
+      ${late.length ? `<div class="cl-day late"><div class="cl-h">${ic('triangle-alert')} Kasni (${late.length})</div>${late.map((k) => `<div class="row">${calChip(k, true)}<span class="small due late">${fmtDate(k.due_date)}</span></div>`).join('')}</div>` : ''}
       ${days.map((d) => { const dt = parseDate(d); const h = holiday(d);
         return `<div class="cl-day ${d === td ? 'today' : ''}" data-day="${d}"><div class="cl-h">${d === td ? 'Danas · ' : ''}${WEEKDAYS_LONG[(dt.getDay() + 6) % 7]}, ${fmtDate(d)}${h ? ` <span class="hol">${esc(h)}</span>` : ''}</div>
           ${byDay[d].map((e) => calChip(e, true)).join('')}</div>`; }).join('') || '<div class="empty">Nema nadolazećih rokova.</div>'}
@@ -1521,7 +1545,7 @@ function calendarView() {
         <select data-act="calPerson" style="width:auto"><option value="0">Svi ljudi</option>${S.data.people.map((p) => `<option value="${p.id}" ${p.id === c.person ? 'selected' : ''}>${esc(pLabel(p))}</option>`).join('')}</select>
         <select data-act="calTopic" style="width:auto;max-width:220px"><option value="0">Sve teme</option>${topicOptions(c.topic)}</select>
         <label class="row small muted" style="gap:4px"><input type="checkbox" data-act="calDone" style="width:auto" ${c.done ? 'checked' : ''}> gotovi</label>
-        <button class="primary" data-act="ical" title="Rokovi iz Delegatora u kalendaru na mobitelu (Google / Apple)">📲 Dodaj u Google/Apple kalendar</button>
+        <button class="primary" data-act="ical" title="Rokovi iz Delegatora u kalendaru na mobitelu (Google / Apple)">${ic('calendar')} Dodaj u Google/Apple kalendar</button>
       </div>
     </div>
     ${body}
@@ -1541,8 +1565,8 @@ function taskInfo(k) {
     <h2>${esc(k.title)}</h2>
     <div class="row small">
       <span class="status st-${k.status}">${STATUS[k.status]}</span>
-      ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtSpan(k)}${late ? ' (kasni)' : ''}</span>` : '<span class="muted">bez roka</span>'}
-      ${k.repeat ? `<span>🔁 ${REPEAT[k.repeat].toLowerCase()}</span>` : ''}
+      ${k.due_date ? `<span class="due ${late ? 'late' : ''}">${ic('calendar')} ${fmtSpan(k)}${late ? ' (kasni)' : ''}</span>` : '<span class="muted">bez roka</span>'}
+      ${k.repeat ? `<span>${ic('repeat')} ${REPEAT[k.repeat].toLowerCase()}</span>` : ''}
       ${k.priority !== 'normal' ? `<span class="prio-${k.priority}">${k.priority === 'high' ? '▲ visok' : '▽ nizak'}</span>` : ''}
     </div>
     ${k.people.length ? `<div class="chips">${k.people.map(person).filter(Boolean).map((p) => `<span class="chip static">${esc(pLabel(p))}</span>`).join('')}</div>` : ''}
@@ -1552,9 +1576,9 @@ function taskInfo(k) {
     ${stepsBlock(k, { readonly: true })}
     <div class="row">
       <button data-act="infoStatus" data-id="${k.id}">${k.status === 'done' ? '↺ Vrati u rad' : '✓ Gotovo'}</button>
-      <button data-act="infoEdit" data-id="${k.id}">✏️ Uredi</button>
+      <button data-act="infoEdit" data-id="${k.id}">${ic('pencil')} Uredi</button>
       <button data-act="infoOpen" data-id="${k.id}">Otvori u temi →</button>
-      ${k.people.length ? `<button data-act="mailTask" data-id="${k.id}" data-pid="0">✉️ Pošalji</button>` : ''}
+      ${k.people.length ? `<button data-act="mailTask" data-id="${k.id}" data-pid="0">${ic('mail')} Pošalji</button>` : ''}
       <button style="margin-left:auto" onclick="this.closest('dialog').close()">Zatvori</button>
     </div></div>`;
   if (!dlg.open) dlg.showModal();
@@ -1725,7 +1749,7 @@ function netSelect(nd) {
       <div style="white-space:pre-wrap">${esc(x.body)}</div>
       <div class="row"><button data-act="calTask" data-id="${x.task_id}">Zadatak</button></div>`;
   }
-  box.innerHTML = html + `<button class="ghost net-x" data-act="netClose" title="Zatvori">✕</button>`;
+  box.innerHTML = html + `<button class="ghost net-x" data-act="netClose" title="Zatvori">${ic('x')}</button>`;
   box.hidden = false;
 }
 
@@ -1777,20 +1801,20 @@ function overviewView() {
     <div class="ov-grid">
       <div class="stack">
         ${newsSection()}
-        ${myOpen.length ? section('⭐ Moji zadaci', myOpen, '') : ''}
-        ${late.length ? section('⚠️ Kasni', late, '') : ''}
-        ${section('📌 Danas', now, 'Za danas nema rokova.')}
-        ${section('📅 Sljedećih 7 dana', soon, 'Nema rokova idući tjedan.')}
+        ${myOpen.length ? section(`${ic('star')} Moji zadaci`, myOpen, '') : ''}
+        ${late.length ? section(`${ic('triangle-alert')} Kasni`, late, '') : ''}
+        ${section(`${ic('pin')} Danas`, now, 'Za danas nema rokova.')}
+        ${section(`${ic('calendar-days')} Sljedećih 7 dana`, soon, 'Nema rokova idući tjedan.')}
       </div>
       <div class="stack">
-        <div class="panel stack"><h3>👥 Opterećenost ljudi</h3>
+        <div class="panel stack"><h3>${ic('users')} Opterećenost ljudi</h3>
           ${load.map((x) => `<button class="loadrow" data-act="openPerson" data-id="${x.p.id}">
             <span class="ln">${esc(pLabel(x.p))}</span>
             <span class="bar"><i style="width:${(x.open / maxLoad) * 100}%"></i>${x.late ? `<i class="late" style="width:${(x.late / maxLoad) * 100}%"></i>` : ''}</span>
             <span class="small muted">${x.open} otv.${x.late ? ` · <span class="due late">${x.late} kasni</span>` : ''}${x.week ? ` · ${x.week} ovaj tj.` : ''}</span></button>`).join('')
             || '<div class="muted small">Nitko nema otvorenih zadataka.</div>'}
         </div>
-        <div class="panel stack"><h3>📈 Napredak tema</h3>
+        <div class="panel stack"><h3>${ic('chart-no-axes-column')} Napredak tema</h3>
           ${progress.map((x) => `<button class="loadrow" data-act="topic" data-id="${x.t.id}">
             <span class="ln"><span class="dot" style="display:inline-block;background:${esc(x.t.color)}"></span> ${esc(x.t.title)}</span>
             <span class="bar"><i class="ok" style="width:${(x.done / x.all) * 100}%;background:${esc(x.t.color)}"></i></span>
@@ -1823,10 +1847,10 @@ function boardView() {
           <div class="kt">${k.priority === 'high' ? '❗' : ''}${hl(k.title)}</div>
           <div class="small muted">${esc(topicPath(t))}</div>
           <div class="row small">
-            ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtSpan(k)}</span>` : ''}
-            ${k.repeat ? '<span title="Ponavlja se">🔁</span>' : ''}
-            ${S.data.notes.some((n) => n.task_id === k.id) ? `<span>📝 ${S.data.notes.filter((n) => n.task_id === k.id).length}</span>` : ''}
-            ${taskFiles(k).length ? `<span>📎 ${taskFiles(k).length}</span>` : ''}
+            ${k.due_date ? `<span class="due ${late ? 'late' : ''}">${ic('calendar')} ${fmtSpan(k)}</span>` : ''}
+            ${k.repeat ? `<span title="Ponavlja se">${ic('repeat')}</span>` : ''}
+            ${S.data.notes.some((n) => n.task_id === k.id) ? `<span title="Bilješke">${ic('message-square')} ${S.data.notes.filter((n) => n.task_id === k.id).length}</span>` : ''}
+            ${taskFiles(k).length ? `<span title="Prilozi">${ic('paperclip')} ${taskFiles(k).length}</span>` : ''}
             ${stepsBadge(k)}
             <span class="kp">${k.people.map(person).filter(Boolean).map((p) => `<b title="${esc(p.name)}">${esc(initials(p.name))}</b>`).join('')}</span>
           </div></div>`;
@@ -1861,7 +1885,7 @@ async function icalDialog(reset = false) {
     <div class="notes-block stack">
       <div class="small"><strong>Ili ručno</strong> — Google: Ostali kalendari → + → „Iz URL-a“; Outlook: Dodaj kalendar → „Pretplati se s weba“.</div>
       <input readonly value="${esc(url)}" onclick="this.select()">
-      <button type="button" data-act="copyText" data-text="${esc(url)}">📋 Kopiraj poveznicu</button>
+      <button type="button" data-act="copyText" data-text="${esc(url)}">${ic('copy')} Kopiraj poveznicu</button>
     </div>
     <div class="muted small">Google osvježava pretplate sporo (do nekoliko sati), Apple otprilike svaki sat.
       Tko ima ovu poveznicu, vidi tvoje rokove — ne dijeli je. Ako je procurila, napravi novu.</div>
@@ -1876,7 +1900,7 @@ const hasDemo = () => S.data.topics.some((t) => t.is_demo) || S.data.people.some
 function demoBanner() {
   if (!hasDemo() || ['admin', 'people'].includes(S.view)) return '';
   return `<div class="demo-banner"><span>🎓 Gledaš <strong>primjere</strong> (tema „Primjer: Sajam 2027“, osobe s oznakom „primjer“). Isprobaj slobodno — kad ti više ne trebaju:</span>
-    <button class="small" data-act="deleteDemo">🗑 Obriši primjere</button></div>`;
+    <button class="small" data-act="deleteDemo">${ic('trash-2')} Obriši primjere</button></div>`;
 }
 const TOUR = [
   { title: 'Dobrodošli u Delegator 👋', welcome: true,
@@ -1905,7 +1929,7 @@ function showTour() {
   const last = S.tour.step === TOUR.length - 1;
   const dots = TOUR.map((_, i) => `<i class="${i === S.tour.step ? 'on' : ''}"></i>`).join('');
   document.getElementById('app').insertAdjacentHTML('beforeend', `<div class="tour" role="dialog" aria-label="Vodič">
-    <button class="ghost tour-x" data-act="tourEnd" title="Zatvori vodič">✕</button>
+    <button class="ghost tour-x" data-act="tourEnd" title="Zatvori vodič">${ic('x')}</button>
     <h3>${st.title}</h3><div class="tour-text">${st.text}</div>
     ${st.welcome ? `<label class="row small tour-demo"><input type="checkbox" id="tour-demo" style="width:auto" ${hasDemo() ? 'disabled' : S.data.topics.length ? '' : 'checked'}>
       ${hasDemo() ? 'Primjeri su već dodani' : '🎓 Dodaj probnu temu s primjerima da odmah vidiš kako sve izgleda (lako se obriše)'}</label>` : ''}
@@ -1936,7 +1960,7 @@ function newsSection() {
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 8);
   if (!recent.length) return '';
   const u = recent.filter((n) => !n.seen);
-  return `<div class="panel stack news"><div class="row"><h3 class="grow">📨 Javljanja ljudi ${u.length ? `<span class="badge">${u.length} novo</span>` : ''}</h3>
+  return `<div class="panel stack news"><div class="row"><h3 class="grow">${ic('inbox')} Javljanja ljudi ${u.length ? `<span class="badge">${u.length} novo</span>` : ''}</h3>
       ${u.length ? `<button class="ghost small" data-act="seenAll">✓ Označi pročitano</button>` : ''}</div>
     ${recent.map((n) => { const k = S.data.tasks.find((x) => x.id === n.task_id);
       return `<button class="newsrow ${n.seen ? '' : 'unseen'}" data-act="calTask" data-id="${n.task_id}">
@@ -1951,13 +1975,13 @@ async function shareDialog(pid, reset = false) {
   const msg = `Bok ${p.name.split(' ')[0]}, ovdje su tvoji zadaci od mene — možeš označiti napredak i javiti mi se: ${url}`;
   const dlg = $('#dlg');
   dlg.innerHTML = `<div class="stack">
-    <h2>🔗 Poveznica za ${esc(p.name)}</h2>
+    <h2>${ic('link')} Poveznica za ${esc(p.name)}</h2>
     <div class="muted small">${esc(p.name.split(' ')[0])} na njoj vidi <b>samo svoje zadatke</b> (rokove, upute za sebe i opće bilješke, priloge) i može označiti <b>U tijeku / Gotovo</b> ili ti napisati poruku. Ne treba račun. Ti dobiješ javljanje u Pregledu${'Notification' in window ? ' i obavijest na mobitel' : ''}.</div>
     <input readonly value="${esc(url)}" onclick="this.select()">
     <div class="row">
-      <button class="primary" data-act="copyText" data-text="${esc(url)}">📋 Kopiraj</button>
+      <button class="primary" data-act="copyText" data-text="${esc(url)}">${ic('copy')} Kopiraj</button>
       <a class="btnlink" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">💬 WhatsApp</a>
-      <a class="btnlink" href="mailto:${esc(p.email || '')}?subject=${encodeURIComponent('Tvoji zadaci')}&body=${encodeURIComponent(msg)}">✉️ Mail</a>
+      <a class="btnlink" href="mailto:${esc(p.email || '')}?subject=${encodeURIComponent('Tvoji zadaci')}&body=${encodeURIComponent(msg)}">${ic('mail')} Mail</a>
       <a class="btnlink" href="${esc(url)}" target="_blank" rel="noopener">👁 Pogledaj kao ${esc(p.name.split(' ')[0])}</a>
     </div>
     <div class="muted small">Tko ima poveznicu, vidi zadatke te osobe — ne objavljuj je javno. Ako je procurila, napravi novu (stara odmah prestaje raditi).</div>
@@ -1976,9 +2000,9 @@ async function updatePushBtn() {
   const b = $('#push-btn'); if (!b) return;
   const st = await pushState().catch(() => 'unsupported');
   b.dataset.state = st;
-  b.textContent = { on: '🔕 Isključi obavijesti na ovom uređaju', off: '🔔 Uključi obavijesti (jutarnji sažetak, javljanja)',
-    denied: '🔔 Obavijesti su blokirane u pregledniku', 'ios-install': '🔔 Obavijesti: najprije dodaj aplikaciju na početni zaslon',
-    unsupported: '🔔 Ovaj preglednik ne podržava obavijesti' }[st];
+  b.innerHTML = (st === 'on' ? ic('bell-off') : ic('bell')) + ' ' + { on: 'Isključi obavijesti na ovom uređaju', off: 'Uključi obavijesti (jutarnji sažetak, javljanja)',
+    denied: 'Obavijesti su blokirane u pregledniku', 'ios-install': 'Obavijesti: najprije dodaj aplikaciju na početni zaslon',
+    unsupported: 'Ovaj preglednik ne podržava obavijesti' }[st];
   b.disabled = st === 'unsupported';
 }
 async function pushToggle(btn) {
@@ -2009,14 +2033,14 @@ const stepsOf = (k) => S.data.subtasks.filter((x) => x.task_id === k.id);
 function stepsBadge(k) {
   const st = stepsOf(k); if (!st.length) return '';
   const done = st.filter((x) => x.done).length;
-  return `<span title="Koraci" class="${done === st.length ? 'steps-done' : ''}">☑ ${done}/${st.length}</span>`;
+  return `<span title="Koraci" class="${done === st.length ? 'steps-done' : ''}">${ic('list-checks')} ${done}/${st.length}</span>`;
 }
 function stepsBlock(k, { readonly = false } = {}) {
   const st = stepsOf(k);
   if (readonly && !st.length) return '';
-  return `<div class="steps-block"><div class="small muted">☑ Koraci ${st.length ? `· ${st.filter((x) => x.done).length}/${st.length}` : ''}</div>
+  return `<div class="steps-block"><div class="small muted">${ic('list-checks')} Koraci ${st.length ? `· ${st.filter((x) => x.done).length}/${st.length}` : ''}</div>
     ${st.map((x) => `<label class="step ${x.done ? 'done' : ''}"><input type="checkbox" data-act="toggleSub" data-id="${x.id}" ${x.done ? 'checked' : ''} style="width:auto">
-      <span class="grow">${hl(x.title)}</span>${readonly ? '' : `<button type="button" class="ghost small danger" data-act="delSub" data-id="${x.id}" title="Obriši korak">✕</button>`}</label>`).join('')}
+      <span class="grow">${hl(x.title)}</span>${readonly ? '' : `<button type="button" class="ghost small danger" data-act="delSub" data-id="${x.id}" title="Obriši korak">${ic('x')}</button>`}</label>`).join('')}
     ${readonly ? '' : `<form class="row step-add" data-form="sub" data-task="${k.id}"><input name="title" placeholder="+ Dodaj korak (npr. „Zatražiti 3 ponude“)" autocomplete="off" style="flex:1;width:auto"></form>`}
   </div>`;
 }
@@ -2062,7 +2086,7 @@ function statsView() {
   const per = (v, l) => `<button class="chip ${S.stats.days === v ? 'on' : ''}" data-act="statsDays" data-v="${v}">${l}</button>`;
   const stat = (n, l, cls = '') => `<div class="stat ${cls}"><b>${n ?? '–'}</b><span>${l}</span></div>`;
   return `<div class="stack" style="max-width:1100px;margin:0 auto">
-    <div class="panel row"><h2 class="grow">📈 Statistika</h2><div class="chips">${per(7, '7 dana')}${per(30, '30 dana')}${per(90, '3 mjeseca')}${per(365, 'godina')}</div></div>
+    <div class="panel row"><h2 class="grow">${ic('chart-no-axes-column')} Statistika</h2><div class="chips">${per(7, '7 dana')}${per(30, '30 dana')}${per(90, '3 mjeseca')}${per(365, 'godina')}</div></div>
     <div class="stats">
       ${stat(doneIn.length, 'završeno')}${stat(created.length, 'novih zadataka')}
       ${stat(pct(onTime.length, withDue.length) != null ? pct(onTime.length, withDue.length) + ' %' : null, 'završeno na vrijeme', pct(onTime.length, withDue.length) < 70 ? 'warn' : '')}
@@ -2162,7 +2186,7 @@ function linkBox(label, url, mailSubject, mailBody) {
     <div class="small"><strong>${label}</strong></div>
     <input readonly value="${esc(url)}" onclick="this.select()">
     <div class="row">
-      <button type="button" data-act="copyText" data-text="${esc(url)}">📋 Kopiraj poveznicu</button>
+      <button type="button" data-act="copyText" data-text="${esc(url)}">${ic('copy')} Kopiraj poveznicu</button>
       <a class="small" href="mailto:?subject=${encodeURIComponent(mailSubject)}&body=${encodeURIComponent(mailBody)}">✉️ Pošalji mailom</a>
     </div></div>`;
 }
@@ -2186,8 +2210,8 @@ function adminView() {
       ${users.map((u) => `<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)">
         <div class="grow"><strong>${esc(u.name)}</strong> ${u.is_admin ? '<span class="chip static small">administrator</span>' : ''}
           <div class="muted small">${esc(u.email)} · od ${fmtDay(u.created_at)} · ${u.tasks} zadataka</div></div>
-        <button class="ghost small" data-act="resetUser" data-id="${u.id}" title="Napravi poveznicu za novu lozinku">🔑 Nova lozinka</button>
-        ${u.id !== S.user.id ? `<button class="ghost small danger" data-act="delUser" data-id="${u.id}" title="Obriši korisnika i sve njegove podatke">✕</button>` : ''}
+        <button class="ghost small" data-act="resetUser" data-id="${u.id}" title="Napravi poveznicu za novu lozinku">${ic('key-round')} Nova lozinka</button>
+        ${u.id !== S.user.id ? `<button class="ghost small danger" data-act="delUser" data-id="${u.id}" title="Obriši korisnika i sve njegove podatke">${ic('x')}</button>` : ''}
       </div>`).join('')}
     </div>
     <div class="panel stack" id="backups"><div class="row"><h3 class="grow">💾 Sigurnosne kopije</h3>
@@ -2293,9 +2317,9 @@ const isStandalone = () => matchMedia('(display-mode: standalone)').matches || n
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 function installButton() {
   if (isStandalone()) return '';
-  if (installEvt) return '<button data-act="install">📲 Instaliraj kao aplikaciju</button>';
-  if (isIOS()) return `<div class="notes-block small">📲 <strong>Na iPhoneu/iPadu:</strong> u Safariju dodirni <strong>Dijeli</strong> (□↑) → <strong>Dodaj na početni zaslon</strong>.</div>`;
-  return '<div class="notes-block small">📲 <strong>Instalacija:</strong> u Chromeu otvori izbornik ⋮ → <strong>Instaliraj aplikaciju</strong> / <strong>Dodaj na početni zaslon</strong>.</div>';
+  if (installEvt) return `<button data-act="install">${ic('smartphone')} Instaliraj kao aplikaciju</button>`;
+  if (isIOS()) return `<div class="notes-block small">${ic('smartphone')} <strong>Na iPhoneu/iPadu:</strong> u Safariju dodirni <strong>Dijeli</strong> (□↑) → <strong>Dodaj na početni zaslon</strong>.</div>`;
+  return `<div class="notes-block small">${ic('smartphone')} <strong>Instalacija:</strong> u Chromeu otvori izbornik ⋮ → <strong>Instaliraj aplikaciju</strong> / <strong>Dodaj na početni zaslon</strong>.</div>`;
 }
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
@@ -2309,13 +2333,13 @@ function userMenu() {
     <h2>${esc(S.user.name)}</h2><div class="muted small">${esc(S.user.email)}${S.user.is_admin ? ' · administrator' : ''}</div>
     ${themePicker()}
     ${installButton()}
-    <button data-act="pushToggle" id="push-btn" disabled>🔔 Obavijesti na ovom uređaju…</button>
-    <button data-act="tourStart">❓ Vodič kroz aplikaciju</button>
-    <a class="btnlink" href="/vodic" target="_blank" rel="noopener">📖 Upute (može se proslijediti)</a>
-    ${hasDemo() ? '' : '<button data-act="addDemo">🎓 Dodaj primjere (probnu temu)</button>'}
-    <button data-act="ical">📅 Rokovi u Google/Apple kalendaru</button>
-    <button data-act="changePw">🔑 Promijeni lozinku</button>
-    <button data-act="logout">↩︎ Odjava</button>
+    <button data-act="pushToggle" id="push-btn" disabled>${ic('bell')} Obavijesti na ovom uređaju…</button>
+    <button data-act="tourStart">${ic('circle-help')} Vodič kroz aplikaciju</button>
+    <a class="btnlink" href="/vodic" target="_blank" rel="noopener">${ic('book-open')} Upute (može se proslijediti)</a>
+    ${hasDemo() ? '' : `<button data-act="addDemo">${ic('graduation-cap')} Dodaj primjere (probnu temu)</button>`}
+    <button data-act="ical">${ic('calendar')} Rokovi u Google/Apple kalendaru</button>
+    <button data-act="changePw">${ic('key-round')} Promijeni lozinku</button>
+    <button data-act="logout">${ic('log-out')} Odjava</button>
     <div class="row" style="justify-content:flex-end"><button type="button" onclick="this.closest('dialog').close()">Zatvori</button></div></div>`;
   dlg.showModal();
 }
@@ -2402,7 +2426,7 @@ function quickStep1(text = '', keepPhoto = false) {
   if (!keepPhoto) setQaPhoto(null);
   const dlg = $('#dlg');
   dlg.innerHTML = `<form class="stack" data-qa="parse">
-    <h2>⚡ Brzi unos</h2>
+    <h2>${ic('zap')} Brzi unos</h2>
     <div class="muted small">Izdiktiraj ili upiši, npr. <em>„Marko do petka naruči štand za sajam, budžet 2000 eura“</em> — ili <strong>slikaj / dodaj PDF</strong>: račun, ponudu, dopis ili ploču sa sastanka. AI će predložiti temu, osobu, rok i bilješke — ti samo potvrdiš.</div>
     <div class="with-mic"><textarea id="qa-text" class="qa-text" name="text" placeholder="Što treba napraviti? (ili samo dodaj fotografiju ili PDF)">${esc(text)}</textarea>${micBtn('qa-text')}</div>
     <div class="row">
