@@ -493,6 +493,7 @@
     .tour { bottom: calc(var(--tabbar-h) + 12px + env(safe-area-inset-bottom)); }
     dialog { padding: 18px 16px; border-radius: 20px; }
     .kcol { min-height: 50vh; }
+    .side { position: static; max-height: none; overflow: visible; }   /* popis tema ne smije lebdjeti preko zadataka */
   }
 
   @media (prefers-reduced-motion: reduce) {
