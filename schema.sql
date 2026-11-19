@@ -149,3 +149,9 @@ CREATE INDEX IF NOT EXISTS attachments_user_idx ON attachments (user_id);
 
 -- Mala sličica fotografije (do 320 px) za brzi prikaz popisa; cijela slika samo na klik.
 ALTER TABLE attachments ADD COLUMN IF NOT EXISTS thumb_url text;
+
+-- Dobrodošlica: je li korisnik prošao vodič; probni podaci („Primjer“) koje korisnik može obrisati jednim klikom.
+ALTER TABLE users  ADD COLUMN IF NOT EXISTS onboarded boolean NOT NULL DEFAULT false;
+ALTER TABLE topics ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false;
+ALTER TABLE people ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false;
+ALTER TABLE pnotes ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false;

@@ -7,8 +7,8 @@ import { sql, currentUser, readBody, txt } from './_lib.js';
 
 async function loadAll(uid) {
   const [people, topics, tasks, notes, pnotes, attachments] = await Promise.all([
-    sql`SELECT id, name, role, email FROM people WHERE user_id = ${uid} ORDER BY name`,
-    sql`SELECT id, parent_id, title, description, color, archived FROM topics WHERE user_id = ${uid} ORDER BY archived, created_at`,
+    sql`SELECT id, name, role, email, is_demo FROM people WHERE user_id = ${uid} ORDER BY name`,
+    sql`SELECT id, parent_id, title, description, color, archived, is_demo FROM topics WHERE user_id = ${uid} ORDER BY archived, created_at`,
     sql`SELECT t.id, t.topic_id, t.title, t.description, t.status, t.priority,
                to_char(t.due_date, 'YYYY-MM-DD') AS due_date, to_char(t.start_date, 'YYYY-MM-DD') AS start_date,
                t.repeat, t.created_at,
@@ -17,7 +17,7 @@ async function loadAll(uid) {
         WHERE t.user_id = ${uid}
         GROUP BY t.id ORDER BY t.created_at`,
     sql`SELECT id, task_id, person_id, body, created_at FROM notes WHERE user_id = ${uid} ORDER BY created_at`,
-    sql`SELECT id, title, body, color, pinned, created_at, updated_at FROM pnotes WHERE user_id = ${uid} ORDER BY pinned DESC, updated_at DESC`,
+    sql`SELECT id, title, body, color, pinned, is_demo, created_at, updated_at FROM pnotes WHERE user_id = ${uid} ORDER BY pinned DESC, updated_at DESC`,
     sql`SELECT id, task_id, note_id, topic_id, pnote_id, name, mime, size, created_at FROM attachments WHERE user_id = ${uid} ORDER BY created_at`,
   ]);
   return { people, topics, tasks, notes, pnotes, attachments };
@@ -77,6 +77,40 @@ async function spawnNext(id, uid) {
 async function purge(rows) {
   const urls = rows.flatMap((r) => [r.blob_url, r.thumb_url]).filter(Boolean);
   if (urls.length) await del(urls).catch((e) => console.error('Blob del', e.message));
+}
+
+// ---- probni podaci za dobrodošlicu ----
+const dayFromToday = (n) => { const d = new Date(todayZg() + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+async function createDemo(uid) {
+  if ((await sql`SELECT 1 FROM topics WHERE user_id = ${uid} AND is_demo`).length) return;
+  const [ana] = await sql`INSERT INTO people (user_id, name, role, is_demo) VALUES (${uid}, 'Ana (primjer)', 'marketing', true) RETURNING id`;
+  const [marko] = await sql`INSERT INTO people (user_id, name, role, is_demo) VALUES (${uid}, 'Marko (primjer)', 'nabava', true) RETURNING id`;
+  const topic = async (title, color, parent, description = null) => (await sql`INSERT INTO topics (user_id, parent_id, title, description, color, is_demo)
+    VALUES (${uid}, ${parent}, ${title}, ${description}, ${color}, true) RETURNING id`)[0].id;
+  const root = await topic('Primjer: Sajam 2027', '#4f6bed', null, 'Probna tema da vidiš kako sve izgleda. Kad ti više ne treba, obriši je jednim klikom (traka na vrhu).');
+  const stand = await topic('Štand', '#4f6bed', root);
+  const mkt = await topic('Marketing', '#d98b1a', root);
+  const daysToMonday = ((8 - new Date(todayZg() + 'T12:00:00Z').getUTCDay()) % 7) || 7;
+  const task = async (topicId, title, people, { due = null, start = null, status = 'todo', priority = 'normal', repeat = null, description = null } = {}) =>
+    (await sql`WITH t AS (INSERT INTO tasks (user_id, topic_id, title, description, status, priority, start_date, due_date, repeat)
+        VALUES (${uid}, ${topicId}, ${title}, ${description}, ${status}, ${priority}, ${start}, ${due}, ${repeat}) RETURNING id),
+      tp AS (INSERT INTO task_people (task_id, person_id) SELECT t.id, p FROM t, unnest(${people}::int[]) AS p)
+      SELECT id FROM t`)[0].id;
+  const note = (taskId, personId, body) => sql`INSERT INTO notes (user_id, task_id, person_id, body) VALUES (${uid}, ${taskId}, ${personId}, ${body})`;
+  const k1 = await task(stand, 'Naručiti štand 3×3 m', [marko.id], { due: dayFromToday(3), priority: 'high' });
+  await note(k1, marko.id, 'Budžet do 2.000 €, traži barem dvije ponude.');
+  await note(k1, null, 'Ovdje možeš dodati 📎 ponudu u PDF-u ili fotografiju.');
+  const k2 = await task(mkt, 'Dizajn letka', [ana.id], { start: dayFromToday(0), due: dayFromToday(4), status: 'doing',
+    description: 'Višednevni zadatak: ima datum početka i rok, pa se u kalendaru vidi kroz više dana.' });
+  await note(k2, ana.id, 'Logo i boje sajma, format A5.');
+  await task(root, 'Tjedni sastanak tima', [ana.id, marko.id], { due: dayFromToday(daysToMonday), repeat: 'weekly',
+    description: 'Ponavlja se svaki tjedan: kad ga označiš gotovim, sam se napravi sljedeći.' });
+  await task(stand, 'Poslati prijavu za sajam', [marko.id], { due: dayFromToday(-1) });
+  await task(mkt, 'Objava na Instagramu', [ana.id], { due: dayFromToday(8), priority: 'low' });
+  await task(root, 'Rezervirati smještaj', [marko.id], { due: dayFromToday(-3), status: 'done' });
+  await sql`INSERT INTO pnotes (user_id, title, body, color, pinned, is_demo) VALUES (${uid}, 'Primjer bilješke',
+    ${'Ovdje zapisuješ svoje ideje, sastanke i popise — vidiš ih samo ti.\n📌 prikvači važno · 🎨 odaberi boju · 🎤 izdiktiraj · 📎 dodaj fotografiju ili PDF'},
+    '#fff8c5', true, true)`;
 }
 
 const notFound = () => Object.assign(new Error('Nije pronađeno'), { status: 404 });
@@ -253,6 +287,17 @@ const ops = {
     await sql`DELETE FROM notes WHERE id = ${b.id} AND user_id = ${uid}`;
     await purge(files);
   },
+
+  // --- dobrodošlica ---
+  createDemo: (b, uid) => createDemo(uid),
+  // Briše sve probne podatke (i zadatke koje je korisnik sam dodao u probnu temu) zajedno s prilozima.
+  deleteDemo: async (b, uid) => {
+    for (const t of await sql`SELECT id FROM topics WHERE user_id = ${uid} AND is_demo AND (parent_id IS NULL OR parent_id NOT IN (SELECT id FROM topics WHERE is_demo))`)
+      await ops.deleteTopic({ id: t.id }, uid);
+    for (const n of await sql`SELECT id FROM pnotes WHERE user_id = ${uid} AND is_demo`) await ops.deletePnote({ id: n.id }, uid);
+    await sql`DELETE FROM people WHERE user_id = ${uid} AND is_demo`;
+  },
+  onboarded: (b, uid) => sql`UPDATE users SET onboarded = ${b.value !== false} WHERE id = ${uid}`,
 
   // --- osobne bilješke (kartica „Bilješke“, vidi ih samo autor) ---
   addPnote: async (b, uid) => {

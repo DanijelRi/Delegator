@@ -213,6 +213,25 @@
   .lightbox { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px; background: #f1f3f6; }
   dialog:has(.lightbox) { width: min(1000px, 96vw); }
 
+  /* dobrodošlica */
+  .tour { position: fixed; z-index: 30; left: 50%; bottom: 24px; transform: translateX(-50%); width: min(440px, calc(100vw - 24px));
+          background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px 14px;
+          box-shadow: 0 12px 40px rgba(20,24,35,.22); display: flex; flex-direction: column; gap: 10px; animation: tourIn .25s ease; }
+  @keyframes tourIn { from { opacity: 0; transform: translate(-50%, 12px); } }
+  .tour h3 { font-size: 17px; margin: 0; padding-right: 28px; }
+  .tour-text { line-height: 1.5; }
+  .tour-x { position: absolute; top: 8px; right: 8px; }
+  .tour-demo { background: var(--accent-soft); border-radius: 8px; padding: 8px 10px; align-items: flex-start; flex-wrap: nowrap; }
+  .tour-dots { display: flex; gap: 4px; } .tour-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+  .tour-dots i.on { background: var(--accent); width: 18px; border-radius: 4px; }
+  .tour-hl { position: relative; z-index: 6; outline: 3px solid var(--accent) !important; outline-offset: 3px; border-radius: 10px;
+             animation: tourPulse 1.6s ease-in-out infinite; }
+  @keyframes tourPulse { 50% { outline-color: rgba(79,107,237,.35); } }
+  .demo-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #fff8e1; border: 1px solid #f3dfa2;
+                 border-radius: var(--radius); padding: 8px 12px; margin-bottom: 12px; font-size: 14px; }
+  .demo-banner span { flex: 1; min-width: 220px; }
+  main:has(.cal) .demo-banner, main:has(.board) .demo-banner, main:has(.net-wrap) .demo-banner { margin-bottom: 10px; }
+
   /* brzi unos s fotografijom */
   .qa-photo { display: flex; align-items: center; gap: 8px; min-height: 0; }
   .qa-photo img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); flex: none; }
@@ -520,7 +539,7 @@ function render() {
   const drafts = {};
   document.querySelectorAll('[data-draft]').forEach((el) => { if (el.value) drafts[el.id] = el.value; });
 
-  app.innerHTML = headerView() + `<main>${
+  app.innerHTML = headerView() + `<main>${demoBanner()}${
     terms().length && S.view !== 'board' && S.view !== 'pnotes' ? searchView()
       : S.view === 'people' ? peopleView() : S.view === 'person' ? personView()
       : S.view === 'admin' && S.user?.is_admin ? adminView()
@@ -532,6 +551,7 @@ function render() {
   Object.entries(drafts).forEach(([id, v]) => { const el = document.getElementById(id); if (el && !el.value) el.value = v; });
   if (active) { const el = document.getElementById(active); if (el) { el.focus(); try { el.setSelectionRange(sel, sel); } catch {} } }
   if (S.view === 'network' && !terms().length) drawNetwork();
+  if (S.tour) showTour();
 }
 
 function headerView() {
@@ -1468,6 +1488,63 @@ async function icalDialog(reset = false) {
   if (!dlg.open) dlg.showModal();
 }
 
+/* ========= dobrodošlica: vodič kroz aplikaciju i probni podaci ========= */
+const hasDemo = () => S.data.topics.some((t) => t.is_demo) || S.data.people.some((p) => p.is_demo) || S.data.pnotes.some((n) => n.is_demo);
+function demoBanner() {
+  if (!hasDemo() || ['admin', 'people'].includes(S.view)) return '';
+  return `<div class="demo-banner"><span>🎓 Gledaš <strong>primjere</strong> (tema „Primjer: Sajam 2027“, osobe s oznakom „primjer“). Isprobaj slobodno — kad ti više ne trebaju:</span>
+    <button class="small" data-act="deleteDemo">🗑 Obriši primjere</button></div>`;
+}
+const TOUR = [
+  { title: 'Dobrodošli u Delegator 👋', welcome: true,
+    text: 'Ovdje vodiš <b>teme</b>, <b>zadatke</b> i <b>ljude</b> kojima ih delegiraš — s rokovima, bilješkama i prilozima. Tvoji podaci vidljivi su samo tebi.<br>Kratki obilazak traje oko minute.' },
+  { view: 'overview', hl: 'nav [data-v="overview"]', title: '🏠 Pregled',
+    text: 'Početna stranica: što <b>kasni</b>, što je <b>danas</b> i u sljedećih 7 dana, tko je najopterećeniji i koliko je koja tema gotova. Klik na brojku vodi u detalje.' },
+  { view: 'topics', hl: '.side', title: '📁 Teme i podteme',
+    text: 'Lijevo su teme, a u njima podteme (npr. Sajam › Štand). Klikni zadatak da ga otvoriš: <b>bilješke za svaku osobu</b>, 📎 <b>prilozi</b> (PDF, fotografije), ✉️ slanje mailom. Status mijenjaš klikom na oznaku „Za napraviti“.' },
+  { hl: 'header [data-act="quick"]', title: '⚡ Brzi unos uz AI',
+    text: 'Najbrži način: <b>izgovori</b> ili upiši „Marko do petka naruči štand, budžet 2000 eura“ — ili <b>slikaj račun / dodaj PDF</b>. AI predloži temu, osobu, rok i bilješke, a ti samo potvrdiš. Na mobitelu je tu i plavi 🎤 gumb dolje desno.' },
+  { view: 'calendar', hl: 'nav [data-v="calendar"]', title: '📅 Kalendar',
+    text: 'Svi rokovi po danima (mjesec, tjedan ili popis). <b>Povuci zadatak</b> na drugi dan i rok se promijeni; „+“ u danu dodaje novi. Gumb <b>📲 Dodaj u Google/Apple kalendar</b> prenosi rokove u kalendar na mobitelu.' },
+  { view: 'board', hl: 'nav [data-v="board"]', title: '🗂 Ploča',
+    text: 'Zadaci u tri stupca: Za napraviti · U tijeku · Gotovo. Povuci karticu u drugi stupac. Zadatak može imati i 🔁 <b>ponavljanje</b> (npr. svaki tjedan) — kad ga završiš, sam se napravi sljedeći.' },
+  { view: 'pnotes', hl: 'nav [data-v="pnotes"]', title: '📝 Bilješke',
+    text: 'Tvoje osobne bilješke — ideje, sastanci, popisi — nevezane uz zadatke. Boja, 📌 prikvačivanje, 🎤 diktiranje i prilozi. 🔍 Tražilica gore pretražuje sve: zadatke, bilješke i nazive priloga.' },
+  { hl: '[data-act="userMenu"]', title: '📲 Za kraj',
+    text: 'Na mobitelu otvori aplikaciju u pregledniku i dodaj je na <b>početni zaslon</b> — radi kao prava aplikacija. Ovaj vodič uvijek možeš ponovno otvoriti u izborniku <b>👤</b> → ❓ Vodič.' },
+];
+function showTour() {
+  const st = TOUR[S.tour.step];
+  document.querySelectorAll('.tour-hl').forEach((x) => x.classList.remove('tour-hl'));
+  const target = st.hl && document.querySelector(st.hl);
+  if (target) { target.classList.add('tour-hl'); target.scrollIntoView({ block: 'nearest' }); }
+  const last = S.tour.step === TOUR.length - 1;
+  const dots = TOUR.map((_, i) => `<i class="${i === S.tour.step ? 'on' : ''}"></i>`).join('');
+  document.getElementById('app').insertAdjacentHTML('beforeend', `<div class="tour" role="dialog" aria-label="Vodič">
+    <button class="ghost tour-x" data-act="tourEnd" title="Zatvori vodič">✕</button>
+    <h3>${st.title}</h3><div class="tour-text">${st.text}</div>
+    ${st.welcome ? `<label class="row small tour-demo"><input type="checkbox" id="tour-demo" style="width:auto" ${hasDemo() ? 'disabled' : S.data.topics.length ? '' : 'checked'}>
+      ${hasDemo() ? 'Primjeri su već dodani' : '🎓 Dodaj probnu temu s primjerima da odmah vidiš kako sve izgleda (lako se obriše)'}</label>` : ''}
+    <div class="row">
+      <span class="tour-dots">${dots}</span>
+      ${st.welcome ? '<button class="ghost" data-act="tourEnd" style="margin-left:auto">Preskoči</button>'
+        : `<button class="ghost" data-act="tourPrev" style="margin-left:auto">← Natrag</button>`}
+      <button class="primary" data-act="${last ? 'tourEnd' : 'tourNext'}">${st.welcome ? 'Kreni →' : last ? 'Gotovo ✓' : 'Dalje →'}</button>
+    </div></div>`);
+}
+async function tourGo(step) {
+  const st = TOUR[step];
+  S.tour = { step };
+  if (st.view) { S.view = st.view; S.q = ''; save(); }
+  render();
+}
+async function tourEnd() {
+  S.tour = null;
+  document.querySelectorAll('.tour-hl').forEach((x) => x.classList.remove('tour-hl'));
+  render();
+  if (!S.user?.onboarded) await run('onboarded');
+}
+
 /* ---- Korisnici (samo administrator) ---- */
 async function loadAdmin() {
   try { S.admin = { ...S.admin, ...(await authOp('listUsers')) }; } catch (e) { toast(e.message); }
@@ -1604,6 +1681,8 @@ function userMenu() {
   dlg.innerHTML = `<div class="stack">
     <h2>${esc(S.user.name)}</h2><div class="muted small">${esc(S.user.email)}${S.user.is_admin ? ' · administrator' : ''}</div>
     ${installButton()}
+    <button data-act="tourStart">❓ Vodič kroz aplikaciju</button>
+    ${hasDemo() ? '' : '<button data-act="addDemo">🎓 Dodaj primjere (probnu temu)</button>'}
     <button data-act="ical">📅 Rokovi u Google/Apple kalendaru</button>
     <button data-act="changePw">🔑 Promijeni lozinku</button>
     <button data-act="logout">↩︎ Odjava</button>
@@ -1809,6 +1888,29 @@ document.addEventListener('click', async (e) => {
     case 'view': S.view = el.dataset.v; S.q = ''; if (S.view === 'admin') S.admin = null; save(); return render();
     case 'topic': S.topicId = id; S.view = 'topics'; S.q = ''; save(); return render();
     case 'clearSearch': S.q = ''; return render();
+    case 'tourNext': {
+      if (S.tour?.step === 0 && $('#tour-demo')?.checked && !hasDemo()) {
+        el.disabled = true; el.textContent = 'Pripremam primjere…';
+        await run('createDemo');
+        const t = S.data.topics.find((x) => x.is_demo && !x.parent_id); if (t) S.topicId = t.id;
+      }
+      if (S.tour?.step === 0 && !S.user?.onboarded) run('onboarded'); // vodič se ne nudi ponovno ni ako se prekine
+      return tourGo(Math.min(TOUR.length - 1, (S.tour?.step || 0) + 1));
+    }
+    case 'tourPrev': return tourGo(Math.max(0, S.tour.step - 1));
+    case 'tourEnd': return tourEnd();
+    case 'tourStart': $('#dlg').close(); return tourGo(0);
+    case 'addDemo': {
+      $('#dlg').close(); await run('createDemo');
+      const t = S.data.topics.find((x) => x.is_demo && !x.parent_id);
+      if (t) { S.view = 'topics'; S.topicId = t.id; save(); render(); }
+      return toast('🎓 Primjeri dodani');
+    }
+    case 'deleteDemo': {
+      const own = S.data.tasks.filter((k) => S.data.topics.find((t) => t.id === k.topic_id)?.is_demo).length;
+      if (!confirm(`Obrisati sve primjere (probnu temu s ${own} zadataka, osobe „primjer“ i probnu bilješku)? Tvoji ostali podaci ostaju netaknuti.`)) return;
+      await run('deleteDemo'); return toast('Primjeri obrisani ✓');
+    }
     case 'qaPhotoDel': return setQaPhoto(null);
     case 'viewFile': { const a = S.data.attachments.find((x) => x.id === id); return a && viewFile(a); }
     case 'delFile': {
@@ -2072,7 +2174,9 @@ document.addEventListener('submit', async (e) => {
       if (kind === 'reset') await authOp('resetPassword', { token: S.auth.token, password: fd.password });
       history.replaceState(null, '', location.pathname);
       S.auth = { mode: 'login' };
-      return api().catch(() => {});
+      await api().catch(() => {});
+      if (S.loaded && S.user && !S.user.onboarded) tourGo(0);
+      return;
     } catch (err) { $('.auth-err', f).textContent = err.message; btn.disabled = false; return; }
   }
   if (kind === 'invite') {
@@ -2128,6 +2232,7 @@ async function boot() {
     if (location.search) history.replaceState(null, '', location.pathname);
     await api().catch(() => {});
     if (quick && S.loaded && !S.offline) quickStep1();
+    else if (S.loaded && !S.offline && S.user && !S.user.onboarded) tourGo(0);
     return;
   }
   if (inv) S.auth = { mode: 'signup', token: inv, info: await authOp('tokenInfo', { token: inv }).catch(() => ({ valid: false })) };

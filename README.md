@@ -3,6 +3,7 @@
 Teme → zadaci → ljudi → bilješke za svaku osobu. Diktiranje glasom na hrvatskom. Baza: Neon Postgres.
 
 ## Što zna
+- **👋 Dobrodošlica:** novi korisnik dobije kratki vodič kroz aplikaciju i probnu temu s primjerima (briše se jednim klikom). Vodič se uvijek može ponovno otvoriti: 👤 → ❓ Vodič.
 - **🏠 Pregled:** što kasni, što je danas i u sljedećih 7 dana, opterećenost ljudi i napredak tema.
 - **Podteme** bilo koje dubine (Sajam › Marketing › Tisak).
 - **🗂 Ploča (Kanban):** Za napraviti / U tijeku / Gotovo — povuci karticu u drugi stupac.
