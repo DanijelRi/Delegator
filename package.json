@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node --env-file=.env --env-file-if-exists=.env.local dev-server.mjs",
     "migrate": "node --env-file=.env migrate.mjs",
-    "vendor": "cp node_modules/cytoscape/dist/cytoscape.min.js vendor/"
+    "vendor": "cp node_modules/cytoscape/dist/cytoscape.min.js vendor/ && mkdir -p vendor/pdfjs/wasm && cp node_modules/pdfjs-dist/build/pdf.min.mjs node_modules/pdfjs-dist/build/pdf.worker.min.mjs node_modules/pdfjs-dist/LICENSE vendor/pdfjs/ && cp node_modules/pdfjs-dist/wasm/* vendor/pdfjs/wasm/ && rm -f vendor/pdfjs/wasm/*quickjs*"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0",
@@ -17,7 +17,8 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "cytoscape": "^3.35.0"
+    "cytoscape": "^3.35.0",
+    "pdfjs-dist": "^6.5.438"
   },
   "overrides": {
     "zod": "^4.6.6"

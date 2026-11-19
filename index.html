@@ -217,6 +217,9 @@
   .qa-photo { display: flex; align-items: center; gap: 8px; min-height: 0; }
   .qa-photo img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); flex: none; }
   .qa-cam { border-style: solid; font-size: 14px; padding: 6px 10px; }
+  .qa-pdf { width: 64px; height: 64px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 1px solid var(--line); border-radius: 8px; background: #fff5f5; font-size: 26px; overflow: hidden; }
+  .qa-pdf small { font-size: 9px; color: var(--muted); max-width: 60px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* osobne bilješke */
   .pgrid { columns: 3 280px; column-gap: 12px; }
@@ -1628,34 +1631,73 @@ async function imageForAI(file) {
   c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
   return c.toDataURL('image/jpeg', 0.82);
 }
-async function parseText(text, image = null) {
+// PDF za AI (u pregledniku, pdf.js iz vendor/ — učitava se tek kad zatreba):
+// ako PDF ima tekst, šalje se tekst; ako je skeniran, prve 3 stranice kao slike.
+let pdfjsLib = null;
+async function pdfForAI(file) {
+  pdfjsLib ||= await import('/vendor/pdfjs/pdf.min.mjs').then((m) => {
+    m.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.mjs'; return m;
+  });
+  const task = pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), wasmUrl: '/vendor/pdfjs/wasm/', isEvalSupported: false });
+  let doc;
+  try {
+    doc = await task.promise;
+  } catch (e) {
+    task.destroy();
+    throw new Error(e?.name === 'PasswordException' ? 'PDF je zaštićen lozinkom — otvori ga i spremi bez lozinke' : 'PDF se ne može pročitati');
+  }
+  let text = '';
+  for (let i = 1; i <= Math.min(doc.numPages, 8) && text.length < 15000; i++) {
+    const tc = await (await doc.getPage(i)).getTextContent();
+    text += tc.items.map((it) => it.str + (it.hasEOL ? '\n' : ' ')).join('') + '\n\n';
+  }
+  if (text.replace(/\s/g, '').length >= 80) { task.destroy(); return { doc_text: text.trim(), pages: doc.numPages }; }
+  const images = [];
+  for (let i = 1; i <= Math.min(doc.numPages, 3); i++) {
+    const page = await doc.getPage(i);
+    const base = page.getViewport({ scale: 1 });
+    const viewport = page.getViewport({ scale: Math.min(2.5, 1600 / Math.max(base.width, base.height)) });
+    const c = document.createElement('canvas');
+    c.width = Math.round(viewport.width); c.height = Math.round(viewport.height);
+    await page.render({ canvas: c, canvasContext: c.getContext('2d'), viewport, background: '#ffffff' }).promise;
+    images.push(c.toDataURL('image/jpeg', 0.8));
+  }
+  task.destroy(); // u pdf.js v6 zatvara se zadatak učitavanja, ne dokument
+  return { images, pages: images.length };
+}
+async function parseText(text, extra = {}) {
   const res = await fetch('/api/parse', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, image, topic_hint: S.view === 'topics' ? topic(S.topicId)?.title : null }),
+    body: JSON.stringify({ text, ...extra, topic_hint: S.view === 'topics' ? topic(S.topicId)?.title : null }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json.error || 'Greška ' + res.status);
   return json;
 }
 
-let qaPhoto = null; // fotografija u brzom unosu: { file, url }
+let qaPhoto = null; // fotografija ili PDF u brzom unosu: { file, url, pdf }
+const qaThumb = () => qaPhoto.pdf
+  ? `<span class="qa-pdf" title="${esc(qaPhoto.file.name)}">📕<small>${esc(qaPhoto.file.name)}</small></span>`
+  : `<img src="${qaPhoto.url}" alt="Fotografija">`;
 function setQaPhoto(file) {
+  if (file && !/^image\/|^application\/pdf$/.test(file.type)) return toast('Odaberi fotografiju ili PDF');
+  if (file && file.size > MAX_FILE) return toast('Datoteka je prevelika (najviše 20 MB)');
   if (qaPhoto?.url) URL.revokeObjectURL(qaPhoto.url);
-  qaPhoto = file ? { file, url: URL.createObjectURL(file) } : null;
+  qaPhoto = file ? { file, url: URL.createObjectURL(file), pdf: file.type === 'application/pdf' } : null;
   const box = $('#qa-photo');
-  if (box) box.innerHTML = qaPhoto ? `<img src="${qaPhoto.url}" alt="Fotografija"><button type="button" class="ghost" data-act="qaPhotoDel" title="Makni fotografiju">✕</button>
-    <span class="small muted">AI će pročitati fotografiju. Tekst je sada neobavezan — možeš dodati npr. „za Marka“.</span>` : '';
+  if (box) box.innerHTML = qaPhoto ? `${qaThumb()}<button type="button" class="ghost" data-act="qaPhotoDel" title="Makni">✕</button>
+    <span class="small muted">AI će pročitati ${qaPhoto.pdf ? 'PDF' : 'fotografiju'}. Tekst je sada neobavezan — možeš dodati npr. „za Marka“.</span>` : '';
 }
 function quickStep1(text = '', keepPhoto = false) {
   if (!keepPhoto) setQaPhoto(null);
   const dlg = $('#dlg');
   dlg.innerHTML = `<form class="stack" data-qa="parse">
     <h2>⚡ Brzi unos</h2>
-    <div class="muted small">Izdiktiraj ili upiši, npr. <em>„Marko do petka naruči štand za sajam, budžet 2000 eura“</em> — ili <strong>slikaj</strong> račun, ponudu, dopis ili ploču sa sastanka. AI će predložiti temu, osobu, rok i bilješke — ti samo potvrdiš.</div>
-    <div class="with-mic"><textarea id="qa-text" class="qa-text" name="text" placeholder="Što treba napraviti? (ili samo dodaj fotografiju)">${esc(text)}</textarea>${micBtn('qa-text')}</div>
+    <div class="muted small">Izdiktiraj ili upiši, npr. <em>„Marko do petka naruči štand za sajam, budžet 2000 eura“</em> — ili <strong>slikaj / dodaj PDF</strong>: račun, ponudu, dopis ili ploču sa sastanka. AI će predložiti temu, osobu, rok i bilješke — ti samo potvrdiš.</div>
+    <div class="with-mic"><textarea id="qa-text" class="qa-text" name="text" placeholder="Što treba napraviti? (ili samo dodaj fotografiju ili PDF)">${esc(text)}</textarea>${micBtn('qa-text')}</div>
     <div class="row">
-      <label class="attach-btn qa-cam" title="Fotografija ili slika s računala — AI pročita sadržaj">📷 Fotografija<input type="file" accept="image/*" data-qa-photo hidden></label>
+      <label class="attach-btn qa-cam" title="Fotografija, slika ili PDF — AI pročita sadržaj">📷 Fotografija / PDF<input type="file" accept="image/*,application/pdf" data-qa-photo hidden></label>
       <div id="qa-photo" class="qa-photo grow"></div>
     </div>
     <div class="row" style="justify-content:flex-end">
@@ -1675,10 +1717,12 @@ function quickStep1(text = '', keepPhoto = false) {
     const t = ta.value.trim();
     if (!t && !qaPhoto) return toast('Upiši što treba napraviti ili dodaj fotografiju');
     const btn = $('#qa-go'); btn.disabled = true;
-    btn.innerHTML = `<span class="spinner"></span> ${qaPhoto ? 'Čitam fotografiju…' : 'Obrađujem…'}`;
+    btn.innerHTML = `<span class="spinner"></span> ${qaPhoto ? (qaPhoto.pdf ? 'Čitam PDF…' : 'Čitam fotografiju…') : 'Obrađujem…'}`;
     try {
-      const image = qaPhoto ? await imageForAI(qaPhoto.file) : null;
-      const p = await parseText(t, image);
+      const extra = !qaPhoto ? {} : qaPhoto.pdf ? { ...(await pdfForAI(qaPhoto.file)), doc_name: qaPhoto.file.name }
+        : { image: await imageForAI(qaPhoto.file) };
+      delete extra.pages;
+      const p = await parseText(t, extra);
       if (p.remaining != null && p.remaining <= 5) toast(`Brzi unos: danas još ${p.remaining}`);
       quickStep2(t, p);
     }
@@ -1702,8 +1746,8 @@ function quickStep2(text, p) {
   dlg.innerHTML = `<form class="stack" data-qa="save">
     <h2>Provjeri i spremi</h2>
     ${text ? `<div class="muted small">„${esc(text)}“</div>` : ''}
-    ${qaPhoto ? `<div class="row qa-photo"><img src="${qaPhoto.url}" alt="Fotografija">
-      <label class="row small" style="gap:6px"><input type="checkbox" name="keep_photo" checked style="width:auto"> 📎 Spremi fotografiju kao prilog zadatku</label></div>` : ''}
+    ${qaPhoto ? `<div class="row qa-photo">${qaThumb()}
+      <label class="row small" style="gap:6px"><input type="checkbox" name="keep_photo" checked style="width:auto"> 📎 Spremi ${qaPhoto.pdf ? 'PDF' : 'fotografiju'} kao prilog zadatku</label></div>` : ''}
     <label class="small muted">Tema</label>
     <select name="topic">${newTopic ? `<option value="new" selected>➕ Nova tema: ${esc(newTopic)}</option>` : ''}${topicOpts.replace(`value="${fallbackTopic}"`, `value="${fallbackTopic}" selected`)}</select>
     <input name="title" required value="${esc(p.title)}" placeholder="Naziv zadatka" style="font-weight:600">
@@ -1943,7 +1987,7 @@ document.addEventListener('dragstart', (e) => {
 });
 // Datoteke povučene s računala na zadatak, bilješku ili temu
 const fileDrag = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
-const dropTarget = (e) => e.target.closest?.('[data-dropzone], form[data-form="note"], form[data-form="pnote"]');
+const dropTarget = (e) => e.target.closest?.('[data-dropzone], form[data-form="note"], form[data-form="pnote"], form[data-qa="parse"]');
 document.addEventListener('dragover', (e) => {
   if (fileDrag(e)) {
     const z = dropTarget(e);
@@ -1967,6 +2011,7 @@ document.addEventListener('drop', (e) => {
     e.preventDefault();
     const files = [...e.dataTransfer.files];
     if (z.dataset.dropzone) return uploadFiles(z.dataset.dropzone, files);
+    if (z.dataset.qa === 'parse') return setQaPhoto(files[0]);
     return z.dataset.form === 'note' ? uploadToNewNote(z, files) : uploadToNewPnote(z, files);
   }
   const col = dragTask && dragFrom === 'board' && e.target.closest?.('.kcol');
