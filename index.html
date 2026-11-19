@@ -232,6 +232,18 @@
   .demo-banner span { flex: 1; min-width: 220px; }
   main:has(.cal) .demo-banner, main:has(.board) .demo-banner, main:has(.net-wrap) .demo-banner { margin-bottom: 10px; }
 
+  /* statistika */
+  .wchart { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; height: 170px; align-items: end; }
+  .wcol { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
+  .wbars { flex: 1; width: 100%; display: flex; gap: 2px; align-items: flex-end; justify-content: center; border-bottom: 1px solid var(--line); }
+  .wbars i { width: 40%; max-width: 18px; border-radius: 3px 3px 0 0; min-height: 1px; }
+  .wbars .d { background: var(--ok); } .wbars .m { background: #c9d1f6; }
+  .wcol small { font-size: 10px; color: var(--muted); }
+  .tbl { overflow-x: auto; } .tbl table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .tbl th, .tbl td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; } .tbl th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .pdfview { overflow: auto; display: flex; flex-direction: column; gap: 10px; background: #e9ecf2; padding: 10px; }
+  .pdfview canvas { box-shadow: 0 2px 8px rgba(0,0,0,.15); background: #fff; }
+
   /* javljanja osoba */
   .badge { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; vertical-align: 1px; }
   .note.from-person { background: #eef6ff; border-radius: 6px; padding: 6px 8px; border-bottom: 0; margin: 2px 0; }
@@ -315,6 +327,7 @@ const S = {
   net: { tasks: true, done: false, people: true, notes: false, layout: 'cose', topic: 0,
          ...JSON.parse(localStorage.getItem('net') || '{}') },   // mreža
   board: { topic: 0, person: 0, allDone: false, ...JSON.parse(localStorage.getItem('board') || '{}') }, // ploča
+  stats: { days: 30 },                               // statistika: razdoblje u danima
 };
 const COLORS = ['#4f6bed', '#2f9e6b', '#d98b1a', '#d64545', '#8e5bd6', '#1f9bb3', '#6b7385'];
 const STATUS = { todo: 'Za napraviti', doing: 'U tijeku', done: 'Gotovo' };
@@ -340,9 +353,47 @@ async function api(body) {
   render();
   return json;
 }
+// Bez interneta: jednostavne promjene (status, korak, nova bilješka) čekaju u redu i šalju se kad se veza vrati.
+const QUEUEABLE = new Set(['setStatus', 'toggleSub', 'addNote', 'addPnote', 'setDue', 'markSeen']);
+const loadQueue = () => { try { return JSON.parse(localStorage.getItem('queue') || '[]'); } catch { return []; } };
+const saveQueue = (q) => { try { localStorage.setItem('queue', JSON.stringify(q)); } catch {} };
+function applyLocally(op, p) {   // da se promjena odmah vidi
+  const k = p.id && S.data.tasks.find((x) => x.id === p.id);
+  if (op === 'setStatus' && k) k.status = p.status;
+  if (op === 'setDue' && k) k.due_date = p.due_date;
+  if (op === 'toggleSub') { const x = S.data.subtasks.find((y) => y.id === p.id); if (x) x.done = p.done; }
+  if (op === 'addNote') S.data.notes.push({ id: -Date.now(), task_id: p.task_id, person_id: p.person_id, body: p.body + ' ⏳', created_at: new Date().toISOString() });
+  if (op === 'addPnote') S.data.pnotes.unshift({ id: -Date.now(), title: p.title, body: p.body, color: p.color, pinned: false, updated_at: new Date().toISOString() });
+  if (op === 'markSeen') S.data.notes.forEach((n) => { if (p.ids.includes(n.id)) n.seen = true; });
+}
+function queueChange(op, payload) {
+  const q = loadQueue(); q.push({ op, payload }); saveQueue(q);
+  applyLocally(op, payload); render();
+  toast(`⏳ Spremljeno na uređaju — šaljem kad se vrati internet (${q.length})`);
+}
+let flushing = false;
+async function flushQueue() {
+  if (!loadQueue().length || flushing || !navigator.onLine) return;
+  flushing = true; let sent = 0;
+  try {
+    while (loadQueue().length) {
+      const [first, ...rest] = loadQueue();
+      try { await api({ op: first.op, ...first.payload }); }
+      catch (e) { if (e instanceof TypeError) throw e; } // veze još nema: pokušaj kasnije; odbijenu promjenu preskoči
+      saveQueue(rest); sent++;
+    }
+  } catch {} finally { flushing = false; }
+  if (sent) toast(`✓ Poslano ${sent} promjena spremljenih bez interneta`);
+  render();
+}
 const run = (op, payload = {}) => {
-  if (S.offline && !navigator.onLine) { toast('📴 Bez interneta — promjene nisu moguće'); return Promise.resolve(); }
-  return api({ op, ...payload }).catch((e) => { if (e instanceof TypeError) toast('📴 Nema veze s internetom'); });
+  if (!navigator.onLine || (S.offline && QUEUEABLE.has(op))) {
+    if (QUEUEABLE.has(op)) { queueChange(op, payload); return Promise.resolve(); }
+    toast('📴 Bez interneta — ova promjena nije moguća dok se veza ne vrati'); return Promise.resolve();
+  }
+  return api({ op, ...payload }).catch((e) => {
+    if (e instanceof TypeError) { if (QUEUEABLE.has(op)) queueChange(op, payload); else toast('📴 Nema veze s internetom'); }
+  });
 };
 
 // Prijava, registracija i administracija (/api/auth). Baca grešku s porukom za korisnika.
@@ -565,7 +616,7 @@ function render() {
       : S.view === 'admin' && S.user?.is_admin ? adminView()
       : S.view === 'calendar' ? calendarView() : S.view === 'network' ? networkView()
       : S.view === 'board' ? boardView() : S.view === 'overview' ? overviewView()
-      : S.view === 'pnotes' ? pnotesView() : topicsView()
+      : S.view === 'pnotes' ? pnotesView() : S.view === 'stats' ? statsView() : topicsView()
   }</main><button class="fab" data-act="quick" title="Brzi unos glasom">🎤</button>`;
 
   Object.entries(drafts).forEach(([id, v]) => { const el = document.getElementById(id); if (el && !el.value) el.value = v; });
@@ -578,10 +629,11 @@ function headerView() {
   const tab = (v, label) => `<button class="${S.view === v ? 'on' : ''}" data-act="view" data-v="${v}">${label}</button>`;
   return `<header>
     <h1>✅ Delegator</h1>
-    <nav>${tab('overview', `🏠 Pregled${unseen().length ? ` <span class="badge">${unseen().length}</span>` : ''}`)}${tab('topics', 'Teme')}${tab('board', '🗂 Ploča')}${tab('calendar', '📅 Kalendar')}${tab('network', '🕸 Mreža')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${tab('pnotes', '📝 Bilješke')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
+    <nav>${tab('overview', `🏠 Pregled${unseen().length ? ` <span class="badge">${unseen().length}</span>` : ''}`)}${tab('topics', 'Teme')}${tab('board', '🗂 Ploča')}${tab('calendar', '📅 Kalendar')}${tab('network', '🕸 Mreža')}${tab('person', 'Po osobi')}${tab('people', 'Ljudi')}${tab('pnotes', '📝 Bilješke')}${tab('stats', '📈 Statistika')}${S.user?.is_admin ? tab('admin', 'Korisnici') : ''}</nav>
     <button class="primary" data-act="quick" title="Izdiktiraj ili upiši zadatak, AI ga razvrsta">⚡ Brzi unos</button>
     <input type="search" class="search" id="search" placeholder="Traži kroz sve teme i bilješke…" value="${esc(S.q)}" autocomplete="off">
     <button class="ghost" data-act="userMenu" title="Račun">👤 ${esc(S.user?.name || '')}</button>
+    ${loadQueue().length ? `<div class="offline">⏳ ${loadQueue().length} promjena čeka internet — poslat će se same</div>` : ''}
     ${S.offline ? '<div class="offline">📴 Bez interneta — prikazujem zadnje spremljene podatke (samo čitanje)</div>' : ''}
   </header>`;
 }
@@ -826,7 +878,7 @@ function attachList(list, { small = false, readonly = false } = {}) {
   return `<div class="atts ${small ? 'small' : ''}">${list.map((a) => isImage(a)
     ? `<button type="button" class="att-img" data-act="viewFile" data-id="${a.id}" title="${esc(a.name)} · ${fmtSize(a.size || 0)}">
         <img src="${fileUrl(a)}&t=1" alt="${esc(a.name)}" loading="lazy"></button>`
-    : `<span class="att"><a href="${fileUrl(a)}" target="_blank" rel="noopener" title="Otvori">${fileIcon(a)} ${hl(a.name)}</a>
+    : `<span class="att"><a href="${fileUrl(a)}" ${a.mime === 'application/pdf' ? `data-act="viewFile" data-id="${a.id}"` : ''} target="_blank" rel="noopener" title="Otvori">${fileIcon(a)} ${hl(a.name)}</a>
         <span class="muted">${fmtSize(a.size || 0)}</span>
         <a href="${fileUrl(a, true)}" class="muted" title="Preuzmi" download>⬇</a>
         ${readonly ? '' : `<button type="button" class="ghost danger" data-act="delFile" data-id="${a.id}" title="Obriši prilog">✕</button>`}</span>`).join('')}</div>`;
@@ -899,9 +951,11 @@ async function uploadToNewNote(form, fileList) {
 }
 function viewFile(a) {
   const dlg = $('#dlg');
+  const pdf = a.mime === 'application/pdf';
   dlg.innerHTML = `<div class="stack">
     <div class="row"><h3 class="grow" style="margin:0">${esc(a.name)}</h3><span class="muted small">${fmtSize(a.size || 0)}</span></div>
-    <img src="${fileUrl(a)}" alt="${esc(a.name)}" class="lightbox">
+    ${pdf ? '<div class="pdfview lightbox" id="pdfview"><div class="muted small" style="padding:20px">Učitavam PDF…</div></div>'
+      : `<img src="${fileUrl(a)}" alt="${esc(a.name)}" class="lightbox">`}
     <div class="row">
       <a class="btnlink" href="${fileUrl(a)}" target="_blank" rel="noopener">↗ Otvori</a>
       <a class="btnlink" href="${fileUrl(a, true)}" download>⬇ Preuzmi</a>
@@ -909,6 +963,29 @@ function viewFile(a) {
       <button style="margin-left:auto" onclick="this.closest('dialog').close()">Zatvori</button>
     </div></div>`;
   if (!dlg.open) dlg.showModal();
+  if (pdf) renderPdf(a);
+}
+// Stranice PDF-a iscrtane u aplikaciji (pdf.js iz vendor/), najviše 30 stranica.
+async function renderPdf(a) {
+  const box = $('#pdfview');
+  try {
+    pdfjsLib ||= await import('/vendor/pdfjs/pdf.min.mjs').then((m) => { m.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.mjs'; return m; });
+    const task = pdfjsLib.getDocument({ url: fileUrl(a), wasmUrl: '/vendor/pdfjs/wasm/', isEvalSupported: false, withCredentials: true });
+    const doc = await task.promise;
+    box.innerHTML = '';
+    const width = Math.min(box.clientWidth || 800, 1000);
+    for (let i = 1; i <= Math.min(doc.numPages, 30); i++) {
+      if (!document.body.contains(box)) break; // dijalog zatvoren
+      const page = await doc.getPage(i);
+      const base = page.getViewport({ scale: 1 }), dpr = Math.min(2, window.devicePixelRatio || 1);
+      const vp = page.getViewport({ scale: (width / base.width) * dpr });
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; c.style.width = '100%';
+      box.appendChild(c);
+      await page.render({ canvas: c, canvasContext: c.getContext('2d'), viewport: vp, background: '#ffffff' }).promise;
+    }
+    if (doc.numPages > 30) box.insertAdjacentHTML('beforeend', `<div class="muted small" style="padding:10px">… još ${doc.numPages - 30} stranica — otvori PDF za cijeli dokument.</div>`);
+    task.destroy();
+  } catch { box.innerHTML = '<div class="muted small" style="padding:20px">PDF se ne može prikazati ovdje — otvori ga ili preuzmi.</div>'; }
 }
 
 /* ---- Bilješke: osobne, vidi ih samo prijavljeni korisnik ---- */
@@ -1677,6 +1754,125 @@ function templateDialog(t) {
     });
 }
 
+/* ---- Statistika i izvoz ---- */
+const daysAgo = (n) => Date.now() - n * 864e5;
+function statsView() {
+  const { tasks, people } = S.data, td = today(), from = daysAgo(S.stats.days);
+  const doneIn = tasks.filter((k) => k.status === 'done' && k.completed_at && new Date(k.completed_at) >= from);
+  const created = tasks.filter((k) => new Date(k.created_at) >= from);
+  const withDue = doneIn.filter((k) => k.due_date);
+  const onTime = withDue.filter((k) => isoDate(new Date(k.completed_at)) <= k.due_date);
+  const pct = (a, b) => (b ? Math.round((a / b) * 100) : null);
+  const avgDays = doneIn.length ? (doneIn.reduce((s, k) => s + (new Date(k.completed_at) - new Date(k.created_at)) / 864e5, 0) / doneIn.length) : null;
+  const lateNow = tasks.filter((k) => k.status !== 'done' && k.due_date && k.due_date < td);
+  // tjedni: zadnjih 12 tjedana (ponedjeljak)
+  const weeks = [...Array(12)].map((_, i) => { const m = addDays(monday(new Date()), -7 * (11 - i)); return { start: m, end: addDays(m, 7), done: 0, made: 0 }; });
+  tasks.forEach((k) => {
+    const c = new Date(k.created_at), d = k.completed_at && new Date(k.completed_at);
+    weeks.forEach((w) => { if (c >= w.start && c < w.end) w.made++; if (d && k.status === 'done' && d >= w.start && d < w.end) w.done++; });
+  });
+  const max = Math.max(1, ...weeks.map((w) => Math.max(w.done, w.made)));
+  const perPerson = people.map((p) => {
+    const mine = tasks.filter((k) => k.people.includes(p.id));
+    const d = mine.filter((k) => doneIn.includes(k)), dd = d.filter((k) => k.due_date);
+    return { p, open: mine.filter((k) => k.status !== 'done').length, done: d.length,
+      onTime: pct(dd.filter((k) => isoDate(new Date(k.completed_at)) <= k.due_date).length, dd.length),
+      late: mine.filter((k) => lateNow.includes(k)).length };
+  }).filter((x) => x.open || x.done).sort((a, b) => b.done - a.done || b.open - a.open);
+  const roots = childTopics(null).map((t) => { const ids = topicSubtree(t.id), all = tasks.filter((k) => ids.has(k.topic_id));
+    return { t, all: all.length, done: all.filter((k) => k.status === 'done').length, late: all.filter((k) => lateNow.includes(k)).length }; }).filter((x) => x.all);
+  const per = (v, l) => `<button class="chip ${S.stats.days === v ? 'on' : ''}" data-act="statsDays" data-v="${v}">${l}</button>`;
+  const stat = (n, l, cls = '') => `<div class="stat ${cls}"><b>${n ?? '–'}</b><span>${l}</span></div>`;
+  return `<div class="stack" style="max-width:1100px;margin:0 auto">
+    <div class="panel row"><h2 class="grow">📈 Statistika</h2><div class="chips">${per(7, '7 dana')}${per(30, '30 dana')}${per(90, '3 mjeseca')}${per(365, 'godina')}</div></div>
+    <div class="stats">
+      ${stat(doneIn.length, 'završeno')}${stat(created.length, 'novih zadataka')}
+      ${stat(pct(onTime.length, withDue.length) != null ? pct(onTime.length, withDue.length) + ' %' : null, 'završeno na vrijeme', pct(onTime.length, withDue.length) < 70 ? 'warn' : '')}
+      ${stat(avgDays != null ? avgDays.toFixed(1).replace('.', ',') : null, 'dana prosječno do završetka')}
+      ${stat(lateNow.length, 'kasni sada', lateNow.length ? 'bad' : '')}
+    </div>
+    <div class="panel stack"><div class="row"><h3 class="grow">Zadnjih 12 tjedana</h3>
+      <span class="small muted"><i class="lg" style="background:var(--ok)"></i> završeno <i class="lg" style="background:#c9d1f6"></i> novo</span></div>
+      <div class="wchart">${weeks.map((w) => `<div class="wcol" title="Tjedan od ${fmtDate(isoDate(w.start))}: završeno ${w.done}, novo ${w.made}">
+        <div class="wbars"><i class="d" style="height:${(w.done / max) * 100}%"></i><i class="m" style="height:${(w.made / max) * 100}%"></i></div>
+        <small>${w.start.getDate()}.${w.start.getMonth() + 1}.</small></div>`).join('')}</div></div>
+    <div class="ov-grid">
+      <div class="panel stack"><h3>👥 Po osobi <span class="muted small">(${S.stats.days} dana)</span></h3>
+        <div class="tbl"><table><thead><tr><th>Osoba</th><th>Otvoreno</th><th>Završeno</th><th>Na vrijeme</th><th>Kasni</th></tr></thead><tbody>
+        ${perPerson.map((x) => `<tr><td><a href="#" data-act="openPerson" data-id="${x.p.id}">${esc(x.p.name)}</a></td><td>${x.open}</td><td>${x.done}</td>
+          <td>${x.onTime == null ? '–' : x.onTime + ' %'}</td><td class="${x.late ? 'due late' : ''}">${x.late || ''}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Još nema podataka.</td></tr>'}
+        </tbody></table></div></div>
+      <div class="panel stack"><h3>📁 Po temi</h3>
+        <div class="tbl"><table><thead><tr><th>Tema</th><th>Gotovo</th><th>Kasni</th></tr></thead><tbody>
+        ${roots.map((x) => `<tr><td><a href="#" data-act="topic" data-id="${x.t.id}">${esc(x.t.title)}</a></td><td>${x.done}/${x.all} (${pct(x.done, x.all)} %)</td><td class="${x.late ? 'due late' : ''}">${x.late || ''}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Još nema tema.</td></tr>'}
+        </tbody></table></div></div>
+    </div>
+    <div class="panel stack"><h3>⬇ Izvoz i izvještaj</h3>
+      <div class="row">
+        <select id="ex-scope" style="width:auto;max-width:280px"><option value="all">Sve teme</option>
+          <optgroup label="Tema">${topicTree().map(({ t, depth }) => `<option value="t${t.id}">${' '.repeat(depth)}${esc(t.title)}</option>`).join('')}</optgroup>
+          <optgroup label="Osoba">${people.map((p) => `<option value="p${p.id}">${esc(p.name)}</option>`).join('')}</optgroup></select>
+        <label class="row small muted" style="gap:4px"><input type="checkbox" id="ex-done" style="width:auto" checked> i gotovi zadaci</label>
+      </div>
+      <div class="row"><button data-act="exportCsv">📊 Preuzmi za Excel (CSV)</button><button data-act="printReport">🖨 Izvještaj za ispis / PDF</button></div>
+      <div class="muted small">Excel otvara CSV izravno (dvoklik). Izvještaj se otvori u novom prozoru — ispiši ga ili spremi kao PDF.</div>
+    </div>
+  </div>`;
+}
+function exportTasks() {
+  const scope = $('#ex-scope')?.value || 'all', withDone = $('#ex-done')?.checked !== false;
+  let list = S.data.tasks.filter((k) => withDone || k.status !== 'done');
+  let title = 'Svi zadaci';
+  if (scope[0] === 't') { const ids = topicSubtree(Number(scope.slice(1))); list = list.filter((k) => ids.has(k.topic_id)); title = topicPath(topic(Number(scope.slice(1)))); }
+  if (scope[0] === 'p') { const pid = Number(scope.slice(1)); list = list.filter((k) => k.people.includes(pid)); title = 'Zadaci: ' + person(pid)?.name; }
+  sortTasks(list);
+  return { list, title };
+}
+function downloadCsv() {
+  const { list, title } = exportTasks();
+  const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = [['Tema', 'Zadatak', 'Opis', 'Osobe', 'Status', 'Prioritet', 'Početak', 'Rok', 'Završeno', 'Ponavljanje', 'Koraci', 'Bilješke']];
+  list.forEach((k) => {
+    const st = stepsOf(k);
+    rows.push([topicPath(topic(k.topic_id)), k.title, k.description, k.people.map((i) => person(i)?.name).filter(Boolean).join(', '),
+      STATUS[k.status], PRIO[k.priority], fmtDate(k.start_date), fmtDate(k.due_date), k.completed_at ? fmtDate(isoDate(new Date(k.completed_at))) : '',
+      k.repeat ? REPEAT[k.repeat] : '', st.length ? `${st.filter((x) => x.done).length}/${st.length}: ` + st.map((x) => (x.done ? '✓ ' : '') + x.title).join('; ') : '',
+      S.data.notes.filter((n) => n.task_id === k.id).map((n) => (n.person_id ? person(n.person_id)?.name + ': ' : '') + n.body).join(' | ')]);
+  });
+  // Excel s hrvatskim postavkama očekuje ; i UTF-8 BOM (za čćšžđ)
+  const csv = '﻿' + rows.map((r) => r.map(q).join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `delegator-${title.replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase()}-${today()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast(`📊 Preuzeto ${list.length} zadataka`);
+}
+function printReport() {
+  const { list, title } = exportTasks();
+  const w = window.open('', '_blank');
+  if (!w) return toast('Preglednik je blokirao novi prozor — dopusti skočne prozore za ovu stranicu');
+  const groups = {};
+  list.forEach((k) => (groups[topicPath(topic(k.topic_id))] ||= []).push(k));
+  const td = today();
+  w.document.write(`<!doctype html><html lang="hr"><head><meta charset="utf-8"><title>${esc(title)} — Delegator</title><style>
+    body{font:12px/1.45 system-ui,sans-serif;color:#1d2330;margin:28px} h1{font-size:20px;margin:0} .sub{color:#6b7385;margin:4px 0 18px}
+    h2{font-size:14px;margin:18px 0 6px;border-bottom:2px solid #4f6bed;padding-bottom:3px} table{width:100%;border-collapse:collapse}
+    td,th{border-bottom:1px solid #e3e6ec;padding:5px 6px;text-align:left;vertical-align:top} th{font-size:11px;color:#6b7385;text-transform:uppercase}
+    .late{color:#d64545;font-weight:600} .done{color:#2f9e6b} .n{color:#6b7385;font-size:11px} @media print{body{margin:0}}</style></head><body>
+    <h1>${esc(title)}</h1><div class="sub">Delegator · ${esc(S.user.name)} · ${fmtDate(td)} · ${list.length} zadataka</div>
+    ${Object.entries(groups).map(([g, ks]) => `<h2>${esc(g)}</h2><table><thead><tr><th style="width:38%">Zadatak</th><th>Osobe</th><th>Status</th><th>Rok</th></tr></thead><tbody>
+      ${ks.map((k) => { const late = k.status !== 'done' && k.due_date && k.due_date < td; const st = stepsOf(k);
+        const notes = S.data.notes.filter((n) => n.task_id === k.id);
+        return `<tr><td><b>${esc(k.title)}</b>${k.priority === 'high' ? ' ❗' : ''}${k.description ? `<div class="n">${esc(k.description)}</div>` : ''}
+          ${st.length ? `<div class="n">Koraci: ${st.map((x) => (x.done ? '☑ ' : '☐ ') + esc(x.title)).join(' · ')}</div>` : ''}
+          ${notes.length ? `<div class="n">${notes.map((n) => '– ' + (n.person_id ? esc(person(n.person_id)?.name) + ': ' : '') + esc(n.body)).join('<br>')}</div>` : ''}</td>
+          <td>${k.people.map((i) => esc(person(i)?.name || '')).join(', ')}</td>
+          <td class="${k.status === 'done' ? 'done' : ''}">${STATUS[k.status]}</td><td class="${late ? 'late' : ''}">${fmtSpan(k)}${late ? ' (kasni)' : ''}</td></tr>`; }).join('')}
+      </tbody></table>`).join('') || '<p>Nema zadataka za odabrani opseg.</p>'}
+    <script>setTimeout(() => print(), 300)<\/script></body></html>`);
+  w.document.close();
+}
+
 /* ---- Korisnici (samo administrator) ---- */
 async function loadAdmin() {
   try { S.admin = { ...S.admin, ...(await authOp('listUsers')) }; } catch (e) { toast(e.message); }
@@ -1826,7 +2022,7 @@ function installButton() {
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }
-window.addEventListener('online', () => { if (S.offline) api().catch(() => {}); });
+window.addEventListener('online', async () => { await flushQueue(); if (S.offline) api().catch(() => {}); });
 
 function userMenu() {
   setTimeout(updatePushBtn, 0);
@@ -2100,7 +2296,7 @@ function quickStepMulti(text, list) {
 document.addEventListener('click', async (e) => {
   const el = e.target.closest('[data-act], [data-mic]');
   if (!el) return;
-  if (el.tagName === 'A' && el.getAttribute('href') === '#') e.preventDefault();
+  if (el.tagName === 'A' && (el.getAttribute('href') === '#' || el.dataset.act === 'viewFile')) e.preventDefault();
   if (el.dataset.mic) { e.preventDefault(); return toggleMic(el); }
   if (el.tagName === 'SELECT') return; // padajući izbornici se obrađuju na 'change'
   const id = Number(el.dataset.id);
@@ -2110,6 +2306,9 @@ document.addEventListener('click', async (e) => {
     case 'view': S.view = el.dataset.v; S.q = ''; if (S.view === 'admin') S.admin = null; save(); return render();
     case 'topic': S.topicId = id; S.view = 'topics'; S.q = ''; save(); return render();
     case 'clearSearch': S.q = ''; return render();
+    case 'statsDays': S.stats.days = Number(el.dataset.v); return render();
+    case 'exportCsv': return downloadCsv();
+    case 'printReport': return printReport();
     case 'toggleSub': { const x = S.data.subtasks.find((y) => y.id === id); x.done = el.checked;
       await run('toggleSub', { id, done: el.checked }); const k = S.data.tasks.find((t) => t.id === x.task_id);
       if ($('#dlg').open && k && $('#dlg .steps-block')) taskInfo(k); return; }
@@ -2478,7 +2677,7 @@ async function boot() {
   if (me.user) {
     if (inv) toast('Već si prijavljen');
     const v = params.get('v'), quick = params.get('brzi');
-    if (v && ['overview', 'topics', 'board', 'calendar', 'network', 'person', 'people', 'pnotes'].includes(v)) { S.view = v; save(); }
+    if (v && ['overview', 'topics', 'board', 'calendar', 'network', 'person', 'people', 'pnotes', 'stats'].includes(v)) { S.view = v; save(); }
     if (location.search) history.replaceState(null, '', location.pathname);
     await api().catch(() => {});
     if (quick && S.loaded && !S.offline) quickStep1();

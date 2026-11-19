@@ -16,6 +16,8 @@ Teme → zadaci → ljudi → bilješke za svaku osobu. Diktiranje glasom na hrv
 - **🔗 Poveznica za osobu:** svakome kome delegiraš pošalješ osobnu poveznicu — vidi samo svoje zadatke, označi „U tijeku/Gotovo“ i javi se porukom, bez registracije. Ti dobiješ javljanje u Pregledu.
 - **🔔 Obavijesti na mobitel:** jutarnji sažetak (što kasni, što je danas) i obavijest kad se netko javi.
 - **💾 Noćne sigurnosne kopije** cijele baze (30 dana), administrator ih vidi u kartici „Korisnici“.
+- **📈 Statistika:** završeno po tjednima, postotak na vrijeme, po osobi i temi; **izvoz u Excel** i **izvještaj za ispis/PDF**.
+- **📄 PDF** se otvara unutar aplikacije; promjene napravljene **bez interneta** pošalju se same kad se veza vrati.
 - **📝 Bilješke:** osobne bilješke (vidiš ih samo ti) s bojama, prikvačivanjem, diktiranjem i prilozima.
 - **🕸 Mreža:** teme, zadaci, ljudi i bilješke kao jedan graf.
 - **📲 Instalacija na mobitel** (PWA) i čitanje bez interneta.

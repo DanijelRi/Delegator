@@ -37,6 +37,9 @@ Više korisnika (kolege, prijatelji) na pozivnice; svaki ima svoje teme, zadatke
 - **Zapisnik → više zadataka:** `api/parse.js` s `multi: true` koristi alat `predlozi_zadatke` (do 15 zadataka); u sučelju `quickStepMulti` sprema redom preko `quickAdd` i usput spaja osobe/teme koje je napravio prethodni zadatak (bez duplikata). AI predlaže i `koraci` → `steps`.
 - **Koraci (podzadaci):** tablica `subtasks` (opovi `addSub/toggleSub/renameSub/deleteSub`, `quickAdd.steps`); `spawnNext` kopira korake neoznačene; osoba ih označava na svojoj stranici (`op: 'sub'`).
 - **Predlošci:** tablica `templates` (JSON: teme, zadaci s pomakom roka u danima, ljudi po imenu, koraci); `saveTemplate`, `useTemplate` (datum početka + pomak), `deleteTemplate`; u dijalogu „Nova tema“.
+- **Statistika i izvoz:** kartica `statsView` (završeno/novo po tjednu iz `completed_at`/`created_at`, na vrijeme = završeno do roka, po osobi i temi); `downloadCsv` (UTF-8 BOM + `;` za hrvatski Excel), `printReport` (novi prozor + `print()`).
+- **PDF u aplikaciji:** `viewFile` → `renderPdf` (pdf.js, do 30 stranica u dijalogu).
+- **Promjene bez interneta:** `run()` op-ove iz `QUEUEABLE` (status, korak, bilješka, osobna bilješka, rok, pročitano) bez veze sprema u `localStorage.queue`, odmah ih primijeni lokalno (`applyLocally`) i šalje redom na događaj `online` (`flushQueue`). Ostale promjene offline nisu moguće.
 - **Sigurnosne kopije:** Neon Free nema automatskih kopija (samo 1 ručni snapshot + vraćanje 6 h unatrag), zato noćna JSON kopija u Blob. Vraćanje: kopiju učitati u NOVU Neon granu, ne preko produkcije.
 - **Pretraga:** kroz sve teme, bez obzira na velika slova i kvačice (`fold`), duže riječi bez zadnjeg slova radi padeža (`terms`), pogoci označeni s `<mark>` (`hl`).
 
@@ -69,4 +72,4 @@ Cloud sesije Claude Codea: okruženje „delegator“ ima dopuštene hostove za 
 3. ✅ ~~Više korisnika na pozivnice; poveznica za osobe (vide i označavaju svoje zadatke); push obavijesti; noćne kopije~~ (gotovo). Dalje: slanje maila iz aplikacije (Resend, treba vlastita domena).
 4. ✅ ~~Prilozi (slike, PDF) uz zadatke, bilješke, teme; osobne bilješke; fotografija i PDF u brzom unosu~~ (gotovo). Dalje: pregled PDF-a unutar aplikacije (pdf.js je već u `vendor/`).
 5. ✅ ~~Kanban, kalendar, mreža, podteme, ponavljanje, datum početka, Pregled~~ (gotovo). Dalje: ručni redoslijed kartica.
-6. ✅ ~~PWA~~ (gotovo). Dalje: promjene offline koje se pošalju kad se veza vrati.
+6. ✅ ~~PWA; promjene bez interneta; statistika; izvoz CSV i izvještaj; PDF u aplikaciji~~ (gotovo).
