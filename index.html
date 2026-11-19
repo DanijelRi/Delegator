@@ -749,7 +749,7 @@ function taskMailText(k, pid) {
   const notes = S.data.notes.filter((n) => n.task_id === k.id && (pid ? n.person_id === pid || !n.person_id : true));
   if (notes.length) {
     lines.push('', 'Bilješke:');
-    notes.forEach((n) => lines.push(`– ${n.person_id && !pid ? person(n.person_id)?.name + ': ' : ''}${n.body}`));
+    notes.forEach((n) => lines.push(`– ${n.person_id && !pid ? outName(person(n.person_id)) + ': ' : ''}${n.body}`));
   }
   const files = taskFiles(k);
   if (files.length) lines.push('', `Prilozi (u Delegatoru): ${files.map((a) => a.name).join(', ')}`);
@@ -758,7 +758,7 @@ function taskMailText(k, pid) {
 function mailTask(taskId, pid) {
   const k = S.data.tasks.find((x) => x.id === taskId);
   const who = pid ? [person(pid)] : k.people.map(person);
-  const greet = pid ? `Bok ${person(pid).name.split(' ')[0]},\n\n` : 'Bok,\n\n';
+  const greet = pid ? `Bok ${outName(person(pid)).split(' ')[0]},\n\n` : 'Bok,\n\n';
   openMail(who.filter(Boolean).map((p) => p.email), `Zadatak: ${k.title}${k.due_date ? ` (rok ${fmtDate(k.due_date)})` : ''}`,
     greet + taskMailText(k, pid));
 }
@@ -1010,6 +1010,8 @@ function sortTasks(arr) {
 
 // Osoba „Ja“ (sam korisnik) prikazuje se sa zvjezdicom.
 const me = () => S.data.people.find((p) => p.is_me);
+// Za tekst koji ide van aplikacije (mail, CSV, izvještaj, kopirani popis): „Ja“ → ime korisnika.
+const outName = (p) => p ? (p.is_me ? (S.user?.name || 'Ja') : p.name) : '';
 const pLabel = (p) => p ? (p.is_me ? '⭐ Ja' : p.name) : '';
 // Osobe koje je korisnik možda ranije napravio za sebe (isto ime kao račun) — nudimo spajanje s „Ja“.
 const selfDupes = () => { const u = fold(S.user?.name || ''), f = u.split(/\s+/)[0];
@@ -1383,7 +1385,7 @@ function personSummary(pid) {
   const p = person(pid);
   const mine = S.data.tasks.filter((k) => k.people.includes(pid) && k.status !== 'done');
   sortTasks(mine);
-  let out = `Bok ${p.name.split(' ')[0]}, tvoji otvoreni zadaci:\n`;
+  let out = `Bok ${outName(p).split(' ')[0]}, tvoji otvoreni zadaci:\n`;
   const byTopic = {};
   mine.forEach((k) => (byTopic[k.topic_id] ||= []).push(k));
   for (const [tid, list] of Object.entries(byTopic)) {
@@ -1393,7 +1395,7 @@ function personSummary(pid) {
       S.data.notes.filter((n) => n.task_id === k.id && n.person_id === pid).forEach((n) => (out += `   – ${n.body}\n`));
     });
   }
-  return mine.length ? out : `${p.name} nema otvorenih zadataka.`;
+  return mine.length ? out : `${outName(p)} nema otvorenih zadataka.`;
 }
 
 /* ---- Kalendar ---- */
@@ -2107,10 +2109,10 @@ function downloadCsv() {
   const rows = [['Tema', 'Zadatak', 'Opis', 'Osobe', 'Status', 'Prioritet', 'Početak', 'Rok', 'Završeno', 'Ponavljanje', 'Koraci', 'Bilješke']];
   list.forEach((k) => {
     const st = stepsOf(k);
-    rows.push([topicPath(topic(k.topic_id)), k.title, k.description, k.people.map((i) => person(i)?.name).filter(Boolean).join(', '),
+    rows.push([topicPath(topic(k.topic_id)), k.title, k.description, k.people.map((i) => outName(person(i))).filter(Boolean).join(', '),
       STATUS[k.status], PRIO[k.priority], fmtDate(k.start_date), fmtDate(k.due_date), k.completed_at ? fmtDate(isoDate(new Date(k.completed_at))) : '',
       k.repeat ? REPEAT[k.repeat] : '', st.length ? `${st.filter((x) => x.done).length}/${st.length}: ` + st.map((x) => (x.done ? '✓ ' : '') + x.title).join('; ') : '',
-      S.data.notes.filter((n) => n.task_id === k.id).map((n) => (n.person_id ? person(n.person_id)?.name + ': ' : '') + n.body).join(' | ')]);
+      S.data.notes.filter((n) => n.task_id === k.id).map((n) => (n.person_id ? outName(person(n.person_id)) + ': ' : '') + n.body).join(' | ')]);
   });
   // Excel s hrvatskim postavkama očekuje ; i UTF-8 BOM (za čćšžđ)
   const csv = '﻿' + rows.map((r) => r.map(q).join(';')).join('\r\n');
@@ -2138,8 +2140,8 @@ function printReport() {
         const notes = S.data.notes.filter((n) => n.task_id === k.id);
         return `<tr><td><b>${esc(k.title)}</b>${k.priority === 'high' ? ' ❗' : ''}${k.description ? `<div class="n">${esc(k.description)}</div>` : ''}
           ${st.length ? `<div class="n">Koraci: ${st.map((x) => (x.done ? '☑ ' : '☐ ') + esc(x.title)).join(' · ')}</div>` : ''}
-          ${notes.length ? `<div class="n">${notes.map((n) => '– ' + (n.person_id ? esc(person(n.person_id)?.name) + ': ' : '') + esc(n.body)).join('<br>')}</div>` : ''}</td>
-          <td>${k.people.map((i) => esc(person(i)?.name || '')).join(', ')}</td>
+          ${notes.length ? `<div class="n">${notes.map((n) => '– ' + (n.person_id ? esc(outName(person(n.person_id))) + ': ' : '') + esc(n.body)).join('<br>')}</div>` : ''}</td>
+          <td>${k.people.map((i) => esc(outName(person(i)) || '')).join(', ')}</td>
           <td class="${k.status === 'done' ? 'done' : ''}">${STATUS[k.status]}</td><td class="${late ? 'late' : ''}">${fmtSpan(k)}${late ? ' (kasni)' : ''}</td></tr>`; }).join('')}
       </tbody></table>`).join('') || '<p>Nema zadataka za odabrani opseg.</p>'}
     <script>setTimeout(() => print(), 300)<\/script></body></html>`);
