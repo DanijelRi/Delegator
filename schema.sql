@@ -202,3 +202,8 @@ CREATE TABLE IF NOT EXISTS templates (
   created_at timestamptz DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS templates_user_idx ON templates (user_id);
+
+-- „Ja“: svaki korisnik ima točno jednu osobu koja je on sam (može sebe dodati u zadatak).
+-- Nastaje automatski pri učitavanju podataka (loadAll u api/data.js); ne može se obrisati ni dijeliti.
+ALTER TABLE people ADD COLUMN IF NOT EXISTS is_me boolean NOT NULL DEFAULT false;
+CREATE UNIQUE INDEX IF NOT EXISTS people_me_idx ON people (user_id) WHERE is_me;

@@ -6,9 +6,20 @@ import { del } from '@vercel/blob';
 import { randomBytes } from 'node:crypto';
 import { sql, currentUser, readBody, txt } from './_lib.js';
 
+// Osoba „Ja“ (sam korisnik) — napravi je ako je još nema.
+const ME = 'Ja';
+const ensureMe = (uid) => sql`INSERT INTO people (user_id, name, is_me) VALUES (${uid}, ${ME}, true)
+                               ON CONFLICT (user_id) WHERE is_me DO NOTHING`;
+
 async function loadAll(uid) {
+  let data = await loadRows(uid);
+  if (!data.people.some((p) => p.is_me)) { await ensureMe(uid); data = await loadRows(uid); }
+  return data;
+}
+
+async function loadRows(uid) {
   const [people, topics, tasks, notes, pnotes, attachments, subtasks, templates] = await Promise.all([
-    sql`SELECT id, name, role, email, is_demo FROM people WHERE user_id = ${uid} ORDER BY name`,
+    sql`SELECT id, name, role, email, is_demo, is_me FROM people WHERE user_id = ${uid} ORDER BY is_me DESC, name`,
     sql`SELECT id, parent_id, title, description, color, archived, is_demo FROM topics WHERE user_id = ${uid} ORDER BY archived, created_at`,
     sql`SELECT t.id, t.topic_id, t.title, t.description, t.status, t.priority,
                to_char(t.due_date, 'YYYY-MM-DD') AS due_date, to_char(t.start_date, 'YYYY-MM-DD') AS start_date,
@@ -152,9 +163,22 @@ const ops = {
   // --- ljudi ---
   addPerson: (b, uid) => sql`INSERT INTO people (user_id, name, role, email)
                              VALUES (${uid}, ${txt(b.name)}, ${txt(b.role)}, ${email(b.email)})`,
-  updatePerson: (b, uid) => sql`UPDATE people SET name = ${txt(b.name)}, role = ${txt(b.role)}, email = ${email(b.email)}
+  // „Ja“ zadržava ime; brisati se ne može
+  updatePerson: (b, uid) => sql`UPDATE people SET name = CASE WHEN is_me THEN name ELSE ${txt(b.name)} END, role = ${txt(b.role)}, email = ${email(b.email)}
                                 WHERE id = ${b.id} AND user_id = ${uid}`,
-  deletePerson: (b, uid) => sql`DELETE FROM people WHERE id = ${b.id} AND user_id = ${uid}`,
+  deletePerson: (b, uid) => sql`DELETE FROM people WHERE id = ${b.id} AND user_id = ${uid} AND NOT is_me`,
+  // Osoba koju je korisnik ranije napravio za sebe (npr. svoje ime) → prebaci zadatke i bilješke na „Ja“ i obriši je.
+  mergeIntoMe: async (b, uid) => {
+    const [p] = await sql`SELECT id FROM people WHERE id = ${b.id} AND user_id = ${uid} AND NOT is_me`;
+    if (!p) throw notFound();
+    await ensureMe(uid);
+    const [me] = await sql`SELECT id FROM people WHERE user_id = ${uid} AND is_me`;
+    await sql.transaction([
+      sql`INSERT INTO task_people (task_id, person_id) SELECT task_id, ${me.id} FROM task_people WHERE person_id = ${p.id} ON CONFLICT DO NOTHING`,
+      sql`UPDATE notes SET person_id = ${me.id} WHERE person_id = ${p.id} AND user_id = ${uid}`,
+      sql`DELETE FROM people WHERE id = ${p.id} AND user_id = ${uid}`,
+    ]);
+  },
 
   // --- teme ---
   addTopic: async (b, uid) => {
@@ -302,7 +326,7 @@ const ops = {
 
   // --- poveznica za osobu kojoj se delegira (/z/TOKEN) ---
   shareLink: async (b, uid) => {
-    const [p] = await sql`SELECT id, share_token FROM people WHERE id = ${b.id} AND user_id = ${uid}`;
+    const [p] = await sql`SELECT id, share_token FROM people WHERE id = ${b.id} AND user_id = ${uid} AND NOT is_me`;
     if (!p) throw notFound();
     let token = p.share_token;
     if (!token || b.reset) {
