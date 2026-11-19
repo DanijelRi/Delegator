@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Upute — Delegator</title>
+<meta name="description" content="Kako koristiti Delegator: teme, zadaci, ljudi, brzi unos uz AI, kalendar, ploča i poveznice za ljude kojima delegiraš.">
+<meta name="theme-color" content="#f6f7fb">
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+<link rel="preload" href="/vendor/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  @font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 100 900;
+    src: url(/vendor/fonts/inter-latin-ext-wght-normal.woff2) format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+  @font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 100 900;
+    src: url(/vendor/fonts/inter-latin-wght-normal.woff2) format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  /* Raspored: široka stranica; lijevo ljepljiv sadržaj, desno poglavlja — tekst gore, velika snimka zaslona ispod. */
+  :root {
+    --bg: #f6f7fb; --surface: #ffffff; --ink: #1b2131; --muted: #59627a; --line: #dfe3ee;
+    --accent: #4f6bed; --accent-soft: #eaeefe; --ok: #2f9e6b; --warm: #fff6dd;
+    --display: "Inter", "Segoe UI", system-ui, sans-serif;
+    --body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --radius: 18px;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #11141c; --surface: #191d28; --ink: #e8ebf4; --muted: #a2abc0; --line: #2a3040;
+    --accent: #8197ff; --accent-soft: #232b48; --ok: #4fc08d; --warm: #2b2618; color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --bg: #11141c; --surface: #191d28; --ink: #e8ebf4; --muted: #a2abc0; --line: #2a3040;
+    --accent: #8197ff; --accent-soft: #232b48; --ok: #4fc08d; --warm: #2b2618; color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 18px/1.7 var(--body); -webkit-font-smoothing: antialiased; }
+  h1, h2 { letter-spacing: -.02em; }
+  .topbar { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; margin-bottom: 40px; }
+  .topbar .logo { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: #fff; font-size: 17px;
+                  background: linear-gradient(135deg, #6a84ff, #4f6bed 55%, #3b52c9); box-shadow: 0 2px 8px rgba(79,107,237,.35); }
+  .topbar a { margin-left: auto; font-size: 16px; font-weight: 600; text-decoration: none; }
+  .phones3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; max-width: 900px; }
+  @media (max-width: 700px) { .phones3 { grid-template-columns: minmax(0, 1fr); max-width: 320px; margin: 0 auto; } }
+  .wrap { max-width: 1480px; margin: 0 auto; padding-block: 56px 100px;
+          padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  a { color: var(--accent); }
+  a:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+  h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0; }
+
+  /* uvod */
+  .hero { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 56px; align-items: center; margin-bottom: 80px; }
+  .eyebrow { font-size: 14px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--accent); }
+  .hero h1 { font-size: clamp(40px, 5.2vw, 68px); font-weight: 800; margin: 12px 0 20px; }
+  .hero h1 span { color: var(--accent); }
+  .lead { font-size: 21px; color: var(--muted); max-width: 32em; margin: 0; }
+  .chain { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 28px 0; font-weight: 600; font-size: 16px; }
+  .chain b { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 16px; font-weight: 600; }
+  .chain i { color: var(--muted); font-style: normal; }
+  .applink { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; background: var(--accent); color: #fff; text-decoration: none;
+         font-weight: 600; font-size: 18px; padding: 14px 24px; border-radius: 12px; }
+  .url { font: 16px/1.4 ui-monospace, "SF Mono", Menlo, monospace; color: var(--muted); user-select: all; }
+
+  /* snimke zaslona */
+  .shot { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+          box-shadow: 0 28px 60px -32px rgba(27, 33, 49, .45); }
+  .shot img { display: block; width: 100%; height: auto; }
+  .shot figcaption { font-size: 15px; color: var(--muted); padding: 12px 18px; border-top: 1px solid var(--line); }
+  .shots2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  .withphone { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; }
+  .phone { border-radius: 36px; border: 8px solid var(--ink); overflow: hidden; background: var(--surface); box-shadow: 0 28px 60px -32px rgba(27, 33, 49, .5); }
+  .phone img { display: block; width: 100%; height: auto; }
+  .phone-cap { font-size: 15px; color: var(--muted); text-align: center; margin-top: 10px; }
+
+  /* dva stupca: sadržaj + poglavlja */
+  .layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 64px; align-items: start; }
+  .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 28px); font-size: 16px; }
+  .toc p { font-size: 13px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .toc a { display: block; color: var(--ink); text-decoration: none; padding: 7px 12px; border-radius: 10px; }
+  .toc a:hover { background: var(--accent-soft); color: var(--accent); }
+  .toc .new { font-size: 11px; font-weight: 700; color: var(--ok); margin-left: 4px; }
+
+  section { scroll-margin-top: 28px; padding-bottom: 72px; margin-bottom: 72px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 24px; }
+  section:last-child { border-bottom: 0; margin-bottom: 0; }
+  section > h2 { font-size: clamp(30px, 3vw, 38px); font-weight: 700; display: flex; gap: 12px; align-items: baseline; }
+  .tag { font: 700 12px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); border-radius: 999px; padding: 3px 10px; align-self: center; }
+  .intro { color: var(--muted); max-width: 44em; margin: 0; font-size: 20px; }
+  .points { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 36px; }
+  .points li { padding-left: 28px; position: relative; }
+  .points li::before { content: ""; position: absolute; left: 4px; top: .65em; width: 10px; height: 10px; border-radius: 3px; background: var(--accent); }
+  .points b { font-weight: 600; }
+
+  .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+  .steps li { counter-increment: s; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+  .steps li::before { content: counter(s); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+                      background: var(--accent-soft); color: var(--accent); font: 700 17px var(--display); margin-bottom: 12px; }
+  .steps h3 { font-size: 19px; margin-bottom: 6px; }
+  .steps p { margin: 0; color: var(--muted); font-size: 17px; }
+
+  .say { background: var(--warm); border-radius: 12px; padding: 14px 20px; font-style: italic; font-size: 19px; }
+  .say::before { content: "🎤  "; font-style: normal; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+  .cards div { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+  .cards h3 { font-size: 19px; margin-bottom: 6px; }
+  .cards p { margin: 0; font-size: 17px; color: var(--muted); }
+
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; }
+  details + details { margin-top: 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  details p { margin: 10px 0 0; color: var(--muted); }
+
+  @media (max-width: 1000px) {
+    .hero, .withphone { grid-template-columns: minmax(0, 1fr); }
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+    .toc { position: static; } .toc ol { flex-direction: row; flex-wrap: wrap; }
+    .toc a { background: var(--surface); border: 1px solid var(--line); padding: 5px 12px; }
+    .phone { max-width: 320px; margin: 0 auto; }
+  }
+  @media (max-width: 700px) { body { font-size: 17px; } .points, .shots2 { grid-template-columns: minmax(0, 1fr); } .intro { font-size: 18px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar"><span class="logo">✓</span>Delegator<a href="/">Otvori aplikaciju →</a></div>
+  <header class="hero">
+    <div>
+      <div class="eyebrow">Vodič za korisnike</div>
+      <h1>Delegiraj zadatke <span>bez papirića</span> i podsjetnika u glavi.</h1>
+      <p class="lead">Delegator je aplikacija u kojoj vodiš teme i zadatke, dijeliš ih ljudima i za svakoga čuvaš upute, rokove i dokumente. Zadatak izgovoriš ili slikaš račun, a AI ga složi umjesto tebe. Ljudi kojima delegiraš javljaju napredak sami, preko svoje poveznice.</p>
+      <div class="chain" aria-label="Kako je složeno"><b>Tema</b><i>→</i><b>Zadatak</b><i>→</i><b>Ljudi</b><i>→</i><b>Bilješke, koraci, prilozi</b></div>
+      <div class="applink">
+        <a class="btn" href="/">Otvori Delegator →</a>
+        <span class="url">delegator-psi.vercel.app</span>
+      </div>
+    </div>
+    <figure class="shot"><img src="/vodic/pregled.jpg" alt="Početna stranica Pregled: moji zadaci, javljanja ljudi, opterećenost ljudi i napredak tema" width="1600" height="1000"></figure>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Sadržaj">
+      <p>Sadržaj</p>
+      <ol>
+        <li><a href="#pocetak">Kako početi</a></li>
+        <li><a href="#izgled">Novi izgled<span class="new">NOVO</span></a></li>
+        <li><a href="#brzi-unos">Brzi unos uz AI</a></li>
+        <li><a href="#teme">Teme, zadaci, koraci</a></li>
+        <li><a href="#ja">⭐ Ja u zadatku<span class="new">NOVO</span></a></li>
+        <li><a href="#poveznica">Poveznica za ljude</a></li>
+        <li><a href="#pregled">Pregled</a></li>
+        <li><a href="#kalendar">Kalendar</a></li>
+        <li><a href="#ploca">Ploča</a></li>
+        <li><a href="#biljeske">Bilješke</a></li>
+        <li><a href="#statistika">Statistika i izvoz</a></li>
+        <li><a href="#mreza">Mreža</a></li>
+        <li><a href="#mobitel">Mobitel i obavijesti</a></li>
+        <li><a href="#sigurnost">Privatnost i kopije</a></li>
+        <li><a href="#pitanja">Česta pitanja</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="pocetak">
+        <h2>👋 Kako početi</h2>
+        <p class="intro">Delegator radi na pozivnice. Kad dobiješ poveznicu, za početak trebaš dvije minute.</p>
+        <ol class="steps">
+          <li><h3>Otvori pozivnicu</h3><p>Upiši ime, e-mail i lozinku. Poveznica vrijedi 7 dana i samo za jedan račun.</p></li>
+          <li><h3>Prođi kratki vodič</h3><p>Aplikacija te sama provede kroz glavne dijelove. Uključi probnu temu da odmah vidiš kako sve izgleda.</p></li>
+          <li><h3>Dodaj svoje ljude</h3><p>U kartici „Ljudi“ upiši osobe kojima delegiraš, po želji s e-mailom.</p></li>
+          <li><h3>Napravi prvi zadatak</h3><p>Najbrže preko ⚡ Brzog unosa. Probnu temu obrišeš jednim klikom kad ti više ne treba.</p></li>
+        </ol>
+        <figure class="shot"><img src="/vodic/vodic.jpg" alt="Vodič kroz aplikaciju: kartica s objašnjenjem i istaknut gumb Brzi unos" width="1600" height="1000" loading="lazy">
+          <figcaption>Vodič se otvara sam pri prvoj prijavi. Kasnije ga pokreneš u izborniku 👤 → ❓ Vodič.</figcaption></figure>
+      </section>
+
+      <section id="izgled">
+        <h2>🌓 Novi izgled <span class="tag">novo</span></h2>
+        <p class="intro">Delegator ima tamni način rada i mobitelu prilagođenu navigaciju. Kad nešto spremiš, dolje se kratko pojavi „✓ Spremljeno“.</p>
+        <ul class="points">
+          <li><b>🌙 Tamni način</b>: sam se uključi kad je mobitel ili računalo u tamnom načinu. Ručno ga biraš u izborniku 👤 → Izgled (Automatski, Svijetli, Tamni).</li>
+          <li><b>📱 Donja traka na mobitelu</b>: Pregled, Teme, Ploča i Kalendar su na dohvat palca, a ostalo je pod ☰ Više.</li>
+          <li><b>🖥 Na računalu</b> su sve kartice gore u zaglavlju, a pretraga je uvijek pri ruci.</li>
+          <li><b>✨ Sitne potvrde</b>: završen zadatak kratko zasvijetli, a kvačica koraka „poskoči“.</li>
+        </ul>
+        <div class="shots2">
+          <figure class="shot"><img src="/vodic/tamna.jpg" alt="Pregled u tamnom načinu rada" width="1600" height="1000" loading="lazy">
+            <figcaption>Pregled u tamnom načinu.</figcaption></figure>
+          <figure class="shot"><img src="/vodic/izbornik.jpg" alt="Izbornik računa s izborom izgleda: Automatski, Svijetli, Tamni" width="1600" height="1000" loading="lazy">
+            <figcaption>👤 → Izgled: Automatski, Svijetli ili Tamni.</figcaption></figure>
+        </div>
+      </section>
+
+      <section id="brzi-unos">
+        <h2>⚡ Brzi unos uz AI</h2>
+        <p class="intro">Zadatak ne moraš slagati polje po polje. Reci ga, upiši jednom rečenicom ili slikaj dokument, a AI predloži temu, osobu, rok, korake i bilješke. Prije spremanja sve provjeriš.</p>
+        <div class="say">„Marko do petka naruči štand za sajam, budžet 2000 eura“</div>
+        <ul class="points">
+          <li><b>Glasom</b>: 🎤 diktiranje na hrvatskom, razumije i padeže („Marku“ je Marko). Kad kažeš „moram…“ ili „ja ću…“, zadatak dobiješ ti.</li>
+          <li><b>Fotografijom</b>: račun, ponuda, dopis, ploča sa sastanka. AI pročita iznos, rok, IBAN i poziv na broj.</li>
+          <li><b>PDF-om</b>: ponuda ili račun iz maila, i skenirani dokumenti. Datoteka ostaje uz zadatak kao prilog.</li>
+          <li><b>📋 Zapisnik sa sastanka</b>: uključi „Zapisnik / popis“ i AI iz jednog teksta napravi više zadataka, svaki za svoju osobu.</li>
+        </ul>
+        <div class="shots2">
+          <figure class="shot"><img src="/vodic/brzi-unos.jpg" alt="Prijedlog zadatka iz fotografije računa s rokom, osobom i podacima za plaćanje" width="1600" height="1000" loading="lazy">
+            <figcaption>Fotografija računa → zadatak s rokom, osobom, iznosom i IBAN-om.</figcaption></figure>
+          <figure class="shot"><img src="/vodic/zapisnik.jpg" alt="Tri prijedloga zadataka izvučena iz zapisnika sa sastanka" width="1600" height="1000" loading="lazy">
+            <figcaption>Zapisnik → tri zadatka odjednom, svaki s ljudima, rokom i koracima.</figcaption></figure>
+        </div>
+      </section>
+
+      <section id="teme">
+        <h2>📁 Teme, zadaci i koraci</h2>
+        <p class="intro">Sve je složeno u teme i podteme bilo koje dubine, npr. Sajam 2027 › Štand. Klikni zadatak da ga otvoriš: koraci, prilozi, bilješke za svaku osobu i javljanja.</p>
+        <ul class="points">
+          <li><b>☑ Koraci</b>: popis za kvačice unutar zadatka, s napretkom „1/3“ na zadatku i ploči.</li>
+          <li><b>Bilješke za svaku osobu</b>: Marko vidi svoje upute, Ana svoje, a opće vrijede za sve.</li>
+          <li><b>📎 Prilozi</b>: PDF, fotografije i dokumenti uz zadatak, bilješku ili cijelu temu. PDF se otvara unutar aplikacije.</li>
+          <li><b>🔁 Ponavljanje</b>: tjedni sastanak ili mjesečni PDV. Kad ga završiš, sam se napravi sljedeći.</li>
+          <li><b>📋 Predlošci</b>: temu spremiš kao predložak i za sljedeći projekt je kopiraš, s preračunatim rokovima.</li>
+          <li><b>🔍 Pretraga</b> kroz sve teme, bilješke i nazive priloga, bez obzira na kvačice („stand“ nađe „štand“).</li>
+        </ul>
+        <figure class="shot"><img src="/vodic/teme.jpg" alt="Otvoreni zadatak s koracima, PDF prilogom, bilješkom za Marka i Markovim javljanjem" width="1600" height="1000" loading="lazy">
+          <figcaption>Otvoreni zadatak: koraci, PDF ponuda, upute za Marka i njegovo javljanje („Dobio sam dvije ponude…“).</figcaption></figure>
+        <figure class="shot"><img src="/vodic/pdf.jpg" alt="PDF ponuda otvorena unutar aplikacije" width="1600" height="1000" loading="lazy">
+          <figcaption>PDF se čita unutar aplikacije, bez preuzimanja.</figcaption></figure>
+      </section>
+
+      <section id="ja">
+        <h2>⭐ Ja u zadatku <span class="tag">novo</span></h2>
+        <p class="intro">Dio posla radiš sam, pa sebe dodaješ u zadatak kao i bilo koju drugu osobu: sam ili zajedno s drugima („Ja + Marko“). Osobu „⭐ Ja“ svatko ima automatski, uvijek prvu na popisu.</p>
+        <ul class="points">
+          <li><b>⭐ Moji zadaci</b> na Pregledu: sve što je na tebi, poredano po roku.</li>
+          <li><b>⭐ Moje bilješke</b> u zadatku: tvoje upute odvojene su od uputa za druge.</li>
+          <li><b>Automatski</b>: napiši „ja i Bojana…“ u naslov zadatka i obje osobe se same označe. U brzom unosu AI razumije „moram“, „trebam“, „ja ću“.</li>
+          <li><b>U mailu i izvještaju</b> piše tvoje pravo ime, ne „Ja“. Ljudi preko svoje poveznice ne vide tvoje bilješke.</li>
+          <li><b>Filtri</b>: na Ploči, u Kalendaru i u kartici „Po osobi“ odabereš „⭐ Ja“ i vidiš samo svoje.</li>
+          <li><b>Već si se upisao kao osoba?</b> Kartica Ljudi ponudi „Spoji s ‚Ja‘“ i svi zadaci prelaze na tebe.</li>
+        </ul>
+        <div class="shots2">
+          <figure class="shot"><img src="/vodic/pregled.jpg" alt="Pregled s karticom Moji zadaci" width="1600" height="1000" loading="lazy">
+            <figcaption>Pregled: „⭐ Moji zadaci“ i „⭐ Ja“ u opterećenosti ljudi.</figcaption></figure>
+          <figure class="shot"><img src="/vodic/ja-zadatak-tamno.jpg" alt="Zadatak na kojem su Ja i Marko, s mojim bilješkama i bilješkama za Marka" width="1600" height="1000" loading="lazy">
+            <figcaption>Zadatak za „Ja + Marko“: tvoje bilješke i Markove upute odvojeno.</figcaption></figure>
+        </div>
+      </section>
+
+      <section id="poveznica">
+        <h2>🔗 Poveznica za ljude kojima delegiraš</h2>
+        <p class="intro">Svaka osoba dobije svoju poveznicu. Na mobitelu vidi samo svoje zadatke, upute, korake i priloge, a može označiti „U tijeku“ ili „Gotovo“ i napisati poruku. Bez registracije. Ti njeno javljanje odmah vidiš u Pregledu, uz obavijest na mobitel.</p>
+        <div class="withphone">
+          <figure class="shot"><img src="/vodic/poveznica.jpg" alt="Dijalog s osobnom poveznicom za Marka i gumbima za kopiranje, WhatsApp i mail" width="1600" height="1000" loading="lazy">
+            <figcaption>Ljudi → 🔗 → pošalji poveznicu WhatsAppom ili mailom.</figcaption></figure>
+          <div><div class="phone"><img src="/vodic/osoba-mobitel.jpg" alt="Markova stranica na mobitelu s njegovim zadacima i gumbima za status" width="780" height="1328" loading="lazy"></div>
+            <div class="phone-cap">Ovo vidi Marko na svom mobitelu</div></div>
+        </div>
+      </section>
+
+      <section id="pregled">
+        <h2>🏠 Pregled</h2>
+        <p class="intro">Početna stranica za jutarnju kavu: što kasni, što je danas i što dolazi ovaj tjedan, tko se javio (crvena značka), tko je koliko opterećen i koliko je koja tema gotova. Klik na bilo što vodi u detalje.</p>
+      </section>
+
+      <section id="kalendar">
+        <h2>📅 Kalendar</h2>
+        <p class="intro">Svi rokovi na jednom mjestu (mjesec, tjedan ili popis), obojeni po temi. Hrvatski blagdani su označeni.</p>
+        <ul class="points">
+          <li><b>Povuci zadatak</b> na drugi dan i rok se promijeni. Višednevni zadaci pomiču se cijeli.</li>
+          <li><b>„+“ u danu</b> dodaje zadatak s tim rokom. Filtri po osobi i temi.</li>
+          <li><b>📲 Dodaj u Google/Apple kalendar</b>: rokovi se sami pojavljuju u kalendaru na mobitelu.</li>
+          <li><b>🔁 Ponavljanja</b> se vide unaprijed, blijedo.</li>
+        </ul>
+        <figure class="shot"><img src="/vodic/kalendar.jpg" alt="Mjesečni kalendar sa zadacima obojenima po temama" width="1600" height="1000" loading="lazy"></figure>
+      </section>
+
+      <section id="ploca">
+        <h2>🗂 Ploča</h2>
+        <p class="intro">Zadaci u tri stupca: Za napraviti, U tijeku i Gotovo. Povuci karticu kad se nešto pomakne. Na kartici se vide rok, ljudi, koraci i prilozi.</p>
+        <figure class="shot"><img src="/vodic/ploca.jpg" alt="Ploča s tri stupca zadataka" width="1600" height="1000" loading="lazy"></figure>
+      </section>
+
+      <section id="biljeske">
+        <h2>📝 Bilješke</h2>
+        <p class="intro">Tvoje osobne bilješke, nevezane uz zadatke: ideje, sastanci, popisi, računi. Vidiš ih samo ti. Mogu imati boju, biti 📌 prikvačene, izdiktirane 🎤 i imati priloge.</p>
+        <figure class="shot"><img src="/vodic/biljeske.jpg" alt="Kartica Bilješke s obojenim bilješkama" width="1600" height="1000" loading="lazy"></figure>
+      </section>
+
+      <section id="statistika">
+        <h2>📈 Statistika i izvoz</h2>
+        <p class="intro">Koliko je završeno po tjednima, koliki postotak na vrijeme, koliko dana prosječno traje zadatak, i sve to po osobi i po temi. Za sastanke i šefa: izvoz u Excel i izvještaj za ispis ili PDF, za temu, osobu ili sve.</p>
+        <figure class="shot"><img src="/vodic/statistika.jpg" alt="Statistika: brojke, tjedni grafikon i tablice po osobi i temi" width="1600" height="1000" loading="lazy"></figure>
+      </section>
+
+      <section id="mreza">
+        <h2>🕸 Mreža</h2>
+        <p class="intro">Cijeli sustav na jednoj slici: teme, podteme, zadaci, ljudi i bilješke povezani u graf. Klik na čvor istakne sve što je s njim povezano, npr. sve zadatke jedne osobe kroz sve teme.</p>
+        <figure class="shot"><img src="/vodic/mreza.jpg" alt="Mrežni prikaz tema, zadataka i ljudi" width="1600" height="1000" loading="lazy"></figure>
+      </section>
+
+      <section id="mobitel">
+        <h2>📲 Na mobitelu</h2>
+        <p class="intro">Delegator se instalira kao aplikacija: ikona na početnom zaslonu, donja traka s glavnim karticama, obavijesti i rad bez interneta.</p>
+        <div class="phones3">
+          <div><div class="phone"><img src="/vodic/mobitel-pregled.jpg" alt="Pregled na mobitelu s donjom trakom" width="780" height="1328" loading="lazy"></div><div class="phone-cap">Pregled i donja traka</div></div>
+          <div><div class="phone"><img src="/vodic/mobitel-vise.jpg" alt="Izbornik Više na mobitelu" width="780" height="1328" loading="lazy"></div><div class="phone-cap">☰ Više: ostale kartice</div></div>
+          <div><div class="phone"><img src="/vodic/mobitel-tamna.jpg" alt="Ploča na mobitelu u tamnom načinu" width="780" height="1328" loading="lazy"></div><div class="phone-cap">Ploča u tamnom načinu</div></div>
+        </div>
+        <div>
+          <div class="cards">
+            <div><h3>iPhone i iPad</h3><p>Otvori adresu u Safariju → <b>Dijeli</b> (□↑) → <b>Dodaj na početni zaslon</b>, pa otvori aplikaciju s ikone.</p></div>
+            <div><h3>Android</h3><p>Otvori adresu u Chromeu → izbornik <b>⋮</b> → <b>Instaliraj aplikaciju</b>. Gumb je i u izborniku 👤.</p></div>
+            <div><h3>🔔 Obavijesti</h3><p>👤 → <b>Uključi obavijesti</b>: jutarnji sažetak (što kasni, što je danas) i obavijest kad se netko javi. Na iPhoneu rade kad je aplikacija na početnom zaslonu.</p></div>
+            <div><h3>📴 Bez interneta</h3><p>Zadnji podaci se mogu čitati. Status, korake i bilješke možeš mijenjati, a promjene se pošalju same kad se veza vrati.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="sigurnost">
+        <h2>🔒 Privatnost i sigurnosne kopije</h2>
+        <div class="cards">
+          <div><h3>Tvoji podaci su tvoji</h3><p>Svaki korisnik vidi samo svoje teme, zadatke, ljude i bilješke. Prilozi se ne otvaraju bez prijave, ni s poveznicom.</p></div>
+          <div><h3>Poveznice za ljude</h3><p>Osoba vidi samo zadatke na kojima je. Ako je poveznica procurila, napraviš novu jednim klikom i stara odmah prestaje raditi.</p></div>
+          <div><h3>Noćne kopije</h3><p>Svake noći sprema se kopija cijele baze, a čuva se 30 dana. Administrator ih vidi u kartici „Korisnici“.</p></div>
+        </div>
+      </section>
+
+      <section id="pitanja">
+        <h2>💬 Česta pitanja</h2>
+        <div>
+          <details><summary>Mora li osoba kojoj delegiram imati račun?</summary>
+            <p>Ne. Pošalješ joj njenu poveznicu (Ljudi → 🔗) i ona na mobitelu vidi svoje zadatke, označava napredak i javlja se porukom.</p></details>
+          <details><summary>Trebam li račun da bih pročitao ove upute?</summary>
+            <p>Ne. Upute su javne i otvaraju se bez prijave, pa ih možeš slobodno proslijediti. Za samu aplikaciju treba pozivnica.</p></details>
+          <details><summary>Kako dodam sebe u zadatak?</summary>
+            <p>Klikni „⭐ Ja“ među ljudima u zadatku ili napiši „ja“ u naslov. Tvoji zadaci su na Pregledu pod „⭐ Moji zadaci“.</p></details>
+          <details><summary>Zaboravio sam lozinku.</summary>
+            <p>Javi se osobi koja te pozvala. Ona ti u kartici „Korisnici“ napravi poveznicu za novu lozinku (vrijedi 24 sata).</p></details>
+          <details><summary>Koliko puta dnevno mogu koristiti brzi unos uz AI?</summary>
+            <p>Do 40 puta dnevno, što je za normalnu upotrebu dovoljno. Zadatke uvijek možeš dodati i ručno.</p></details>
+          <details><summary>Koje datoteke mogu priložiti?</summary>
+            <p>PDF, fotografije, Word, Excel i druge dokumente, do 20 MB po datoteci. Fotografije s mobitela automatski se smanje.</p></details>
+          <details><summary>Ne stižu mi obavijesti.</summary>
+            <p>U izborniku 👤 provjeri jesu li uključene na tom uređaju. Na iPhoneu obavijesti rade samo u aplikaciji dodanoj na početni zaslon. Ako ih je preglednik blokirao, dopusti ih u postavkama za ovu stranicu.</p></details>
+          <details><summary>Diktiranje mi ne radi.</summary>
+            <p>Diktiranje radi u Chromeu, Edgeu i Safariju, a ne radi u Firefoxu. Prvi put preglednik pita za dopuštenje za mikrofon, pa ga odobri.</p></details>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</body>
+</html>
