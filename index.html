@@ -465,6 +465,7 @@
   .more-sheet button .ic { font-size: 22px; }
   .more-sheet button.on { background: var(--accent-soft); border-color: transparent; color: var(--accent); font-weight: 600; }
   .chip.me:not(.on) { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
+  .row > h2.grow { min-width: auto; overflow-wrap: break-word; }   /* naslov se ne stisne u „Pl…“, filtri prijeđu u novi red */
   .theme-pick { display: flex; background: var(--track); border-radius: 12px; padding: 3px; gap: 2px; }
   .theme-pick button { flex: 1; border: 0; background: transparent; color: var(--muted); padding: 7px 6px; border-radius: 9px; }
   .theme-pick button.on { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-sm); }
@@ -915,6 +916,7 @@ function loginView() {
       ${a.mode === 'setup' ? '<input type="password" name="invite" placeholder="Kod za prvo postavljanje" required>' : ''}
       ${err}<button class="primary">Napravi račun</button>
       ${a.mode === 'signup' ? '<button type="button" class="ghost" data-act="toLogin">Već imam račun — prijava</button>' : ''}
+      <div class="muted small" style="text-align:center"><a href="/vodic" target="_blank" rel="noopener">📖 Što je Delegator? Pogledaj upute</a></div>
     </form>`;
   }
   return `<form class="panel login stack" data-form="login">${head}
@@ -922,7 +924,7 @@ function loginView() {
     <input type="email" name="email" placeholder="E-mail" required autocomplete="email" autofocus>
     <input type="password" name="password" placeholder="Lozinka" required autocomplete="current-password">
     ${err}<button class="primary">Uđi</button>
-    <div class="muted small">Nemaš račun? Delegator radi na pozivnice — zatraži je od administratora.
+    <div class="muted small"><a href="/vodic" target="_blank" rel="noopener">📖 Upute</a> · Nemaš račun? Delegator radi na pozivnice — zatraži je od administratora.
       Zaboravljenu lozinku također resetira administrator.</div>
   </form>`;
 }
@@ -2308,6 +2310,7 @@ function userMenu() {
     ${installButton()}
     <button data-act="pushToggle" id="push-btn" disabled>🔔 Obavijesti na ovom uređaju…</button>
     <button data-act="tourStart">❓ Vodič kroz aplikaciju</button>
+    <a class="btnlink" href="/vodic" target="_blank" rel="noopener">📖 Upute (može se proslijediti)</a>
     ${hasDemo() ? '' : '<button data-act="addDemo">🎓 Dodaj primjere (probnu temu)</button>'}
     <button data-act="ical">📅 Rokovi u Google/Apple kalendaru</button>
     <button data-act="changePw">🔑 Promijeni lozinku</button>

@@ -28,9 +28,9 @@ http.createServer(async (req, res) => {
   }
   // statične datoteke: biblioteke (vidi `npm run vendor`), ikone, manifest i service worker
   const path = req.url.split('?')[0];
-  const m = path.match(/^\/((?:vendor|icons)\/(?:[\w-]+\/)*[\w.-]+\.(?:m?js|png|svg|wasm|woff2)|sw\.js|manifest\.webmanifest)$/);
+  const m = path.match(/^\/((?:vendor|icons|vodic)\/(?:[\w-]+\/)*[\w.-]+\.(?:m?js|png|jpg|svg|wasm|woff2)|sw\.js|manifest\.webmanifest)$/);
   if (m) {
-    const types = { js: 'text/javascript; charset=utf-8', mjs: 'text/javascript; charset=utf-8', png: 'image/png', svg: 'image/svg+xml', wasm: 'application/wasm', woff2: 'font/woff2', webmanifest: 'application/manifest+json' };
+    const types = { js: 'text/javascript; charset=utf-8', mjs: 'text/javascript; charset=utf-8', png: 'image/png', svg: 'image/svg+xml', wasm: 'application/wasm', woff2: 'font/woff2', jpg: 'image/jpeg', webmanifest: 'application/manifest+json' };
     try {
       const body = await readFile(new URL(`./${m[1]}`, import.meta.url));
       res.setHeader('Content-Type', types[m[1].split('.').pop()]);
@@ -39,6 +39,7 @@ http.createServer(async (req, res) => {
   }
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   // /z/TOKEN = stranica za osobu kojoj se delegira (na Vercelu isto radi rewrite u vercel.json)
-  const page = path.startsWith('/z/') ? './guest.html' : './index.html';
+  // /vodic = javne upute (na Vercelu rewrite u vercel.json)
+  const page = path.startsWith('/z/') ? './guest.html' : path === '/vodic' ? './vodic.html' : './index.html';
   res.end(await readFile(new URL(page, import.meta.url)));
 }).listen(port, () => console.log(`Delegator: http://localhost:${port}`));
