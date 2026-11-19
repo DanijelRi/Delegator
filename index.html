@@ -213,6 +213,11 @@
   .lightbox { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px; background: #f1f3f6; }
   dialog:has(.lightbox) { width: min(1000px, 96vw); }
 
+  /* brzi unos s fotografijom */
+  .qa-photo { display: flex; align-items: center; gap: 8px; min-height: 0; }
+  .qa-photo img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); flex: none; }
+  .qa-cam { border-style: solid; font-size: 14px; padding: 6px 10px; }
+
   /* osobne bilješke */
   .pgrid { columns: 3 280px; column-gap: 12px; }
   .pcard { break-inside: avoid; margin-bottom: 12px; border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -1614,40 +1619,66 @@ function changePwDialog() {
 const selectedChips = (root) => [...root.querySelectorAll('[data-chips] .chip.on')].map((c) => Number(c.dataset.id));
 
 /* ========= brzi unos uz AI ========= */
-async function parseText(text) {
+// Fotografija za AI: smanjena na 1600 px (dovoljno za čitanje teksta), kao data URL.
+async function imageForAI(file) {
+  const img = await createImageBitmap(file);
+  const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.82);
+}
+async function parseText(text, image = null) {
   const res = await fetch('/api/parse', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, topic_hint: S.view === 'topics' ? topic(S.topicId)?.title : null }),
+    body: JSON.stringify({ text, image, topic_hint: S.view === 'topics' ? topic(S.topicId)?.title : null }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json.error || 'Greška ' + res.status);
   return json;
 }
 
-function quickStep1(text = '') {
+let qaPhoto = null; // fotografija u brzom unosu: { file, url }
+function setQaPhoto(file) {
+  if (qaPhoto?.url) URL.revokeObjectURL(qaPhoto.url);
+  qaPhoto = file ? { file, url: URL.createObjectURL(file) } : null;
+  const box = $('#qa-photo');
+  if (box) box.innerHTML = qaPhoto ? `<img src="${qaPhoto.url}" alt="Fotografija"><button type="button" class="ghost" data-act="qaPhotoDel" title="Makni fotografiju">✕</button>
+    <span class="small muted">AI će pročitati fotografiju. Tekst je sada neobavezan — možeš dodati npr. „za Marka“.</span>` : '';
+}
+function quickStep1(text = '', keepPhoto = false) {
+  if (!keepPhoto) setQaPhoto(null);
   const dlg = $('#dlg');
   dlg.innerHTML = `<form class="stack" data-qa="parse">
     <h2>⚡ Brzi unos</h2>
-    <div class="muted small">Izdiktiraj ili upiši, npr. <em>„Marko do petka naruči štand za sajam, budžet 2000 eura“</em>. AI će predložiti temu, osobu, rok i bilješke — ti samo potvrdiš.</div>
-    <div class="with-mic"><textarea id="qa-text" class="qa-text" name="text" required>${esc(text)}</textarea>${micBtn('qa-text')}</div>
+    <div class="muted small">Izdiktiraj ili upiši, npr. <em>„Marko do petka naruči štand za sajam, budžet 2000 eura“</em> — ili <strong>slikaj</strong> račun, ponudu, dopis ili ploču sa sastanka. AI će predložiti temu, osobu, rok i bilješke — ti samo potvrdiš.</div>
+    <div class="with-mic"><textarea id="qa-text" class="qa-text" name="text" placeholder="Što treba napraviti? (ili samo dodaj fotografiju)">${esc(text)}</textarea>${micBtn('qa-text')}</div>
+    <div class="row">
+      <label class="attach-btn qa-cam" title="Fotografija ili slika s računala — AI pročita sadržaj">📷 Fotografija<input type="file" accept="image/*" data-qa-photo hidden></label>
+      <div id="qa-photo" class="qa-photo grow"></div>
+    </div>
     <div class="row" style="justify-content:flex-end">
       <button type="button" onclick="this.closest('dialog').close()">Odustani</button>
       <button class="primary" id="qa-go">Obradi ✨</button>
     </div></form>`;
   if (!dlg.open) dlg.showModal();
+  if (qaPhoto) setQaPhoto(qaPhoto.file);
   const ta = $('#qa-text');
   ta.focus();
   // na mobitelu odmah kreni slušati
   const mic = $('[data-mic="qa-text"]', dlg);
-  if (mic && !text && matchMedia('(pointer: coarse)').matches) toggleMic(mic);
+  if (mic && !text && !qaPhoto && matchMedia('(pointer: coarse)').matches) toggleMic(mic);
   $('form', dlg).onsubmit = async (e) => {
     e.preventDefault();
     if (activeRec) activeRec.rec.stop();
-    const t = ta.value.trim(); if (!t) return;
-    const btn = $('#qa-go'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Obrađujem…';
+    const t = ta.value.trim();
+    if (!t && !qaPhoto) return toast('Upiši što treba napraviti ili dodaj fotografiju');
+    const btn = $('#qa-go'); btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> ${qaPhoto ? 'Čitam fotografiju…' : 'Obrađujem…'}`;
     try {
-      const p = await parseText(t);
+      const image = qaPhoto ? await imageForAI(qaPhoto.file) : null;
+      const p = await parseText(t, image);
       if (p.remaining != null && p.remaining <= 5) toast(`Brzi unos: danas još ${p.remaining}`);
       quickStep2(t, p);
     }
@@ -1670,7 +1701,9 @@ function quickStep2(text, p) {
 
   dlg.innerHTML = `<form class="stack" data-qa="save">
     <h2>Provjeri i spremi</h2>
-    <div class="muted small">„${esc(text)}“</div>
+    ${text ? `<div class="muted small">„${esc(text)}“</div>` : ''}
+    ${qaPhoto ? `<div class="row qa-photo"><img src="${qaPhoto.url}" alt="Fotografija">
+      <label class="row small" style="gap:6px"><input type="checkbox" name="keep_photo" checked style="width:auto"> 📎 Spremi fotografiju kao prilog zadatku</label></div>` : ''}
     <label class="small muted">Tema</label>
     <select name="topic">${newTopic ? `<option value="new" selected>➕ Nova tema: ${esc(newTopic)}</option>` : ''}${topicOpts.replace(`value="${fallbackTopic}"`, `value="${fallbackTopic}" selected`)}</select>
     <input name="title" required value="${esc(p.title)}" placeholder="Naziv zadatka" style="font-weight:600">
@@ -1685,7 +1718,7 @@ function quickStep2(text, p) {
       <button type="button" data-qa-back>← Natrag</button>
       <button class="primary" id="qa-save">Spremi zadatak</button>
     </div></form>`;
-  $('[data-qa-back]', dlg).onclick = () => quickStep1(text);
+  $('[data-qa-back]', dlg).onclick = () => quickStep1(text, true);
   $('form', dlg).onsubmit = async (e) => {
     e.preventDefault();
     const f = e.target, fd = new FormData(f);
@@ -1709,8 +1742,10 @@ function quickStep2(text, p) {
         people: on.filter((c) => !c.dataset.new).map((c) => Number(c.dataset.id)),
         new_people: newPeople, notes,
       });
-      dlg.close();
+      const keep = qaPhoto && fd.get('keep_photo') ? qaPhoto.file : null;
+      dlg.close(); setQaPhoto(null);
       S.view = 'topics'; S.topicId = data.result.topic_id; S.open.add(data.result.task_id); S.statusFilter = 'open';
+      if (keep) uploadFiles(`task:${data.result.task_id}`, [keep]);
       save(); render(); toast('Zadatak spremljen ✓');
     } catch { $('#qa-save').disabled = false; }
   };
@@ -1730,6 +1765,7 @@ document.addEventListener('click', async (e) => {
     case 'view': S.view = el.dataset.v; S.q = ''; if (S.view === 'admin') S.admin = null; save(); return render();
     case 'topic': S.topicId = id; S.view = 'topics'; S.q = ''; save(); return render();
     case 'clearSearch': S.q = ''; return render();
+    case 'qaPhotoDel': return setQaPhoto(null);
     case 'viewFile': { const a = S.data.attachments.find((x) => x.id === id); return a && viewFile(a); }
     case 'delFile': {
       const a = S.data.attachments.find((x) => x.id === id);
@@ -1867,6 +1903,7 @@ document.addEventListener('change', (e) => {
     if (inp.dataset.upload) return uploadFiles(inp.dataset.upload, files);
     if ('uploadNewNote' in inp.dataset) return uploadToNewNote(inp.closest('form'), files);
     if ('uploadNewPnote' in inp.dataset) return uploadToNewPnote(inp.closest('form'), files);
+    if ('qaPhoto' in inp.dataset) return setQaPhoto(files[0]);
     return;
   }
   const act = e.target.dataset.act, v = Number(e.target.value);
@@ -1957,6 +1994,7 @@ document.addEventListener('dragend', () => { dragTask = null; document.querySele
 document.addEventListener('paste', (e) => {
   const files = [...(e.clipboardData?.files || [])];
   if (!files.length) return;
+  if (e.target.closest?.('form[data-qa="parse"]') && files[0].type.startsWith('image/')) { e.preventDefault(); return setQaPhoto(files[0]); }
   const z = e.target.closest?.('[data-dropzone], form[data-form="note"], form[data-form="pnote"], .task-body');
   if (!z) return;
   e.preventDefault();

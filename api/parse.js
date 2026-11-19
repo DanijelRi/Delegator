@@ -1,4 +1,5 @@
-// POST /api/parse {text} -> AI iz izdiktirane rečenice izvuče prijedlog zadatka.
+// POST /api/parse {text, image?} -> AI iz izdiktirane rečenice i/ili fotografije (račun, ponuda, dopis,
+// ploča sa sastanka…) izvuče prijedlog zadatka. image = data URL JPEG/PNG/WebP (u pregledniku smanjen).
 // Ništa ne sprema u bazu: vraća prijedlog koji korisnik pregleda i potvrdi (op "quickAdd" u api/data.js).
 import { sql, currentUser, readBody, todayZagreb } from './_lib.js';
 
@@ -56,7 +57,10 @@ export default async function handler(req, res) {
   let body;
   try { body = readBody(req); } catch (e) { return res.status(e.status || 400).json({ error: e.message }); }
   const text = String(body.text || '').trim().slice(0, 2000);
-  if (!text) return res.status(400).json({ error: 'Prazan tekst' });
+  const image = typeof body.image === 'string' ? body.image : null;
+  if (image && (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image) || image.length > 4 * 1024 * 1024))
+    return res.status(400).json({ error: 'Fotografija nije ispravna ili je prevelika' });
+  if (!text && !image) return res.status(400).json({ error: 'Upiši tekst ili dodaj fotografiju' });
 
   try {
     // Brojač se poveća samo ako je korisnik ispod dnevnog limita (atomarno, bez utrke).
@@ -80,7 +84,11 @@ export default async function handler(req, res) {
 
     const system = [
       'Ti si pomoćnik za delegiranje zadataka. Korisnik je izdiktirao rečenicu na hrvatskom (moguće s greškama prepoznavanja govora).',
-      'Iz nje izvuci JEDAN zadatak i pozovi alat predlozi_zadatak.',
+      image ? 'Korisnik je priložio i FOTOGRAFIJU (npr. račun, ponudu, dopis, obavijest, rukom pisanu bilješku ili ploču sa sastanka). Pročitaj je pažljivo. '
+        + 'Ako je tekst korisnika prazan ili kratak, zadatak izvedi iz fotografije (npr. račun → "Platiti račun <dobavljač>", rok = rok plaćanja). '
+        + 'Važne podatke s fotografije (iznos s valutom, broj računa/ponude, poziv na broj, IBAN, dobavljač, kontakt, datumi, adresa) stavi u bilješke, svaki podatak u svoju kratku bilješku. '
+        + 'Ne izmišljaj podatke kojih nema na fotografiji; ako je nečitko, napiši to u opis.' : '',
+      'Iz toga izvuci JEDAN zadatak i pozovi alat predlozi_zadatak.',
       `Današnji datum: ${todayInfo()}. "Do petka" znači najbliži idući petak (ako je danas petak, onda danas). "Sutra", "za tjedan dana", "do kraja mjeseca" izračunaj od današnjeg datuma.`,
       `Postojeće osobe: ${people.map((p) => p.name + (p.role ? ` (${p.role})` : '')).join(', ') || 'nema'}.`,
       `Postojeće teme (podteme su zapisane kao "Tema › Podtema"; u odgovoru navedi točan zapis s popisa): ${topics.map((t) => t.path).join(' | ') || 'nema'}.`,
@@ -93,10 +101,12 @@ export default async function handler(req, res) {
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: MODEL,
-        messages: [{ role: 'system', content: system }, { role: 'user', content: text }],
+        messages: [{ role: 'system', content: system }, { role: 'user', content: image
+          ? [{ type: 'text', text: text || '(bez teksta — zadatak izvedi iz fotografije)' }, { type: 'image_url', image_url: { url: image } }]
+          : text }],
         tools: [TOOL],
         tool_choice: { type: 'function', function: { name: 'predlozi_zadatak' } },
-        max_tokens: 800,
+        max_tokens: image ? 1200 : 800,
       }),
     });
     const json = await r.json().catch(() => ({}));

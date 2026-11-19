@@ -19,6 +19,7 @@ Teme → zadaci → ljudi → bilješke za svaku osobu. Diktiranje glasom na hrv
 - **Zadaci:** status (klik na oznaku: Za napraviti → U tijeku → Gotovo), prioritet, rok (crveno kad kasni), više ljudi po zadatku.
 - **Ljudi:** popis jednom, onda ih samo klikneš na zadatak. Ako u naslovu napišeš/izdiktiraš ime („Ivanu reci…“), osoba se sama označi.
 - **Bilješke po osobi** unutar svakog zadatka + opće bilješke. Enter = spremi.
+- **📷 Brzi unos s fotografijom:** slikaj račun, ponudu, dopis ili ploču sa sastanka — AI pročita iznos, rok, IBAN, dobavljača i predloži zadatak; fotografija se sprema kao prilog.
 - **⚡ Brzi unos uz AI:** izdiktiraj „Marko do petka naruči štand, budžet 2000“ → AI predloži temu, osobu, rok, prioritet i bilješke, ti provjeriš i spremiš. Na mobitelu plutajući 🎤 gumb odmah kreće slušati.
 - **🎤 Diktiranje** u svim poljima (Chrome, Edge, Safari).
 - **Po osobi:** svi zadaci jedne osobe kroz sve teme + „Kopiraj popis za slanje“ (gotov tekst za WhatsApp/mail).
