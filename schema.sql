@@ -178,3 +178,27 @@ CREATE TABLE IF NOT EXISTS push_subs (
   created_at timestamptz DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS push_subs_user_idx ON push_subs (user_id);
+
+-- Koraci (podzadaci) unutar zadatka: popis za kvačice.
+CREATE TABLE IF NOT EXISTS subtasks (
+  id         serial PRIMARY KEY,
+  user_id    int NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  task_id    int NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  title      text NOT NULL,
+  done       boolean NOT NULL DEFAULT false,
+  pos        int NOT NULL DEFAULT 0,
+  created_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS subtasks_task_idx ON subtasks (task_id);
+CREATE INDEX IF NOT EXISTS subtasks_user_idx ON subtasks (user_id);
+
+-- Predlošci: tema sa svim podtemama, zadacima i koracima spremljena kao JSON;
+-- rokovi su zapisani kao pomak u danima od datuma spremanja, pa se pri korištenju preračunaju.
+CREATE TABLE IF NOT EXISTS templates (
+  id         serial PRIMARY KEY,
+  user_id    int NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name       text NOT NULL,
+  data       jsonb NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS templates_user_idx ON templates (user_id);

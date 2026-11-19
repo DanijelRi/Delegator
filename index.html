@@ -246,6 +246,16 @@
   .qa-photo { display: flex; align-items: center; gap: 8px; min-height: 0; }
   .qa-photo img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); flex: none; }
   .qa-cam { border-style: solid; font-size: 14px; padding: 6px 10px; }
+  .qa-multi { background: var(--accent-soft); border-radius: 8px; padding: 6px 10px; flex-wrap: nowrap; }
+  .mlist { max-height: 60vh; overflow: auto; }
+  .mcard { border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: #fafbfc; }
+  .mcard:has(.m-on:not(:checked)) { opacity: .5; }
+  /* koraci */
+  .steps-block { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fafbfc; }
+  .step { display: flex; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; }
+  .step.done span { text-decoration: line-through; color: var(--muted); }
+  .step-add input { border-style: dashed; }
+  .steps-done { color: var(--ok); font-weight: 600; }
   .qa-pdf { width: 64px; height: 64px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center;
             border: 1px solid var(--line); border-radius: 8px; background: #fff5f5; font-size: 26px; overflow: hidden; }
   .qa-pdf small { font-size: 9px; color: var(--muted); max-width: 60px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -286,7 +296,7 @@
 <script>
 /* ========= stanje ========= */
 const S = {
-  data: { people: [], topics: [], tasks: [], notes: [], pnotes: [], attachments: [] },
+  data: { people: [], topics: [], tasks: [], notes: [], pnotes: [], attachments: [], subtasks: [], templates: [] },
   view: localStorage.getItem('view') || 'overview', // overview | topics | board | calendar | network | person | people | admin
   topicId: Number(localStorage.getItem('topicId')) || null,
   personId: Number(localStorage.getItem('personId')) || null,
@@ -674,6 +684,7 @@ function topicsView() {
         <span class="dot" style="background:${esc(t.color)};width:14px;height:14px"></span>
         <h2 class="grow">${esc(t.title)}</h2>
         <button class="ghost" data-act="newSubtopic" data-id="${t.id}" title="Nova podtema unutar ove teme">+ Podtema</button>
+        <button class="ghost" data-act="saveTemplate" data-id="${t.id}" title="Spremi ovu temu kao predložak za sljedeći put">📋 Predložak</button>
         <button class="ghost" data-act="editTopic" data-id="${t.id}">Uredi</button>
       </div>
       ${t.description ? `<div class="muted">${esc(t.description)}</div>` : ''}
@@ -735,6 +746,7 @@ function taskView(k, opts = {}) {
         ${k.repeat ? `<span title="Ponavlja se">🔁 ${REPEAT[k.repeat].toLowerCase()}</span>` : ''}
         ${noteCount ? `<span>📝 ${noteCount}</span>` : ''}
         ${fileCount ? `<span title="Prilozi">📎 ${fileCount}</span>` : ''}
+        ${stepsBadge(k)}
       </div>
     </div>
     <div class="chips" style="justify-content:flex-end">${k.people.map((id) => person(id)).filter(Boolean)
@@ -750,6 +762,7 @@ function taskView(k, opts = {}) {
   return `<div class="task ${k.status}">${head}
     <div class="task-body stack">
       ${k.description ? `<div style="white-space:pre-wrap">${hl(k.description)}</div>` : ''}
+      ${stepsBlock(k)}
       <div class="row task-files" data-dropzone="task:${k.id}">
         ${attachList(filesOf('task', k.id))}
         ${attachBtn(`task:${k.id}`, '📎 Prilog zadatku')}
@@ -1191,6 +1204,7 @@ function taskInfo(k) {
     ${k.description ? `<div style="white-space:pre-wrap">${esc(k.description)}</div>` : ''}
     ${notes.length ? `<div class="notes-block">${notes.map((n) => `<div class="note ${n.from_person ? 'from-person' : ''}"><div class="note-body">${n.person_id ? `<strong>${esc(person(n.person_id)?.name)}${n.from_person ? ' (javljanje)' : ''}:</strong> ` : ''}${esc(n.body)}${attachList(filesOf('note', n.id), { small: true, readonly: true })}</div><span class="note-time">${fmtTime(n.created_at)}</span></div>`).join('')}</div>` : ''}
     ${attachList(filesOf('task', k.id), { readonly: true })}
+    ${stepsBlock(k, { readonly: true })}
     <div class="row">
       <button data-act="infoStatus" data-id="${k.id}">${k.status === 'done' ? '↺ Vrati u rad' : '✓ Gotovo'}</button>
       <button data-act="infoEdit" data-id="${k.id}">✏️ Uredi</button>
@@ -1459,6 +1473,7 @@ function boardView() {
             ${k.repeat ? '<span title="Ponavlja se">🔁</span>' : ''}
             ${S.data.notes.some((n) => n.task_id === k.id) ? `<span>📝 ${S.data.notes.filter((n) => n.task_id === k.id).length}</span>` : ''}
             ${taskFiles(k).length ? `<span>📎 ${taskFiles(k).length}</span>` : ''}
+            ${stepsBadge(k)}
             <span class="kp">${k.people.map(person).filter(Boolean).map((p) => `<b title="${esc(p.name)}">${esc(initials(p.name))}</b>`).join('')}</span>
           </div></div>`;
       }).join('') || '<div class="muted small kempty">Povuci karticu ovamo</div>'}
@@ -1634,6 +1649,34 @@ async function pushToggle(btn) {
   updatePushBtn();
 }
 
+/* ========= koraci (podzadaci) ========= */
+const stepsOf = (k) => S.data.subtasks.filter((x) => x.task_id === k.id);
+function stepsBadge(k) {
+  const st = stepsOf(k); if (!st.length) return '';
+  const done = st.filter((x) => x.done).length;
+  return `<span title="Koraci" class="${done === st.length ? 'steps-done' : ''}">☑ ${done}/${st.length}</span>`;
+}
+function stepsBlock(k, { readonly = false } = {}) {
+  const st = stepsOf(k);
+  if (readonly && !st.length) return '';
+  return `<div class="steps-block"><div class="small muted">☑ Koraci ${st.length ? `· ${st.filter((x) => x.done).length}/${st.length}` : ''}</div>
+    ${st.map((x) => `<label class="step ${x.done ? 'done' : ''}"><input type="checkbox" data-act="toggleSub" data-id="${x.id}" ${x.done ? 'checked' : ''} style="width:auto">
+      <span class="grow">${hl(x.title)}</span>${readonly ? '' : `<button type="button" class="ghost small danger" data-act="delSub" data-id="${x.id}" title="Obriši korak">✕</button>`}</label>`).join('')}
+    ${readonly ? '' : `<form class="row step-add" data-form="sub" data-task="${k.id}"><input name="title" placeholder="+ Dodaj korak (npr. „Zatražiti 3 ponude“)" autocomplete="off" style="flex:1;width:auto"></form>`}
+  </div>`;
+}
+
+/* ========= predlošci ========= */
+function templateDialog(t) {
+  openDialog(`<h2>📋 Spremi „${esc(t.title)}“ kao predložak</h2>
+    <div class="muted small">Sprema se tema sa svim podtemama, zadacima, koracima i zaduženim ljudima. Rokovi se pamte kao razmak u danima, pa se pri korištenju preračunaju od datuma koji odabereš. Bilješke i prilozi se ne kopiraju.</div>
+    <input name="name" required value="${esc(t.title)}" placeholder="Naziv predloška">`,
+    async (fd) => {
+      const d = await api({ op: 'saveTemplate', topic_id: t.id, name: fd.get('name') }).catch(() => null);
+      if (d?.result) toast('📋 Predložak spremljen — koristi ga u „+ Nova tema“');
+    });
+}
+
 /* ---- Korisnici (samo administrator) ---- */
 async function loadAdmin() {
   try { S.admin = { ...S.admin, ...(await authOp('listUsers')) }; } catch (e) { toast(e.message); }
@@ -1714,14 +1757,25 @@ function topicDialog(t, parentId = null) {
     <div class="with-mic"><input id="dt-title" name="title" required placeholder="Naziv teme" value="${esc(t?.title)}">${micBtn('dt-title')}</div>
     <div class="with-mic"><textarea id="dt-desc" name="description" placeholder="Opis (nije obavezno)">${esc(t?.description)}</textarea>${micBtn('dt-desc')}</div>
     ${colorPicker(t?.color || topic(parentId)?.color || COLORS[S.data.topics.length % COLORS.length])}
+    ${!t && S.data.templates.length ? `<div class="notes-block stack">
+      <label class="small muted">📋 Iz predloška (podteme, zadaci, koraci i ljudi)</label>
+      <select name="template_id"><option value="">— prazna tema —</option>${S.data.templates.map((x) =>
+        `<option value="${x.id}">${esc(x.name)} · ${x.task_count} zadataka</option>`).join('')}</select>
+      <label class="row small muted" style="gap:6px">Datum početka (rokovi se preračunaju od njega)
+        <input type="date" name="start_date" value="${today()}" style="width:auto"></label>
+      <div class="small">${S.data.templates.map((x) => `<span class="chip static" style="margin:2px">${esc(x.name)}
+        <button type="button" class="ghost small danger" data-act="delTemplate" data-id="${x.id}" title="Obriši predložak" style="padding:0 4px">✕</button></span>`).join('')}</div>
+    </div>` : ''}
     ${t ? `<label class="row small"><input type="checkbox" name="archived" style="width:auto" ${t.archived ? 'checked' : ''}> Arhivirana</label>
       <button type="button" class="danger" data-act="delTopic" data-id="${t.id}">Obriši temu${subCount ? `, ${subCount} podtema` : ''} i ${taskCount} zadataka</button>` : ''}`,
     async (fd) => {
       const body = Object.fromEntries(fd);
       if (t) await run('updateTopic', { ...body, id: t.id, archived: fd.has('archived') });
       else {
-        const data = await api({ op: 'addTopic', ...body }).catch(() => null);
-        if (data?.result) { S.topicId = data.result.topic_id; S.view = 'topics'; save(); render(); }
+        const data = body.template_id
+          ? await api({ op: 'useTemplate', template_id: Number(body.template_id), title: body.title, parent_id: body.parent_id, start_date: body.start_date }).catch(() => null)
+          : await api({ op: 'addTopic', ...body }).catch(() => null);
+        if (data?.result) { S.topicId = data.result.topic_id; S.view = 'topics'; save(); render(); if (body.template_id) toast('📋 Tema napravljena iz predloška'); }
       }
     });
 }
@@ -1879,6 +1933,8 @@ function quickStep1(text = '', keepPhoto = false) {
       <label class="attach-btn qa-cam" title="Fotografija, slika ili PDF — AI pročita sadržaj">📷 Fotografija / PDF<input type="file" accept="image/*,application/pdf" data-qa-photo hidden></label>
       <div id="qa-photo" class="qa-photo grow"></div>
     </div>
+    <label class="row small qa-multi"><input type="checkbox" id="qa-multi" style="width:auto">
+      📋 <b>Zapisnik / popis</b> — izvuci <b>više zadataka</b> odjednom (npr. bilješke sa sastanka)</label>
     <div class="row" style="justify-content:flex-end">
       <button type="button" onclick="this.closest('dialog').close()">Odustani</button>
       <button class="primary" id="qa-go">Obradi ✨</button>
@@ -1901,9 +1957,11 @@ function quickStep1(text = '', keepPhoto = false) {
       const extra = !qaPhoto ? {} : qaPhoto.pdf ? { ...(await pdfForAI(qaPhoto.file)), doc_name: qaPhoto.file.name }
         : { image: await imageForAI(qaPhoto.file) };
       delete extra.pages;
-      const p = await parseText(t, extra);
+      const multi = $('#qa-multi')?.checked;
+      const p = await parseText(t, { ...extra, multi });
       if (p.remaining != null && p.remaining <= 5) toast(`Brzi unos: danas još ${p.remaining}`);
-      quickStep2(t, p);
+      if (multi) { if (!p.tasks?.length) throw new Error('AI nije pronašao zadatke — pokušaj s više detalja'); quickStepMulti(t, p.tasks); }
+      else quickStep2(t, p);
     }
     catch (err) { toast(err.message); btn.disabled = false; btn.textContent = 'Obradi ✨'; }
   };
@@ -1936,6 +1994,8 @@ function quickStep2(text, p) {
       <select name="priority" style="width:auto">${Object.entries(PRIO).map(([v, l]) => `<option value="${v}" ${v === p.priority ? 'selected' : ''}>Prioritet: ${l.toLowerCase()}</option>`).join('')}</select>
       <input type="date" name="due_date" value="${p.due_date || ''}" style="width:auto" title="Rok">
     </div>
+    <label class="small muted">☑ Koraci (svaki u svom redu, nije obavezno)</label>
+    <textarea name="steps" rows="${Math.max(1, Math.min(6, (p.steps || []).length))}" placeholder="npr. Zatražiti 3 ponude">${esc((p.steps || []).join('\n'))}</textarea>
     ${p.notes.length ? `<label class="small muted">Bilješke</label><div class="stack">${p.notes.map(noteRow).join('')}</div>` : ''}
     <div class="row" style="justify-content:flex-end">
       <button type="button" data-qa-back>← Natrag</button>
@@ -1964,6 +2024,7 @@ function quickStep2(text, p) {
         priority: fd.get('priority'), due_date: fd.get('due_date'),
         people: on.filter((c) => !c.dataset.new).map((c) => Number(c.dataset.id)),
         new_people: newPeople, notes,
+        steps: String(fd.get('steps') || '').split('\n').map((x) => x.trim()).filter(Boolean),
       });
       const keep = qaPhoto && fd.get('keep_photo') ? qaPhoto.file : null;
       dlg.close(); setQaPhoto(null);
@@ -1971,6 +2032,67 @@ function quickStep2(text, p) {
       if (keep) uploadFiles(`task:${data.result.task_id}`, [keep]);
       save(); render(); toast('Zadatak spremljen ✓');
     } catch { $('#qa-save').disabled = false; }
+  };
+}
+
+// Zapisnik: više prijedloga odjednom — svaki se može urediti, isključiti i sve se sprema jednim klikom.
+function quickStepMulti(text, list) {
+  const dlg = $('#dlg');
+  const card = (p, i) => {
+    const chips = S.data.people.map((x) => `<button type="button" class="chip ${p.people.includes(x.id) ? 'on' : ''}" data-act="chip" data-id="${x.id}">${esc(x.name)}</button>`).join('')
+      + p.new_people.map((n) => `<button type="button" class="chip new on" data-act="chip" data-new="${esc(n)}" title="Nova osoba">+ ${esc(n)}</button>`).join('');
+    return `<div class="mcard" data-i="${i}">
+      <label class="row" style="gap:8px"><input type="checkbox" class="m-on" checked style="width:auto"><input class="m-title" value="${esc(p.title)}" style="flex:1;font-weight:600"></label>
+      <div class="row">
+        <select class="m-topic" style="flex:1;width:auto">${p.new_topic ? `<option value="new" selected>➕ Nova tema: ${esc(p.new_topic)}</option>` : ''}${topicOptions(p.topic_id || (!p.new_topic && S.topicId), { hideArchived: true })}</select>
+        <select class="m-prio" style="width:auto">${Object.entries(PRIO).map(([v, l]) => `<option value="${v}" ${v === p.priority ? 'selected' : ''}>${l}</option>`).join('')}</select>
+        <input type="date" class="m-due" value="${p.due_date || ''}" style="width:auto">
+      </div>
+      <div class="chips" data-chips="people">${chips}</div>
+      ${p.notes.length || p.steps?.length ? `<div class="small muted">${p.notes.map((n) => `📝 ${esc(n.body)}`).join('<br>')}${p.steps?.length ? `<br>☑ ${p.steps.map(esc).join(' · ')}` : ''}</div>` : ''}
+    </div>`;
+  };
+  dlg.innerHTML = `<form class="stack" data-qa="multi">
+    <h2>📋 ${list.length} zadataka iz zapisnika</h2>
+    ${text ? `<div class="muted small">„${esc(text.slice(0, 200))}${text.length > 200 ? '…' : ''}“</div>` : ''}
+    <div class="stack mlist">${list.map(card).join('')}</div>
+    <div class="row" style="justify-content:flex-end">
+      <button type="button" data-qa-back>← Natrag</button>
+      <button class="primary" id="qa-save">Spremi odabrane</button>
+    </div></form>`;
+  $('[data-qa-back]', dlg).onclick = () => quickStep1(text, true);
+  $('form', dlg).onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = $('#qa-save'); btn.disabled = true;
+    const keep = qaPhoto?.file;
+    let saved = 0, firstTask = null, firstTopic = null;
+    for (const el of dlg.querySelectorAll('.mcard')) {
+      if (!el.querySelector('.m-on').checked) continue;
+      const p = list[Number(el.dataset.i)];
+      btn.innerHTML = `<span class="spinner"></span> Spremam ${saved + 1}…`;
+      const on = [...el.querySelectorAll('[data-chips] .chip.on')];
+      // osobe/teme koje je napravio prethodni zadatak iz ovog zapisnika više nisu „nove“
+      const byName = (n) => S.data.people.find((x) => x.name.toLowerCase() === n.toLowerCase());
+      const people = on.filter((c) => !c.dataset.new).map((c) => Number(c.dataset.id))
+        .concat(on.filter((c) => c.dataset.new && byName(c.dataset.new)).map((c) => byName(c.dataset.new).id));
+      const newPeople = on.filter((c) => c.dataset.new && !byName(c.dataset.new)).map((c) => c.dataset.new);
+      const tsel = el.querySelector('.m-topic').value;
+      const existingNew = tsel === 'new' && S.data.topics.find((x) => x.title.toLowerCase() === String(p.new_topic).toLowerCase());
+      const notes = p.notes.map((n) => {
+        if (n.person_id || !n.person_name) return n;
+        const x = byName(n.person_name); return x ? { ...n, person_id: x.id } : newPeople.includes(n.person_name) ? n : { ...n, person_name: null };
+      });
+      const data = await api({ op: 'quickAdd',
+        topic_id: tsel === 'new' ? existingNew?.id || null : Number(tsel), new_topic: tsel === 'new' && !existingNew ? p.new_topic : null,
+        title: el.querySelector('.m-title').value, description: p.description, priority: el.querySelector('.m-prio').value,
+        due_date: el.querySelector('.m-due').value, people, new_people: newPeople, notes, steps: p.steps || [] }).catch(() => null);
+      if (!data?.result) continue;
+      saved++; firstTask ||= data.result.task_id; firstTopic ||= data.result.topic_id;
+    }
+    dlg.close(); setQaPhoto(null);
+    if (keep && firstTask) uploadFiles(`task:${firstTask}`, [keep]);
+    if (firstTopic) { S.view = 'topics'; S.topicId = firstTopic; S.statusFilter = 'open'; save(); render(); }
+    toast(`📋 Spremljeno ${saved} zadataka`);
   };
 }
 
@@ -1988,6 +2110,16 @@ document.addEventListener('click', async (e) => {
     case 'view': S.view = el.dataset.v; S.q = ''; if (S.view === 'admin') S.admin = null; save(); return render();
     case 'topic': S.topicId = id; S.view = 'topics'; S.q = ''; save(); return render();
     case 'clearSearch': S.q = ''; return render();
+    case 'toggleSub': { const x = S.data.subtasks.find((y) => y.id === id); x.done = el.checked;
+      await run('toggleSub', { id, done: el.checked }); const k = S.data.tasks.find((t) => t.id === x.task_id);
+      if ($('#dlg').open && k && $('#dlg .steps-block')) taskInfo(k); return; }
+    case 'delSub': return run('deleteSub', { id });
+    case 'saveTemplate': return templateDialog(topic(id));
+    case 'delTemplate': {
+      const x = S.data.templates.find((y) => y.id === id);
+      if (confirm(`Obrisati predložak „${x.name}“? Teme napravljene iz njega ostaju.`)) { $('#dlg').close(); run('deleteTemplate', { id }); }
+      return;
+    }
     case 'shareLink': if ($('#dlg').open) $('#dlg').close(); return shareDialog(id);
     case 'shareReset': if (confirm('Napraviti novu poveznicu? Stara odmah prestaje raditi pa osobi trebaš poslati novu.')) return shareDialog(id, true); return;
     case 'seenAll': return run('markSeen', { ids: unseen().map((n) => n.id) });
@@ -2085,7 +2217,7 @@ document.addEventListener('click', async (e) => {
       try { await authOp('logout'); } catch {}
       try { await caches.delete('delegator-data'); } catch {}
       Object.assign(S, { user: null, loaded: false, needLogin: true, auth: { mode: 'login' }, admin: null, q: '',
-        data: { people: [], topics: [], tasks: [], notes: [], pnotes: [], attachments: [] } });
+        data: { people: [], topics: [], tasks: [], notes: [], pnotes: [], attachments: [], subtasks: [], templates: [] } });
       S.open.clear();
       return render();
     case 'toLogin': history.replaceState(null, '', location.pathname); S.auth = { mode: 'login' }; return render();
@@ -2311,6 +2443,12 @@ document.addEventListener('submit', async (e) => {
     const people = selectedChips(f);
     f.reset();
     await run('addTask', { ...fd, topic_id: Number(f.dataset.topic), people });
+    return;
+  }
+  if (kind === 'sub') {
+    const title = fd.title.trim(); if (!title) return;
+    f.reset(); await run('addSub', { task_id: Number(f.dataset.task), title });
+    setTimeout(() => document.querySelector(`form[data-form="sub"][data-task="${f.dataset.task}"] input`)?.focus(), 30);
     return;
   }
   if (kind === 'pnote') {

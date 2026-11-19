@@ -47,6 +47,9 @@
   .reply[hidden] { display: none; }
   .empty, .error { text-align: center; color: var(--muted); padding: 40px 10px; }
   .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 15px; }
+  .steps { display: flex; flex-direction: column; gap: 4px; } .steps small { color: var(--muted); }
+  .steps label { display: flex; gap: 10px; align-items: center; padding: 6px 0; font-size: 16px; }
+  .steps input { width: 22px; height: 22px; accent-color: var(--ok); } .steps .sd { color: var(--muted); text-decoration: line-through; }
   footer { margin-top: 30px; color: var(--muted); font-size: 13px; text-align: center; }
 </style>
 </head>
@@ -77,6 +80,7 @@ function fail(msg) { $('#app').innerHTML = `<div class="error"><div style="font-
 function card(k) {
   const td = today(), late = k.status !== 'done' && k.due_date && k.due_date < td;
   const notes = D.notes.filter((n) => n.task_id === k.id);
+  const steps = (D.subtasks || []).filter((x) => x.task_id === k.id);
   const files = D.files.filter((a) => a.task_id === k.id || notes.some((n) => n.id === a.note_id));
   const st = (v, l) => `<button data-st="${v}" data-id="${k.id}" class="${k.status === v ? 'on' : ''} ${v === 'done' && k.status !== 'done' ? 'done-btn' : ''}">${l}</button>`;
   return `<article class="card ${k.status}" style="--c:${esc(k.color || '#4f6bed')}">
@@ -85,6 +89,8 @@ function card(k) {
         ${k.due_date ? `<span class="due ${late ? 'late' : ''}">📅 ${k.start_date ? fmtDate(k.start_date) + ' – ' : ''}${fmtDate(k.due_date)}${late ? ' · kasni' : ''}</span>` : ''}
         ${k.priority === 'high' ? '<span class="hi">hitno</span>' : ''}${k.repeat ? '<span>🔁 ponavlja se</span>' : ''}</div></div>
     ${k.description ? `<div class="desc">${esc(k.description)}</div>` : ''}
+    ${steps.length ? `<div class="steps"><small>Koraci · ${steps.filter((x) => x.done).length}/${steps.length}</small>${steps.map((x) =>
+      `<label class="${x.done ? 'sd' : ''}"><input type="checkbox" data-sub="${x.id}" data-task="${k.id}" ${x.done ? 'checked' : ''}> ${esc(x.title)}</label>`).join('')}</div>` : ''}
     ${notes.length ? `<div class="notes">${notes.map((n) => `<div class="n ${n.from_person ? 'me' : ''}">${n.from_person ? '<b>Ti:</b> ' : ''}${esc(n.body)}
       <small> · ${new Date(n.created_at).toLocaleDateString('hr-HR')}</small></div>`).join('')}</div>` : ''}
     ${files.length ? `<div class="files">${files.map((a) => isImg(a)
@@ -127,6 +133,12 @@ document.addEventListener('click', async (e) => {
   }
   if (b.dataset.reply) { const f = document.querySelector(`form.reply[data-id="${b.dataset.reply}"]`); f.hidden = false; f.body.focus(); }
   if ('cancel' in b.dataset) b.closest('form').hidden = true;
+});
+document.addEventListener('change', async (e) => {
+  const c = e.target; if (!c.dataset.sub) return;
+  c.disabled = true;
+  try { await send({ op: 'sub', task_id: Number(c.dataset.task), sub_id: Number(c.dataset.sub), done: c.checked }); await load(); }
+  catch (err) { toast(err.message); c.checked = !c.checked; c.disabled = false; }
 });
 document.addEventListener('submit', async (e) => {
   e.preventDefault();

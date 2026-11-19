@@ -34,6 +34,9 @@ Više korisnika (kolege, prijatelji) na pozivnice; svaki ima svoje teme, zadatke
 - **Osobne bilješke (kartica „Bilješke“):** tablica `pnotes` (naslov, tekst, boja, prikvačeno), samo za prijavljenog korisnika; `pnotesView`, opovi `addPnote/updatePnote/pinPnote/deletePnote`.
 - **Dobrodošlica:** `users.onboarded`; dok je `false`, nakon prijave se otvara vodič (`TOUR`, `tourGo`, `showTour` — plutajuća kartica koja otvara kartice i ističe elemente klasom `.tour-hl`). Korak 1 nudi probne podatke: op `createDemo` (tema „Primjer: Sajam 2027“ s podtemama, osobe „(primjer)“, 6 zadataka, bilješka; sve s `is_demo = true`), `deleteDemo` ih briše zajedno s prilozima (traka `demoBanner`). Vodič i primjeri ponovno su dostupni u izborniku 👤.
 - **Poveznice za osobe i javljanja:** `people.share_token` (op `shareLink`, `reset` = nova), `notes.from_person/seen` (op `markSeen`; otvaranje zadatka ih označi pročitanima), `tasks.completed_at` (postavlja se pri prelasku u „done“). U sučelju `shareDialog`, `newsSection`, značka na kartici Pregled.
+- **Zapisnik → više zadataka:** `api/parse.js` s `multi: true` koristi alat `predlozi_zadatke` (do 15 zadataka); u sučelju `quickStepMulti` sprema redom preko `quickAdd` i usput spaja osobe/teme koje je napravio prethodni zadatak (bez duplikata). AI predlaže i `koraci` → `steps`.
+- **Koraci (podzadaci):** tablica `subtasks` (opovi `addSub/toggleSub/renameSub/deleteSub`, `quickAdd.steps`); `spawnNext` kopira korake neoznačene; osoba ih označava na svojoj stranici (`op: 'sub'`).
+- **Predlošci:** tablica `templates` (JSON: teme, zadaci s pomakom roka u danima, ljudi po imenu, koraci); `saveTemplate`, `useTemplate` (datum početka + pomak), `deleteTemplate`; u dijalogu „Nova tema“.
 - **Sigurnosne kopije:** Neon Free nema automatskih kopija (samo 1 ručni snapshot + vraćanje 6 h unatrag), zato noćna JSON kopija u Blob. Vraćanje: kopiju učitati u NOVU Neon granu, ne preko produkcije.
 - **Pretraga:** kroz sve teme, bez obzira na velika slova i kvačice (`fold`), duže riječi bez zadnjeg slova radi padeža (`terms`), pogoci označeni s `<mark>` (`hl`).
 
@@ -61,7 +64,7 @@ Cloud sesije Claude Codea: okruženje „delegator“ ima dopuštene hostove za 
 - Ništa destruktivno nad produkcijskom bazom bez pitanja.
 
 ## Ideje za dalje (redoslijed po korisnosti)
-1. ✅ ~~Glasovni brzi unos uz AI~~ (gotovo). Moguća nadogradnja: više zadataka iz jedne rečenice.
+1. ✅ ~~Glasovni brzi unos uz AI; zapisnik → više zadataka; koraci; predlošci~~ (gotovo).
 2. Podsjetnici: dnevni mail/push s rokovima koji ističu (Vercel Cron). ✅ Pretplata na kalendar već daje podsjetnike u Google/Apple kalendaru.
 3. ✅ ~~Više korisnika na pozivnice; poveznica za osobe (vide i označavaju svoje zadatke); push obavijesti; noćne kopije~~ (gotovo). Dalje: slanje maila iz aplikacije (Resend, treba vlastita domena).
 4. ✅ ~~Prilozi (slike, PDF) uz zadatke, bilješke, teme; osobne bilješke; fotografija i PDF u brzom unosu~~ (gotovo). Dalje: pregled PDF-a unutar aplikacije (pdf.js je već u `vendor/`).

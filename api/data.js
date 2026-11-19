@@ -7,7 +7,7 @@ import { randomBytes } from 'node:crypto';
 import { sql, currentUser, readBody, txt } from './_lib.js';
 
 async function loadAll(uid) {
-  const [people, topics, tasks, notes, pnotes, attachments] = await Promise.all([
+  const [people, topics, tasks, notes, pnotes, attachments, subtasks, templates] = await Promise.all([
     sql`SELECT id, name, role, email, is_demo FROM people WHERE user_id = ${uid} ORDER BY name`,
     sql`SELECT id, parent_id, title, description, color, archived, is_demo FROM topics WHERE user_id = ${uid} ORDER BY archived, created_at`,
     sql`SELECT t.id, t.topic_id, t.title, t.description, t.status, t.priority,
@@ -20,8 +20,11 @@ async function loadAll(uid) {
     sql`SELECT id, task_id, person_id, body, from_person, seen, created_at FROM notes WHERE user_id = ${uid} ORDER BY created_at`,
     sql`SELECT id, title, body, color, pinned, is_demo, created_at, updated_at FROM pnotes WHERE user_id = ${uid} ORDER BY pinned DESC, updated_at DESC`,
     sql`SELECT id, task_id, note_id, topic_id, pnote_id, name, mime, size, created_at FROM attachments WHERE user_id = ${uid} ORDER BY created_at`,
+    sql`SELECT id, task_id, title, done, pos FROM subtasks WHERE user_id = ${uid} ORDER BY pos, id`,
+    sql`SELECT id, name, created_at, jsonb_array_length(data->'tasks') AS task_count, jsonb_array_length(data->'topics') AS topic_count
+        FROM templates WHERE user_id = ${uid} ORDER BY name`,
   ]);
-  return { people, topics, tasks, notes, pnotes, attachments };
+  return { people, topics, tasks, notes, pnotes, attachments, subtasks, templates };
 }
 
 const ids = (a) => (Array.isArray(a) ? a.map(Number).filter(Number.isInteger) : []);
@@ -70,6 +73,7 @@ export async function spawnNext(id, uid) {
       VALUES (${uid}, ${k.topic_id}, ${k.title}, ${k.description}, ${k.priority}, ${start}, ${due}, ${k.repeat}) RETURNING id),
     tp AS (INSERT INTO task_people (task_id, person_id) SELECT t.id, person_id FROM t, task_people WHERE task_id = ${k.id})
     SELECT id FROM t`;
+  await sql`INSERT INTO subtasks (user_id, task_id, title, pos) SELECT ${uid}, ${created.id}, title, pos FROM subtasks WHERE task_id = ${k.id}`;
   await sql`UPDATE tasks SET repeat = NULL WHERE id = ${k.id}`; // ponavljanje prelazi na novi zadatak
   return { next_id: created.id, next_due: due };
 }
@@ -276,6 +280,9 @@ const ops = {
       nt AS (INSERT INTO notes (user_id, task_id, person_id, body)
         SELECT ${uid}, t.id, NULLIF(n.pid, 0), n.body FROM t, unnest(${notePeople}::int[], ${notes.map((n) => txt(n.body))}::text[]) AS n(pid, body))
       SELECT id FROM t`;
+    const steps = (Array.isArray(b.steps) ? b.steps : []).map(txt).filter(Boolean).slice(0, 30);
+    if (steps.length) await sql`INSERT INTO subtasks (user_id, task_id, title, pos)
+      SELECT ${uid}, ${task.id}, s.title, s.pos FROM unnest(${steps}::text[]) WITH ORDINALITY AS s(title, pos)`;
     return { topic_id: topicId, task_id: task.id };
   },
 
@@ -306,6 +313,70 @@ const ops = {
   },
   // javljanja osoba (bilješke s from_person) označi pročitanima
   markSeen: (b, uid) => sql`UPDATE notes SET seen = true WHERE user_id = ${uid} AND NOT seen AND id = ANY(${ids(b.ids)}::int[])`,
+
+  // --- koraci (podzadaci) ---
+  addSub: async (b, uid) => {
+    await own.task(b.task_id, uid);
+    const title = txt(b.title)?.slice(0, 300);
+    if (!title) throw Object.assign(new Error('Upiši korak'), { status: 400 });
+    return sql`INSERT INTO subtasks (user_id, task_id, title, pos)
+               VALUES (${uid}, ${b.task_id}, ${title}, (SELECT COALESCE(max(pos), 0) + 1 FROM subtasks WHERE task_id = ${b.task_id}))`;
+  },
+  toggleSub: (b, uid) => sql`UPDATE subtasks SET done = ${!!b.done} WHERE id = ${b.id} AND user_id = ${uid}`,
+  renameSub: (b, uid) => sql`UPDATE subtasks SET title = ${txt(b.title)?.slice(0, 300)} WHERE id = ${b.id} AND user_id = ${uid} AND ${txt(b.title)} IS NOT NULL`,
+  deleteSub: (b, uid) => sql`DELETE FROM subtasks WHERE id = ${b.id} AND user_id = ${uid}`,
+
+  // --- predlošci: tema s podtemama, zadacima i koracima ---
+  saveTemplate: async (b, uid) => {
+    await own.topic(b.topic_id, uid);
+    const topics = await sql`
+      WITH RECURSIVE sub AS (
+        SELECT id, parent_id, title, description, color, 0 AS depth FROM topics WHERE id = ${b.topic_id} AND user_id = ${uid}
+        UNION ALL SELECT t.id, t.parent_id, t.title, t.description, t.color, sub.depth + 1 FROM topics t JOIN sub ON t.parent_id = sub.id WHERE sub.depth < 20)
+      SELECT * FROM sub ORDER BY depth, id`;
+    const ids = topics.map((t) => t.id);
+    const tasks = await sql`SELECT t.id, t.topic_id, t.title, t.description, t.priority, t.repeat,
+        (t.due_date - CURRENT_DATE) AS due_off, (t.start_date - CURRENT_DATE) AS start_off,
+        COALESCE(array_agg(p.name) FILTER (WHERE p.id IS NOT NULL), '{}') AS people
+      FROM tasks t LEFT JOIN task_people tp ON tp.task_id = t.id LEFT JOIN people p ON p.id = tp.person_id
+      WHERE t.user_id = ${uid} AND t.topic_id = ANY(${ids}::int[]) GROUP BY t.id ORDER BY t.id`;
+    const subs = await sql`SELECT task_id, title FROM subtasks WHERE user_id = ${uid} AND task_id = ANY(${tasks.map((t) => t.id)}::int[]) ORDER BY pos, id`;
+    const data = {
+      topics: topics.map((t) => ({ key: t.id, parent: t.id === Number(b.topic_id) ? null : t.parent_id, title: t.title, description: t.description, color: t.color })),
+      tasks: tasks.map((t) => ({ topic: t.topic_id, title: t.title, description: t.description, priority: t.priority, repeat: t.repeat,
+        due_off: t.due_off, start_off: t.start_off, people: t.people, steps: subs.filter((x) => x.task_id === t.id).map((x) => x.title) })),
+    };
+    const name = txt(b.name) || topics[0].title;
+    const [tpl] = await sql`INSERT INTO templates (user_id, name, data) VALUES (${uid}, ${name}, ${JSON.stringify(data)}::jsonb) RETURNING id`;
+    return { template_id: tpl.id };
+  },
+  // Nova tema iz predloška: rokovi = datum početka + spremljeni pomak; ljudi se spajaju po imenu s postojećima.
+  useTemplate: async (b, uid) => {
+    const [tpl] = await sql`SELECT data FROM templates WHERE id = ${b.template_id} AND user_id = ${uid}`;
+    if (!tpl) throw notFound();
+    const start = day(b.start_date) || todayZg();
+    const shift = (off) => (off == null ? null : new Date(Date.parse(start + 'T12:00:00Z') + off * 864e5).toISOString().slice(0, 10));
+    const parent = await parentFor({ parent_id: b.parent_id }, uid);
+    const map = {};
+    for (const t of tpl.data.topics) {
+      const title = t.parent == null ? (txt(b.title) || t.title) : t.title;
+      const [n] = await sql`INSERT INTO topics (user_id, parent_id, title, description, color)
+        VALUES (${uid}, ${t.parent == null ? parent : map[t.parent] ?? null}, ${title}, ${t.description}, ${t.color}) RETURNING id`;
+      map[t.key] = n.id;
+    }
+    const people = await sql`SELECT id, lower(name) AS n FROM people WHERE user_id = ${uid}`;
+    for (const k of tpl.data.tasks) {
+      const pids = (k.people || []).map((nm) => people.find((p) => p.n === String(nm).toLowerCase())?.id).filter(Boolean);
+      const [n] = await sql`WITH t AS (INSERT INTO tasks (user_id, topic_id, title, description, priority, repeat, due_date, start_date)
+          VALUES (${uid}, ${map[k.topic]}, ${k.title}, ${k.description}, ${k.priority || 'normal'}, ${k.repeat}, ${shift(k.due_off)}, ${k.due_off == null ? null : shift(k.start_off)}) RETURNING id),
+        tp AS (INSERT INTO task_people (task_id, person_id) SELECT t.id, p FROM t, unnest(${pids}::int[]) AS p)
+        SELECT id FROM t`;
+      if (k.steps?.length) await sql`INSERT INTO subtasks (user_id, task_id, title, pos)
+        SELECT ${uid}, ${n.id}, s.title, s.pos FROM unnest(${k.steps}::text[]) WITH ORDINALITY AS s(title, pos)`;
+    }
+    return { topic_id: map[tpl.data.topics[0].key] };
+  },
+  deleteTemplate: (b, uid) => sql`DELETE FROM templates WHERE id = ${b.id} AND user_id = ${uid}`,
 
   // --- dobrodošlica ---
   createDemo: (b, uid) => createDemo(uid),
@@ -351,7 +422,7 @@ export default async function handler(req, res) {
     }
     const data = await loadAll(me.id);
     data.user = me;
-    if (['quickAdd', 'addTopic', 'setStatus', 'updateTask', 'addPnote', 'shareLink'].includes(body?.op)) data.result = result || null;
+    if (['quickAdd', 'addTopic', 'setStatus', 'updateTask', 'addPnote', 'shareLink', 'saveTemplate', 'useTemplate'].includes(body?.op)) data.result = result || null;
     return res.status(200).json(data);
   } catch (e) {
     if (!e.status) console.error(e);

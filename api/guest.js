@@ -50,20 +50,21 @@ export default async function handler(req, res) {
         WHERE t.user_id = ${p.user_id} AND (t.status <> 'done' OR t.completed_at > now() - interval '14 days')
         ORDER BY t.due_date NULLS LAST, t.id`;
       const ids = tasks.map((t) => t.id);
-      const [topics, notes, files] = await Promise.all([
+      const [topics, notes, files, subtasks] = await Promise.all([
         sql`SELECT id, parent_id, title, color FROM topics WHERE user_id = ${p.user_id}`,
         sql`SELECT id, task_id, person_id, body, from_person, created_at FROM notes
             WHERE task_id = ANY(${ids}::int[]) AND (person_id IS NULL OR person_id = ${p.id}) ORDER BY created_at`,
         sql`SELECT a.id, a.task_id, a.note_id, a.name, a.mime, a.size FROM attachments a LEFT JOIN notes n ON n.id = a.note_id
             WHERE a.user_id = ${p.user_id} AND (a.task_id = ANY(${ids}::int[])
               OR (n.task_id = ANY(${ids}::int[]) AND (n.person_id IS NULL OR n.person_id = ${p.id})))`,
+        sql`SELECT id, task_id, title, done FROM subtasks WHERE task_id = ANY(${ids}::int[]) ORDER BY pos, id`,
       ]);
       const byId = Object.fromEntries(topics.map((t) => [t.id, t]));
       const path = (t, d = 0) => (t?.parent_id && byId[t.parent_id] && d < 20 ? path(byId[t.parent_id], d + 1) + ' › ' : '') + (t?.title || '');
       return res.status(200).json({
         person: { name: p.name }, owner: p.owner_name,
         tasks: tasks.map((t) => ({ ...t, topic: path(byId[t.topic_id]), color: byId[t.topic_id]?.color })),
-        notes, files,
+        notes, files, subtasks,
       });
     }
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -79,6 +80,10 @@ export default async function handler(req, res) {
       line = b.status === 'done' ? '✓ Označio/la gotovim' : `↻ Status: ${STATUS[b.status]}`;
       if (b.status === 'done') await spawnNext(k.id, p.user_id); // zadatak koji se ponavlja dobije nasljednika
       title = `${p.name}: ${b.status === 'done' ? '✓ gotovo' : STATUS[b.status].toLowerCase()}`;
+    } else if (b.op === 'sub') {
+      const [st] = await sql`UPDATE subtasks SET done = ${!!b.done} WHERE id = ${Number(b.sub_id)} AND task_id = ${k.id} RETURNING title`;
+      if (!st) throw fail(404, 'Korak nije pronađen');
+      return res.status(200).json({ ok: true }); // kvačica na koraku: bez javljanja, vlasnik vidi napredak u zadatku
     } else if (b.op === 'comment') {
       const body = txt(b.body)?.slice(0, 2000);
       if (!body) throw fail(400, 'Upiši poruku');

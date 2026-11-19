@@ -40,6 +40,18 @@ const TOOL = {
     },
   },
 };
+TOOL.function.parameters.properties.koraci = { type: 'array', items: { type: 'string' },
+  description: 'Kratki koraci (podzadaci) samo ako zadatak očito ima više dijelova, npr. ["Zatražiti 3 ponude", "Odabrati ponudu", "Naručiti"]. Inače prazno.' };
+// Zapisnik sa sastanka / popis: više zadataka odjednom (isti oblik svakog zadatka).
+const TOOL_MULTI = {
+  type: 'function',
+  function: {
+    name: 'predlozi_zadatke',
+    description: 'Popis svih zadataka izvučenih iz zapisnika, popisa ili dokumenta.',
+    parameters: { type: 'object', required: ['zadaci'],
+      properties: { zadaci: { type: 'array', maxItems: 15, items: TOOL.function.parameters } } },
+  },
+};
 
 function todayInfo() {
   const tz = 'Europe/Zagreb';
@@ -65,6 +77,7 @@ export default async function handler(req, res) {
   const docText = String(body.doc_text || '').trim().slice(0, 15000);
   const docName = String(body.doc_name || 'dokument.pdf').slice(0, 120);
   const image = images[0] || null;
+  const multi = Boolean(body.multi); // zapisnik: više zadataka odjednom
   if (!text && !images.length && !docText) return res.status(400).json({ error: 'Upiši tekst ili dodaj fotografiju ili PDF' });
 
   try {
@@ -97,7 +110,8 @@ export default async function handler(req, res) {
         + 'Ako je tekst korisnika prazan ili kratak, zadatak izvedi iz fotografije (npr. račun → "Platiti račun <dobavljač>", rok = rok plaćanja). '
         + 'Važne podatke s fotografije (iznos s valutom, broj računa/ponude, poziv na broj, IBAN, dobavljač, kontakt, datumi, adresa) stavi u bilješke, svaki podatak u svoju kratku bilješku. '
         + 'Ne izmišljaj podatke kojih nema na fotografiji; ako je nečitko, napiši to u opis.' : '',
-      'Iz toga izvuci JEDAN zadatak i pozovi alat predlozi_zadatak.',
+      multi ? 'Ovo je ZAPISNIK ili POPIS: izvuci SVE zadatke koji se spominju (najviše 15), svaki kao zaseban zadatak sa svojom osobom, rokom i bilješkama, i pozovi alat predlozi_zadatke. Ne spajaj različite zadatke u jedan i ne izmišljaj zadatke kojih nema.'
+        : 'Iz toga izvuci JEDAN zadatak i pozovi alat predlozi_zadatak.',
       `Današnji datum: ${todayInfo()}. "Do petka" znači najbliži idući petak (ako je danas petak, onda danas). "Sutra", "za tjedan dana", "do kraja mjeseca" izračunaj od današnjeg datuma.`,
       `Postojeće osobe: ${people.map((p) => p.name + (p.role ? ` (${p.role})` : '')).join(', ') || 'nema'}.`,
       `Postojeće teme (podteme su zapisane kao "Tema › Podtema"; u odgovoru navedi točan zapis s popisa): ${topics.map((t) => t.path).join(' | ') || 'nema'}.`,
@@ -117,9 +131,9 @@ export default async function handler(req, res) {
             ...images.map((url) => ({ type: 'image_url', image_url: { url } })),
           ]
           : text }],
-        tools: [TOOL],
-        tool_choice: { type: 'function', function: { name: 'predlozi_zadatak' } },
-        max_tokens: images.length || docText ? 1200 : 800,
+        tools: [multi ? TOOL_MULTI : TOOL],
+        tool_choice: { type: 'function', function: { name: multi ? 'predlozi_zadatke' : 'predlozi_zadatak' } },
+        max_tokens: multi ? 3000 : images.length || docText ? 1200 : 800,
       }),
     });
     const json = await r.json().catch(() => ({}));
@@ -136,6 +150,10 @@ export default async function handler(req, res) {
 
     const call = json.choices?.[0]?.message?.tool_calls?.[0];
     const raw = call ? JSON.parse(call.function.arguments) : JSON.parse(json.choices?.[0]?.message?.content || '{}');
+    if (multi) {
+      const list = (Array.isArray(raw.zadaci) ? raw.zadaci : []).slice(0, 15).map((r) => normalize(r, people, topics)).filter((t) => t.title);
+      return res.status(200).json({ tasks: list, remaining: DAILY_LIMIT - used[0].count });
+    }
     return res.status(200).json({ ...normalize(raw, people, topics), remaining: DAILY_LIMIT - used[0].count });
   } catch (e) {
     console.error(e);
@@ -176,6 +194,7 @@ export function normalize(raw, people, topics) {
     new_people: unknown,
     due_date: /^\d{4}-\d{2}-\d{2}$/.test(raw.due_date || '') ? raw.due_date : null,
     priority: ['low', 'normal', 'high'].includes(raw.priority) ? raw.priority : 'normal',
+    steps: (Array.isArray(raw.koraci) ? raw.koraci : []).map((x) => String(x).trim()).filter(Boolean).slice(0, 15),
     notes: (raw.notes || []).filter((n) => n && String(n.body || '').trim()).map((n) => {
       const p = findPerson(n.person);
       return { person_id: p?.id || null, person_name: p ? p.name : (n.person ? String(n.person).trim() : null), body: String(n.body).trim() };
