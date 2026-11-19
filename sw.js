@@ -1,9 +1,10 @@
 // Service worker: aplikacija se otvara i bez interneta, a zadnji podaci mogu se čitati offline.
 // Promijeni VERSION pri svakoj promjeni ovog popisa datoteka.
-const VERSION = 'v1.6';
+const VERSION = 'v1.7';
 const SHELL = `delegator-shell-${VERSION}`;
 const DATA = 'delegator-data';
-const FILES = ['/', '/manifest.webmanifest', '/vendor/cytoscape.min.js', '/icons/icon-192.png', '/icons/icon-512.png'];
+const FILES = ['/', '/manifest.webmanifest', '/vendor/cytoscape.min.js', '/icons/icon-192.png', '/icons/icon-512.png',
+  '/vendor/fonts/inter-latin-wght-normal.woff2', '/vendor/fonts/inter-latin-ext-wght-normal.woff2'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(SHELL).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
